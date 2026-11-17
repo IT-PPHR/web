@@ -1,0 +1,21 @@
+/* กำหนดขนาดฉลามให้ใหญ่ขึ้น 3 เท่าตัว */
+.friendly-shark {
+  position: absolute;
+  width: 360px; /* ขยายจากขนาดเดิมประมาณ 3 เท่า */
+  height: auto;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.friendly-shark.is-swimming {
+  opacity: 1;
+}
+
+/* เอฟเฟกต์ตอนฉลามงับกระทง */
+.shark-held {
+  transform: scale(1.1) rotate(5deg);
+  transition: transform 0.2s ease;
+}
