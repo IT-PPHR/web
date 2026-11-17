@@ -264,3 +264,41 @@ footer{text-align:center;padding:28px 10px 36px;color:#a8b9c9;font-size:11px;let
 .wish-ticker{display:block;width:100%;padding:15px 20px;border-radius:18px;color:#f8eed9;background:linear-gradient(90deg,#102a44,#193d56,#102a44);border:1px solid #486885;text-align:center;line-height:1.65;font-size:14px;min-height:62px;overflow-wrap:anywhere}
 .wish-ticker:hover{border-color:#f0cc87}
 @media(max-width:760px){.wish-ticker-wrap{padding:0 12px}.wish-ticker{font-size:13px;padding:12px}}
+
+
+/* V9: Desktop and mobile rotating wishes, no latest-wishes cards */
+.wish-ticker-wrap{
+  width:calc(100% - 8vw);
+  max-width:none;
+  margin:0 auto 24px;
+  padding:0;
+  display:grid;
+  grid-template-columns:minmax(180px,220px) minmax(0,1fr);
+  align-items:center;
+  gap:14px;
+  text-align:left;
+}
+.ticker-head{margin:0;font-size:13px;letter-spacing:.8px;white-space:nowrap;color:#f0cc87}
+.wish-ticker{
+  min-width:0;width:100%;min-height:58px;
+  padding:12px 22px;
+  display:block;
+  text-align:left;
+  font-size:clamp(13px,1.05vw,16px);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  line-height:1.6;
+  box-shadow:0 8px 24px rgba(0,0,0,.1);
+}
+main{padding-bottom:18px}
+@media(max-width:1040px){
+  .wish-ticker-wrap{grid-template-columns:1fr;gap:8px;width:calc(100% - 8vw);text-align:center}
+  .ticker-head{margin:0 auto}
+  .wish-ticker{text-align:center;white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;min-height:66px}
+}
+@media(max-width:760px){
+  .wish-ticker-wrap{width:calc(100% - 24px);padding:0;margin:3px auto 20px;gap:9px}
+  .ticker-head{font-size:12px}
+  .wish-ticker{font-size:13px;padding:13px 14px;min-height:74px}
+}

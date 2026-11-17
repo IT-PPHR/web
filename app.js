@@ -283,11 +283,6 @@ function renderSea(){
     }
   });
 
-  $('wishCards').innerHTML=(state.recentItems.length?state.recentItems:state.items).slice(0,12).map((item,i)=>{
-    const photo=safePhoto(item.photo);
-    return `<button class="wish-card" data-index="${i}" style="text-align:left;color:inherit;cursor:pointer"><div class="wc-head">${photo?`<img class="face" src="${photo}" alt="">`:''}<b>${getParts(item).flower[1]} ${esc(item.name)}</b></div><p>${esc(item.wish)}</p><small>${esc(item.department)} • ${new Date(item.createdAt).toLocaleString('th-TH')}</small></button>`;
-  }).join('');
-  $('wishCards').querySelectorAll('[data-index]').forEach(b=>b.onclick=()=>displayWish((state.recentItems.length?state.recentItems:state.items)[+b.dataset.index]));
   renderWishTicker();
 }
 function animateSea(ts){
