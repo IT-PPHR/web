@@ -20,7 +20,6 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const safePhoto=s=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(String(s||''))?s:'';
 const drifters=new Map();
 let lastFrame=0;
-const sharkState={el:null,timeout:null,busy:false};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 function getParts(item){
@@ -266,94 +265,8 @@ function initSeaDecor(){
       lantern.style.setProperty('--lantern-travel',(sky.clientHeight+75)+'px');
   },{passive:true});
   // The sea remains rendered below the sky; no islands are created.
-  ensureShark();
-  scheduleSharkAttack();
 }
 
-function ensureShark(){
-  if(sharkState.el?.isConnected) return sharkState.el;
-  const sea=$('seaBoard');
-  const el=document.createElement('div');
-  el.className='sea-shark fin-only';
-  el.setAttribute('aria-hidden','true');
-  el.innerHTML='    <span class="shark-wake"></span>    <span class="shark-fin-solo"></span>    <div class="shark-body">      <span class="shark-tail"></span>      <span class="shark-fin"></span>      <span class="shark-mouth"></span>      <span class="shark-eye"></span>    </div>';
-  sea.appendChild(el);
-  sharkState.el=el;
-  return el;
-}
-function sharkTargetList(){
-  return [...drifters.values()].filter(v=>v?.el?.isConnected);
-}
-function scheduleSharkAttack(){
-  if(sharkState.timeout) return;
-  const queue=()=>{
-    sharkState.timeout=setTimeout(async()=>{
-      sharkState.timeout=null;
-      if(!document.hidden) await runSharkAttack();
-      queue();
-    }, 14000 + Math.random()*14000);
-  };
-  queue();
-}
-async function runSharkAttack(){
-  if(sharkState.busy) return;
-  const candidates=sharkTargetList();
-  if(!candidates.length) return;
-  const sea=$('seaBoard');
-  const el=ensureShark();
-  const target=candidates[Math.floor(Math.random()*candidates.length)];
-  if(!target) return;
-  sharkState.busy=true;
-
-  const fromLeft=Math.random()<0.5;
-  const startX=fromLeft ? -120 : sea.clientWidth+120;
-  const exitX=fromLeft ? sea.clientWidth+150 : -150;
-  const approachX=target.x + (fromLeft ? -78 : 78);
-  const breachX=target.x + (fromLeft ? -20 : 20);
-  const surfaceY=Math.max(sea.clientHeight*0.60, Math.min(sea.clientHeight*0.87, target.y + 12 + (Math.random()*10-5)));
-  const breachY=Math.max(sea.clientHeight*0.50, target.y - 8);
-
-  el.classList.remove('active','from-right','bite','breach');
-  el.classList.add('fin-only');
-  if(!fromLeft) el.classList.add('from-right');
-  el.style.left=startX+'px';
-  el.style.top=surfaceY+'px';
-  el.style.opacity='0';
-  el.style.transitionDuration='0s';
-  void el.offsetWidth;
-
-  el.classList.add('active');
-  el.style.opacity='1';
-  el.style.transitionDuration='3.1s';
-  el.style.left=approachX+'px';
-  el.style.top=surfaceY+'px';
-  await sleep(2800);
-
-  el.classList.add('breach','bite');
-  el.classList.remove('fin-only');
-  el.style.transitionDuration='.38s';
-  el.style.left=breachX+'px';
-  el.style.top=breachY+'px';
-  await sleep(180);
-  target.el.classList.add('krathong-bitten');
-  await sleep(760);
-
-  target.el.classList.remove('krathong-bitten');
-  el.classList.remove('bite','breach');
-  el.classList.add('fin-only');
-  el.style.transitionDuration='.45s';
-  el.style.left=(breachX + (fromLeft ? 24 : -24))+'px';
-  el.style.top=(surfaceY+2)+'px';
-  await sleep(380);
-
-  el.style.transitionDuration='2.4s';
-  el.style.left=exitX+'px';
-  el.style.top=(surfaceY + (Math.random()*20-10))+'px';
-  await sleep(2200);
-  el.classList.remove('active','from-right','fin-only');
-  el.style.opacity='0';
-  sharkState.busy=false;
-}
 function randomPosition(sea){ return {x:sea.clientWidth*(.08+Math.random()*.84), y:sea.clientHeight*(.54+Math.random()*.34)}; }
 function seaItemHTML(item){
   const photo=safePhoto(item.photo);
