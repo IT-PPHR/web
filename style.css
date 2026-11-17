@@ -365,3 +365,46 @@ main{padding-bottom:18px}
   .sea-item .krathong-art{font-size:34px}
   .wish-symbol .krathong-art,.dialog-art{font-size:72px}
 }
+
+
+/* V11: raise incense and candle height/position so they look taller */
+.art-candle-box{transform:translateY(.18em) scale(1.02)}
+
+.candle-classic{top:.06em;width:.38em;height:.62em}
+.candle-classic i{width:.13em;height:.42em}
+.candle-classic::after{top:-.11em;left:.135em;width:.105em;height:.16em}
+
+.candle-pair{top:.04em;width:.58em;height:.62em}
+.candle-pair i{width:.12em;height:.42em}
+.candle-pair i:nth-child(1){left:.11em}
+.candle-pair i:nth-child(2){left:.34em}
+.candle-pair::before{top:-.11em;left:.115em;width:.1em;height:.16em}
+.candle-pair::after{top:-.11em;left:.345em;width:.1em;height:.16em}
+
+.candle-incense{top:.02em;width:.76em;height:.74em}
+.candle-incense i{width:.045em;height:.4em;bottom:.12em}
+.candle-incense i:nth-child(1){left:.15em}
+.candle-incense i:nth-child(2){left:.35em}
+.candle-incense i:nth-child(3){left:.55em}
+.candle-incense b{width:.09em;height:.13em;top:.02em}
+.candle-incense b:nth-child(4){left:.128em}
+.candle-incense b:nth-child(5){left:.328em}
+.candle-incense b:nth-child(6){left:.528em}
+.candle-incense::after{left:.05em;right:.04em;top:-.02em;height:.22em}
+
+.candle-golden{top:.08em}
+.candle-lantern{top:.08em}
+.candle-sparkle{top:.08em}
+
+/* make preview/mobile specifically read taller */
+.krathong-preview .art-candle-box{transform:translateY(.13em) scale(1.06)}
+.sea-item .art-candle-box{transform:translateY(.2em) scale(1)}
+.wish-symbol .art-candle-box,.dialog-art .art-candle-box{transform:translateY(.17em) scale(1.04)}
+
+@media (max-width:760px){
+  .art-candle-box{transform:translateY(.12em) scale(1.04)}
+  .candle-classic{top:.03em}
+  .candle-pair{top:.02em}
+  .candle-incense{top:0}
+  .krathong-preview .art-candle-box{transform:translateY(.08em) scale(1.08)}
+}
