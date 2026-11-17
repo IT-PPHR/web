@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#081b36">
   <title>Phi Phi • Loy Krathong 2026</title>
-  <link rel="stylesheet" href="style.css?v=16">
+  <link rel="stylesheet" href="style.css?v=17">
 </head>
 <body>
   <div class="stars"></div>
@@ -140,12 +140,17 @@
       <div class="popup-head"><div><div class="eyebrow">HR PANEL</div><h3>Lucky Draw / ผู้ร่วมกิจกรรม</h3></div></div>
 
       <div id="hrLoginBox">
+        <div class="hr-login-symbol" aria-hidden="true">🎁</div>
+        <div class="hr-login-eyebrow">PHI PHI HOLIDAY RESORT</div>
+        <h3 class="hr-login-title">HR Lucky Draw</h3>
+        <p class="hr-login-description">สำหรับฝ่ายทรัพยากรบุคคล<br>เข้าสู่ระบบเพื่อจัดการผู้ร่วมกิจกรรมและสุ่มรางวัล</p>
         <label for="hrPin">รหัส PIN สำหรับ HR</label>
         <div class="loginrow">
-          <input id="hrPin" type="password" placeholder="กรอกรหัส PIN">
-          <button class="btn primary" id="hrLoginBtn">Login</button>
+          <input id="hrPin" type="password" inputmode="numeric" autocomplete="off" placeholder="กรอกรหัส PIN">
+          <button class="btn primary" id="hrLoginBtn">เข้าสู่ระบบ <span aria-hidden="true">→</span></button>
         </div>
-        <div id="hrLoginStatus" class="hint"></div>
+        <div id="hrLoginStatus" class="hint" role="status" aria-live="polite"></div>
+        <div class="hr-login-footnote">🔒 เฉพาะเจ้าหน้าที่ HR ที่ได้รับอนุญาต</div>
       </div>
 
       <div id="hrPanel" hidden>

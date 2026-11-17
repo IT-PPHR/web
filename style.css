@@ -566,3 +566,84 @@ header .brand-event{font-weight:800;line-height:1.24;color:#f3cc80;text-wrap:bal
  header .hotel-logo{height:56px}
  header .brand-with-logo{gap:6px}
 }
+
+
+/* V17: centered premium HR login card; preserve full admin panel after login. */
+#hrModal:has(#hrPanel[hidden]){
+  padding:18px;
+  align-items:center;
+  justify-content:center;
+  background:rgba(2,12,26,.78);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+#hrModal:has(#hrPanel[hidden]) .dialog.hrwide{
+  width:min(100%,455px);
+  max-width:455px;
+  height:auto;
+  max-height:calc(100dvh - 36px);
+  margin:auto;
+  padding:34px 30px 25px;
+  overflow-y:auto;
+  border:1px solid #57718d;
+  border-radius:24px;
+  background:linear-gradient(160deg,#193855 0%,#102941 58%,#0a2037 100%);
+  box-shadow:0 24px 85px rgba(0,0,0,.52), inset 0 1px rgba(255,255,255,.09);
+}
+#hrModal:has(#hrPanel[hidden]) .popup-head{display:none}
+#hrModal:has(#hrPanel[hidden]) .x{
+  position:absolute;top:12px;right:14px;float:none;
+  height:38px;width:38px;border-radius:50%;
+  display:grid;place-items:center;line-height:1;font-size:27px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  color:#fff;z-index:3;
+}
+#hrModal:has(#hrPanel[hidden]) .x:hover{background:rgba(255,255,255,.16)}
+#hrLoginBox{text-align:center}
+#hrLoginBox .hr-login-symbol{
+  width:76px;height:76px;display:grid;place-items:center;margin:5px auto 18px;
+  border-radius:24px;font-size:38px;
+  background:linear-gradient(140deg,#254b63,#102c47);
+  border:1px solid #b9945688;
+  box-shadow:0 9px 30px #030f213b,0 0 0 7px #f6ce7c0c;
+}
+#hrLoginBox .hr-login-eyebrow{color:#f2d394;font-size:10px;font-weight:700;letter-spacing:2.2px;margin-bottom:8px}
+#hrLoginBox .hr-login-title{font-size:29px;line-height:1.2;font-weight:800;color:#fff8e8;margin:0 0 12px}
+#hrLoginBox .hr-login-description{font-size:13px;line-height:1.8;color:#b8c9d8;margin:0 0 27px}
+#hrLoginBox label{display:block;text-align:left;font-size:13px;color:#e9f2f9;font-weight:700;margin-bottom:9px}
+#hrLoginBox .loginrow{display:flex;flex-direction:column;align-items:stretch;gap:13px}
+#hrLoginBox #hrPin{
+  appearance:none;-webkit-appearance:none;display:block;width:100%;min-height:51px;
+  border:1px solid #63819b;border-radius:13px;padding:13px 15px;
+  background:#0b2238;color:#fff;font-size:16px;outline:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+#hrLoginBox #hrPin::placeholder{color:#96aabc}
+#hrLoginBox #hrPin:focus{border-color:#f1ce88;box-shadow:0 0 0 3px #f1ce882c}
+#hrLoginBox #hrLoginBtn{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  width:100%;min-height:52px;padding:11px 16px;border-radius:13px;
+  font-size:16px;font-weight:800;color:#082038;background:#f1cf8a;
+  box-shadow:0 5px 18px #020b1b35;
+}
+#hrLoginBox #hrLoginBtn:hover{background:#ffdaa0}
+#hrLoginBox #hrLoginBtn:disabled{opacity:.65;cursor:wait}
+#hrLoginBox .hint{margin-top:12px;min-height:19px;font-size:12px;line-height:1.4}
+#hrLoginBox .hr-login-footnote{
+  font-size:11px;color:#8da7bc;margin-top:16px;padding-top:16px;
+  border-top:1px solid #48637a80;
+}
+@media(max-width:760px){
+  #hrModal:has(#hrPanel[hidden]){padding:16px;align-items:center;justify-content:center}
+  #hrModal:has(#hrPanel[hidden]) .dialog.hrwide{
+    width:min(100%,410px);max-width:410px;height:auto;
+    max-height:calc(100dvh - 32px);
+    padding:35px 23px 22px;border-radius:22px;
+  }
+  #hrLoginBox .hr-login-title{font-size:26px}
+  #hrLoginBox .hr-login-symbol{width:70px;height:70px;font-size:35px}
+}
+@media(max-width:370px){
+  #hrModal:has(#hrPanel[hidden]) .dialog.hrwide{padding:32px 18px 20px}
+  #hrLoginBox .hr-login-description{font-size:12px}
+}
