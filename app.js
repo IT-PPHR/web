@@ -12,7 +12,7 @@ const CANDLES=[
 ];
 const state={
   type:'lotus',flower:'lotus',candle:'classic',color:'#ffc977',photo:'',photoProcessing:false,
-  items:[],total:0,adminToken:localStorage.getItem('phiPhiHrToken')||'',hrPool:[]
+  items:[],recentItems:[],total:0,minute:null,ownItem:null,ownUntil:0,tickerIndex:0,adminToken:localStorage.getItem('phiPhiHrToken')||'',hrPool:[]
 };
 const $=id=>document.getElementById(id);
 const API=(window.APP_CONFIG||{}).API_URL||'';
@@ -231,6 +231,8 @@ function initSeaDecor(){
     sky.appendChild(lantern);
   }
   sea.appendChild(sky);
+  // Moon must be painted beneath the sky overlay so lanterns cross in front.
+  sky.style.zIndex='4';
   window.addEventListener('resize',()=>{
     for(const lantern of sky.querySelectorAll('.v7-lantern'))
       lantern.style.setProperty('--lantern-travel',(sky.clientHeight+75)+'px');
@@ -256,7 +258,12 @@ function addDrifter(item){
 }
 function renderSea(){
   $('total').textContent=Number(state.total||state.items.length).toLocaleString('th-TH');
-  const sea=$('seaBoard'), visible=state.items.slice(0,80), ids=new Set(visible.map(x=>String(x.id)));
+  const sea=$('seaBoard');
+  let visible=state.items.slice(0,20);
+  if(state.ownItem && Date.now()<state.ownUntil && !visible.some(i=>String(i.id)===String(state.ownItem.id))){
+    visible=[state.ownItem,...visible.slice(0,19)];
+  }
+  const ids=new Set(visible.map(x=>String(x.id)));
   for(const [id,v] of drifters) if(!ids.has(id)){ v.el.remove(); drifters.delete(id); }
   sea.querySelectorAll('.empty').forEach(x=>x.remove());
   if(!state.items.length) sea.insertAdjacentHTML('beforeend','<div class="empty">ยังไม่มีกระทง มาเป็นคนแรกกันเถอะ 🪷</div>');
@@ -276,11 +283,12 @@ function renderSea(){
     }
   });
 
-  $('wishCards').innerHTML=state.items.slice(0,12).map((item,i)=>{
+  $('wishCards').innerHTML=(state.recentItems.length?state.recentItems:state.items).slice(0,12).map((item,i)=>{
     const photo=safePhoto(item.photo);
     return `<button class="wish-card" data-index="${i}" style="text-align:left;color:inherit;cursor:pointer"><div class="wc-head">${photo?`<img class="face" src="${photo}" alt="">`:''}<b>${getParts(item).flower[1]} ${esc(item.name)}</b></div><p>${esc(item.wish)}</p><small>${esc(item.department)} • ${new Date(item.createdAt).toLocaleString('th-TH')}</small></button>`;
   }).join('');
-  $('wishCards').querySelectorAll('[data-index]').forEach(b=>b.onclick=()=>displayWish(state.items[+b.dataset.index]));
+  $('wishCards').querySelectorAll('[data-index]').forEach(b=>b.onclick=()=>displayWish((state.recentItems.length?state.recentItems:state.items)[+b.dataset.index]));
+  renderWishTicker();
 }
 function animateSea(ts){
   const dt=Math.min(.05,Math.max(0,(ts-lastFrame)/1000||0)); lastFrame=ts;
@@ -306,17 +314,38 @@ function animateSea(ts){
   }
   requestAnimationFrame(animateSea);
 }
+function renderWishTicker(){
+  const node=$('wishTicker');
+  if(!node) return;
+  const source=(state.recentItems.length?state.recentItems:state.items).filter(x=>String(x.wish||'').trim());
+  if(!source.length){node.textContent='ร่วมลอยกระทงเพื่อแบ่งปันคำอธิษฐานของคุณ';node.onclick=null;return;}
+  state.tickerIndex%=source.length;
+  const item=source[state.tickerIndex];
+  const short=String(item.wish).length>88?String(item.wish).slice(0,88)+'…':String(item.wish);
+  node.textContent='💫 '+(item.name||'ผู้ร่วมกิจกรรม')+' : '+short+'  ·  แตะเพื่ออ่านทั้งหมด';
+  node.onclick=()=>displayWish(item);
+}
 async function loadSea(){
   if(loadSea.busy) return;
   loadSea.busy=true;
   try{
-    const out=await request('list',{limit:'100'},'GET');
-    state.items=out.items||[];
-    state.total=Number(out.total ?? state.items.length);
+    // Backend selects 20 out of ALL live participants, stable per-minute.
+    const out=await request('list',{limit:'20',random:'20'},'GET');
+    const nextMinute=out.minute ?? Math.floor(Date.now()/60000);
+    const nextItems=out.items||[];
+    const needRerender=state.minute!==nextMinute || nextItems.map(x=>String(x.id)).join('|')!==state.items.map(x=>String(x.id)).join('|');
+    state.items=nextItems;
+    state.recentItems=out.recent||nextItems;
+    state.total=Number(out.total??nextItems.length);
+    state.minute=nextMinute;
     initSeaDecor();
-    renderSea();
+    if(needRerender){renderSea();}else{
+      $('total').textContent=state.total.toLocaleString('th-TH');
+      // Refresh recent wishes without restarting sea animation.
+      renderWishTicker();
+    }
   }catch(e){ console.error('Automatic sea refresh failed:',e); }
-  finally{ loadSea.busy=false; }
+  finally{loadSea.busy=false;}
 }
 
 $('release').onclick=async()=>{
@@ -328,7 +357,12 @@ $('release').onclick=async()=>{
   $('release').disabled=true; $('status').textContent='กำลังปล่อยกระทง...';
   try{
     const out=await request('create',{name,employeeId,department,wish,type:state.type,flower:state.flower,candle:state.candle,color:state.color,photo:state.photo,photoPublic:!!state.photo&&$('photoPublic').checked,consent:true});
-    if(out.item){ state.items.unshift(out.item); state.total+=1; renderSea(); }
+    if(out.item){
+      state.ownItem=out.item;state.ownUntil=Date.now()+65000;
+      state.total+=1;
+      state.recentItems=[out.item,...state.recentItems.filter(x=>String(x.id)!==String(out.item.id))].slice(0,12);
+      renderSea();
+    }
     $('launch').hidden=false;
     setTimeout(()=>{$('launch').hidden=true;},2300);
     $('status').textContent='กระทงของคุณลอยอยู่ในทะเลแล้ว!';
@@ -408,5 +442,6 @@ syncHrUi();
 initSeaDecor();
 loadSea();
 requestAnimationFrame(animateSea);
+setInterval(()=>{state.tickerIndex++;renderWishTicker();},8000);
 setInterval(()=>{ if(!document.hidden) loadSea(); },10000);
 document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hidden) loadSea(); });

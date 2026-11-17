@@ -253,3 +253,14 @@ footer{text-align:center;padding:28px 10px 36px;color:#a8b9c9;font-size:11px;let
 @keyframes v7CloudLeft{from{transform:translateX(0) scale(var(--cloud-scale))}to{transform:translateX(-135vw) scale(var(--cloud-scale))}}
 @media(max-width:760px){.v7-cloud{filter:blur(1.5px);opacity:.5}.atmosphere-sky .v7-pyro{filter:none}}
 @media(prefers-reduced-motion:reduce){.v7-cloud,.atmosphere-sky .v7-pyro,.atmosphere-sky .v7-pyro>.before,.atmosphere-sky .v7-pyro>.after,.atmosphere-sky .v7-lantern{animation:none!important;opacity:0!important}}
+
+/* V8: lanterns pass IN FRONT of the moon; never above the sea */
+.sea-stage>.moon{z-index:2}
+.sea-stage>.atmosphere-sky{z-index:4!important}
+.sea-stage>.sea-item{z-index:6}
+.sea-stage>.sea-surface{z-index:0}
+.wish-ticker-wrap{max-width:1040px;margin:0 auto 24px;padding:0 4vw;text-align:center}
+.ticker-head{font-size:12px;letter-spacing:1.2px;color:#f0cc87;margin:8px auto}
+.wish-ticker{display:block;width:100%;padding:15px 20px;border-radius:18px;color:#f8eed9;background:linear-gradient(90deg,#102a44,#193d56,#102a44);border:1px solid #486885;text-align:center;line-height:1.65;font-size:14px;min-height:62px;overflow-wrap:anywhere}
+.wish-ticker:hover{border-color:#f0cc87}
+@media(max-width:760px){.wish-ticker-wrap{padding:0 12px}.wish-ticker{font-size:13px;padding:12px}}
