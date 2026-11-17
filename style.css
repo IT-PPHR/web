@@ -648,9 +648,118 @@ header .brand-event{font-weight:800;line-height:1.24;color:#f3cc80;text-wrap:bal
   #hrLoginBox .hr-login-description{font-size:12px}
 }
 
-/* Friendly shark overlay: placed in the water above waves and behind dialogs. */
-.friendly-shark{position:absolute;z-index:8;left:-180px;top:70%;width:clamp(110px,17vw,190px);height:auto;pointer-events:none;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 9px 7px #031b2c88);will-change:left,top;}
-.friendly-shark.is-swimming{opacity:1;}
-.sea-item.shark-held{z-index:9;pointer-events:none;filter:drop-shadow(0 0 12px #ffe5a3);}
-@media(max-width:760px){.friendly-shark{width:125px;}}
-@media(prefers-reduced-motion:reduce){.friendly-shark{display:none!important;}}
+
+/* V18: playful shark randomly bites a floating krathong and releases it */
+.sea-shark{position:absolute;left:-140px;top:65%;width:96px;height:44px;z-index:7;pointer-events:none;opacity:0;transform:translate(-50%,-50%);transition:left 2.8s cubic-bezier(.22,.61,.36,1), top 2.8s ease, opacity .35s ease;filter:drop-shadow(0 8px 8px rgba(0,0,0,.18))}
+.sea-shark .shark-body{position:relative;width:96px;height:44px;background:linear-gradient(180deg,#88abc3 0%,#658aa6 45%,#4b6d87 46%,#2f536c 100%);border-radius:58% 42% 48% 52% / 56% 48% 52% 44%;box-shadow:inset 0 -7px 0 rgba(255,255,255,.2)}
+.sea-shark .shark-body::after{content:"";position:absolute;left:15px;right:12px;bottom:3px;height:14px;background:linear-gradient(180deg,#d7e6ef,#b8cedd);border-radius:45% 55% 55% 45%/70% 65% 35% 30%;opacity:.96}
+.sea-shark .shark-tail{position:absolute;left:-18px;top:8px;width:0;height:0;border-top:13px solid transparent;border-bottom:13px solid transparent;border-right:24px solid #5d7e97;filter:drop-shadow(0 2px 1px rgba(0,0,0,.1))}
+.sea-shark .shark-fin{position:absolute;left:35px;top:-11px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:18px solid #597993;transform:rotate(-8deg)}
+.sea-shark .shark-mouth{position:absolute;right:-1px;top:17px;width:18px;height:10px;background:#173246;border-radius:0 11px 11px 0;overflow:hidden}
+.sea-shark .shark-mouth::before{content:"";position:absolute;left:2px;right:2px;top:1px;height:4px;background:repeating-linear-gradient(90deg,#fff 0 3px,transparent 3px 5px);clip-path:polygon(0 0,100% 0,94% 100%,6% 100%)}
+.sea-shark .shark-eye{position:absolute;right:17px;top:11px;width:5px;height:5px;border-radius:50%;background:#10293a;box-shadow:0 0 0 1px rgba(255,255,255,.12)}
+.sea-shark.from-right .shark-body{transform:scaleX(-1)}
+.sea-shark.bite .shark-body{animation:sharkChomp .22s ease-in-out 3}
+.sea-item.krathong-bitten{animation:krathongBitten .9s ease-in-out}
+.sea-item.krathong-bitten .sea-bob{animation:bittenBob .15s ease-in-out 6 alternate}
+@keyframes sharkChomp{0%,100%{transform:translateY(0)}50%{transform:translateY(2px) scaleY(.93)}}
+@keyframes krathongBitten{0%,100%{transform:translate(-50%,-50%) rotate(0) scale(1)}15%{transform:translate(-50%,-55%) rotate(-6deg) scale(1.04)}30%{transform:translate(-50%,-47%) rotate(7deg) scale(.98)}45%{transform:translate(-50%,-58%) rotate(-8deg) scale(1.05)}60%{transform:translate(-50%,-49%) rotate(8deg) scale(.97)}75%{transform:translate(-50%,-54%) rotate(-4deg) scale(1.02)}}
+@keyframes bittenBob{from{transform:translateY(0)}to{transform:translateY(-3px)}}
+@media(max-width:760px){.sea-shark{width:74px;height:34px}.sea-shark .shark-body{width:74px;height:34px}.sea-shark .shark-body::after{left:12px;right:10px;height:11px}.sea-shark .shark-tail{left:-14px;top:6px;border-top:10px solid transparent;border-bottom:10px solid transparent;border-right:18px solid #5d7e97}.sea-shark .shark-fin{left:27px;top:-9px;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #597993}.sea-shark .shark-mouth{right:-1px;top:13px;width:15px;height:8px}.sea-shark .shark-eye{right:13px;top:9px;width:4px;height:4px}}
+
+
+/* V20 corrected: shark swims as a fin in the sea, then breaches briefly to nibble a krathong */
+.sea-shark{
+  position:absolute;left:-140px;top:65%;width:108px;height:76px;z-index:7;pointer-events:none;opacity:0;
+  transform:translate(-50%,-50%);
+  transition:left 3s cubic-bezier(.22,.61,.36,1), top 3s ease, opacity .35s ease;
+  filter:drop-shadow(0 8px 8px rgba(0,0,0,.14));
+}
+.sea-shark .shark-wake{
+  position:absolute;left:18px;top:22px;width:30px;height:8px;border-radius:50%;
+  background:radial-gradient(ellipse at center, rgba(255,255,255,.55) 0, rgba(255,255,255,.18) 44%, transparent 72%);
+  opacity:.75;filter:blur(.2px);
+}
+.sea-shark .shark-fin-solo{
+  position:absolute;left:36px;top:3px;width:0;height:0;
+  border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:24px solid #5d7e97;
+  transform:rotate(-5deg);
+  filter:drop-shadow(0 2px 1px rgba(0,0,0,.15));
+}
+.sea-shark .shark-body{
+  position:absolute;left:10px;top:10px;width:96px;height:44px;
+  background:linear-gradient(180deg,#88abc3 0%,#658aa6 45%,#4b6d87 46%,#2f536c 100%);
+  border-radius:58% 42% 48% 52% / 56% 48% 52% 44%;
+  box-shadow:inset 0 -7px 0 rgba(255,255,255,.2);
+  opacity:0;transform:translateY(24px) rotate(5deg) scale(.88);
+  transform-origin:50% 75%;transition:opacity .22s ease, transform .22s ease;
+}
+.sea-shark .shark-body::after{content:"";position:absolute;left:15px;right:12px;bottom:3px;height:14px;background:linear-gradient(180deg,#d7e6ef,#b8cedd);border-radius:45% 55% 55% 45%/70% 65% 35% 30%;opacity:.96}
+.sea-shark .shark-tail{position:absolute;left:-18px;top:8px;width:0;height:0;border-top:13px solid transparent;border-bottom:13px solid transparent;border-right:24px solid #5d7e97;filter:drop-shadow(0 2px 1px rgba(0,0,0,.1))}
+.sea-shark .shark-fin{position:absolute;left:35px;top:-11px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:18px solid #597993;transform:rotate(-8deg)}
+.sea-shark .shark-mouth{position:absolute;right:-1px;top:17px;width:18px;height:10px;background:#173246;border-radius:0 11px 11px 0;overflow:hidden}
+.sea-shark .shark-mouth::before{content:"";position:absolute;left:2px;right:2px;top:1px;height:4px;background:repeating-linear-gradient(90deg,#fff 0 3px,transparent 3px 5px);clip-path:polygon(0 0,100% 0,94% 100%,6% 100%)}
+.sea-shark .shark-eye{position:absolute;right:17px;top:11px;width:5px;height:5px;border-radius:50%;background:#10293a;box-shadow:0 0 0 1px rgba(255,255,255,.12)}
+.sea-shark.fin-only .shark-body{opacity:0;transform:translateY(24px) rotate(5deg) scale(.88)}
+.sea-shark.fin-only .shark-fin-solo,.sea-shark.fin-only .shark-wake{opacity:1}
+.sea-shark.breach .shark-body{opacity:1;transform:translateY(-4px) rotate(-6deg) scale(1)}
+.sea-shark.breach .shark-fin-solo,.sea-shark.breach .shark-wake{opacity:.2}
+.sea-shark.bite .shark-body{animation:sharkBreachChomp .2s ease-in-out 4}
+.sea-shark.from-right .shark-wake{transform:scaleX(-1)}
+.sea-shark.from-right .shark-fin-solo{transform:scaleX(-1) rotate(-5deg)}
+.sea-shark.from-right .shark-body{transform:translateY(24px) rotate(-5deg) scale(-.88,.88)}
+.sea-shark.from-right.breach .shark-body{transform:translateY(-4px) rotate(6deg) scale(-1,1)}
+.sea-shark.from-right.bite .shark-body{animation:sharkBreachChompRight .2s ease-in-out 4}
+.sea-item.krathong-bitten{animation:krathongBitten .9s ease-in-out}
+.sea-item.krathong-bitten .sea-bob{animation:bittenBob .15s ease-in-out 6 alternate}
+@keyframes sharkBreachChomp{0%,100%{transform:translateY(-4px) rotate(-6deg) scale(1)}50%{transform:translateY(-1px) rotate(-3deg) scale(1.03,.95)}}
+@keyframes sharkBreachChompRight{0%,100%{transform:translateY(-4px) rotate(6deg) scale(-1,1)}50%{transform:translateY(-1px) rotate(3deg) scale(-1.03,.95)}}
+@media(max-width:760px){
+  .sea-shark{width:84px;height:60px}
+  .sea-shark .shark-wake{left:13px;top:19px;width:22px;height:6px}
+  .sea-shark .shark-fin-solo{left:29px;top:2px;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:19px solid #5d7e97}
+  .sea-shark .shark-body{left:8px;top:8px;width:74px;height:34px}
+  .sea-shark .shark-body::after{left:12px;right:10px;height:11px}
+  .sea-shark .shark-tail{left:-14px;top:6px;border-top:10px solid transparent;border-bottom:10px solid transparent;border-right:18px solid #5d7e97}
+  .sea-shark .shark-fin{left:27px;top:-9px;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #597993}
+  .sea-shark .shark-mouth{right:-1px;top:13px;width:15px;height:8px}
+  .sea-shark .shark-eye{right:13px;top:9px;width:4px;height:4px}
+}
+
+
+/* V21: submission loading animation for releasing a krathong */
+.builder-shell{overflow:visible}
+.release-loading[hidden]{display:none}
+.release-loading{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;background:rgba(7,24,41,.58);backdrop-filter:blur(4px);border-radius:20px}
+.release-loading-card{width:min(92vw,420px);padding:24px 22px;border-radius:24px;border:1px solid rgba(240,204,135,.42);background:linear-gradient(180deg,rgba(14,36,58,.96),rgba(10,28,47,.98));box-shadow:0 20px 60px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05);text-align:center}
+.release-loading-card h4{margin:14px 0 8px;font-size:24px;color:#fff2d2}
+.release-loading-card p{margin:0;color:#bdd0de;font-size:14px;line-height:1.6}
+.release-loading-art{position:relative;height:118px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.release-k{position:relative;font-size:72px;z-index:2;filter:drop-shadow(0 0 20px rgba(255,212,133,.45));animation:releaseFloat 1.8s ease-in-out infinite}
+.release-ripple{position:absolute;left:50%;bottom:16px;width:56px;height:18px;border:2px solid rgba(118,210,230,.45);border-radius:50%;transform:translateX(-50%) scale(.8);opacity:0;animation:releaseRipple 2.1s ease-out infinite}
+.release-ripple.r2{animation-delay:.7s}
+.release-ripple.r3{animation-delay:1.4s}
+.release-spark{position:absolute;color:#ffd88e;font-size:18px;opacity:.7;animation:releaseSpark 1.9s ease-in-out infinite}
+.release-spark.s1{left:29%;top:20px;animation-delay:.1s}
+.release-spark.s2{right:27%;top:34px;animation-delay:.7s}
+.release-spark.s3{right:34%;top:12px;animation-delay:1.2s}
+.release-dots{display:flex;justify-content:center;gap:8px;margin-top:14px}
+.release-dots span{width:9px;height:9px;border-radius:50%;background:#f0cc87;opacity:.28;animation:releaseDots 1s ease-in-out infinite}
+.release-dots span:nth-child(2){animation-delay:.18s}
+.release-dots span:nth-child(3){animation-delay:.36s}
+.btn[disabled]{opacity:.8;cursor:not-allowed}
+.btn-spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(16,34,53,.22);border-top-color:currentColor;border-radius:50%;animation:btnSpin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelBuilder{opacity:.55;pointer-events:none}
+@keyframes releaseFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes releaseRipple{0%{opacity:0;transform:translateX(-50%) scale(.72)}20%{opacity:.75}100%{opacity:0;transform:translateX(-50%) scale(2.2)}}
+@keyframes releaseSpark{0%,100%{transform:translateY(0) scale(.9);opacity:.32}50%{transform:translateY(-6px) scale(1.1);opacity:.9}}
+@keyframes releaseDots{0%,100%{transform:translateY(0);opacity:.25}50%{transform:translateY(-4px);opacity:1}}
+@keyframes btnSpin{to{transform:rotate(360deg)}}
+@media(max-width:760px){
+  .release-loading{border-radius:18px}
+  .release-loading-card{width:min(88vw,360px);padding:20px 18px;border-radius:20px}
+  .release-loading-card h4{font-size:21px}
+  .release-loading-card p{font-size:13px}
+  .release-loading-art{height:104px}
+  .release-k{font-size:62px}
+}

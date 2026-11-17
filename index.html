@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#081b36">
   <title>Phi Phi • Loy Krathong 2026</title>
-  <link rel="stylesheet" href="style.css?v=18">
+  <link rel="stylesheet" href="style.css?v=21">
 </head>
 <body>
   <div class="stars"></div>
@@ -53,12 +53,28 @@
 
   <!-- Builder popup -->
   <div id="builderModal" class="modal" hidden>
-    <div class="dialog wide">
+    <div class="dialog wide builder-shell">
       <button id="closeBuilder" aria-label="ปิด" class="x">×</button>
       <div class="popup-head">
         <div>
           <div class="eyebrow">CREATE YOUR KRATHONG</div>
           <h3>สร้างกระทงของคุณ</h3>
+        </div>
+      </div>
+      <div id="releaseLoading" class="release-loading" hidden aria-live="polite" aria-busy="true">
+        <div class="release-loading-card">
+          <div class="release-loading-art" aria-hidden="true">
+            <div class="release-ripple r1"></div>
+            <div class="release-ripple r2"></div>
+            <div class="release-ripple r3"></div>
+            <div class="release-k">🪷</div>
+            <div class="release-spark s1">✨</div>
+            <div class="release-spark s2">✨</div>
+            <div class="release-spark s3">✨</div>
+          </div>
+          <h4>กำลังปล่อยกระทง...</h4>
+          <p>กรุณารอสักครู่ ระบบกำลังส่งกระทงของคุณลงสู่ทะเล</p>
+          <div class="release-dots"><span></span><span></span><span></span></div>
         </div>
       </div>
       <div class="builder-grid">
@@ -179,6 +195,6 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=21"></script>
 </body>
 </html>
