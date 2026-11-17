@@ -468,3 +468,106 @@ requestAnimationFrame(animateSea);
 setInterval(()=>{state.tickerIndex++;renderWishTicker();},8000);
 setInterval(()=>{ if(!document.hidden) loadSea(); },10000);
 document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hidden) loadSea(); });
+
+/* ===== Shark: krathong-sized; every 15s swims to a random krathong, bites it ~5s, then vanishes for 10s ===== */
+(function(){
+  const actor=$('sharkActor');
+  if(!actor || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const sea=$('seaBoard');
+  const rig=actor.querySelector('.shark-rig'), jaw=actor.querySelector('.shark-jaw');
+  const ring=actor.querySelector('.shark-ring'), drops=actor.querySelector('.shark-drops');
+  const RATIO=230/420;                          // svg height / width
+  const SWIM=2000, LUNGE=450, BITE=1900, DIVE=750, TOTAL=SWIM+LUNGE+BITE+DIVE;
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const easeOut=t=>1-Math.pow(1-clamp(t,0,1),3);
+  const easeInOut=t=>{t=clamp(t,0,1);return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;};
+  let busy=false;
+
+  function krathongSize(){
+    const a=sea.querySelector('.sea-item .krathong-art');
+    const w=a&&a.getBoundingClientRect().width;
+    return w>20?w:76;                            // shark body length = krathong width
+  }
+  function splash(face,power){
+    ring.classList.remove('go'); void ring.offsetWidth; ring.classList.add('go');
+    const sw=parseFloat(actor.style.getPropertyValue('--sw'))||76;
+    for(let i=0;i<power;i++){
+      const d=document.createElement('i');
+      const dx=(Math.random()-.5)*sw*1.3, up=sw*(.35+Math.random()*.55), s=2+Math.random()*3.5;
+      d.style.left=(sw*.45+sw*.5+(face*sw*-.1))+'px'; d.style.width=d.style.height=s+'px';
+      drops.appendChild(d);
+      d.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${dx*.6}px,${-up}px)`,opacity:1,offset:.45},{transform:`translate(${dx}px,${sw*.05}px)`,opacity:0}],
+        {duration:600+Math.random()*350,easing:'ease-out'}).onfinish=()=>d.remove();
+    }
+  }
+  function shakeKrathong(t){
+    const n=t.el.querySelector('.sea-bob')||t.el;
+    if(n.animate) n.animate({translate:['0 0','-3px 2px','3px -2px','0 0'],rotate:['0deg','-10deg','8deg','0deg']},{duration:330,easing:'ease-out'});
+  }
+
+  function attack(){
+    if(busy) return Promise.resolve(false);
+    const list=[...drifters.values()].filter(v=>v.el&&v.el.isConnected);
+    if(!list.length||document.hidden) return Promise.resolve(false);
+    busy=true;
+    const target=list[Math.floor(Math.random()*list.length)];
+    const sw=krathongSize();
+    actor.style.setProperty('--sw',sw+'px');
+    const W=sea.clientWidth;
+    const fromRight=(W-target.x)>target.x;       // approach from the roomier side
+    const face=fromRight?-1:1;                   // -1 = facing left, +1 = facing right
+    actor.style.setProperty('--flip',face===-1?1:-1);
+    const room=fromRight?(W-target.x):target.x;
+    const startOff=clamp(room*.9,sw*1.6,sw*4);   // distance to swim in from
+    const H=sw*RATIO;
+    let snapped=-1, t0=null;
+
+    return new Promise(res=>{
+      function frame(ts){
+        if(t0===null) t0=ts;
+        const t=ts-t0;
+        if(t>=TOTAL||!target.el.isConnected){
+          actor.classList.remove('on'); actor.style.opacity='0'; jaw.style.transform=''; rig.style.transform='';
+          busy=false; return res(true);
+        }
+        // phase maths
+        let off=0, sub=.74, rot=0, jawA=0, shake=0, extraX=0, op=1;
+        if(t<SWIM){
+          const p=t/SWIM; off=startOff*(1-easeInOut(p)); sub=.74+Math.sin(t/140)*.03; rot=Math.sin(t/190)*2.5; op=clamp(t/350,0,1);
+        }else if(t<SWIM+LUNGE){
+          const p=easeOut((t-SWIM)/LUNGE); sub=.74-p*.86; rot=p*38; jawA=-32*p;
+          if(snapped<-0.5){snapped=-0.4; splash(face,9);}
+        }else if(t<SWIM+LUNGE+BITE){
+          const b=t-SWIM-LUNGE, cyc=620, ph=(b%cyc)/cyc, n=Math.floor(b/cyc);
+          sub=-.12+Math.sin(b/260)*.03; rot=38+Math.sin(b/300)*4;
+          if(ph<.62) jawA=-32*easeOut(ph/.22); else if(ph<.76) jawA=-32*(1-(ph-.62)/.14); else jawA=0;
+          if(ph>=.76 && n!==snapped){ snapped=n; shakeKrathong(target); }
+          shake=ph>=.76?Math.sin((ph-.76)*60)*3.5*(1-(ph-.76)/.24):0;
+        }else{
+          const p=easeInOut((t-SWIM-LUNGE-BITE)/DIVE); sub=-.12+p*1.2; rot=38+p*34; extraX=p*sw*.5;
+          if(p>.25 && snapped!==-9){snapped=-9; splash(face,6);}
+          op=1-clamp((p-.7)/.3,0,1);
+        }
+        const wl=target.y+sw*.28;                // waterline just under the krathong
+        const cx=target.x-face*sw*.40-face*off+face*extraX;
+        actor.style.left=(cx-sw*.95)+'px';
+        actor.style.top=(wl-sw*1.5)+'px';
+        actor.style.opacity=op;
+        actor.classList.add('on');
+        rig.style.transform=`translateY(${sub*H}px) rotate(${rot+shake}deg)`;
+        jaw.style.transform=`rotate(${jawA}deg)`;
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  async function loop(){
+    await sleep(1500);
+    for(;;){
+      const ok=await attack();
+      await sleep(ok?10000:2500);                // 5s on screen + 10s gone = 15s cycle
+    }
+  }
+  loop();
+})();
