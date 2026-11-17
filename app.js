@@ -186,32 +186,26 @@ function initSeaDecor(){
   const layer=document.createElement('div');
   layer.className='bg-decor';
 
-  for(let i=0;i<3;i++){
-    const island=document.createElement('div');
-    island.className='mini-island';
-    island.style.left=(15 + i*26 + Math.random()*7)+'%';
-    island.style.bottom=(11 + Math.random()*10)+'%';
-    island.style.transform=`scale(${0.72 + Math.random()*0.45})`;
-    layer.appendChild(island);
+  for(let i=0;i<5;i++){
+    const pyro=document.createElement('div');
+    pyro.className='pyro';
+    pyro.style.left=(8 + Math.random()*84)+'%';
+    pyro.style.top=(7 + Math.random()*24)+'%';
+    pyro.style.setProperty('--delay',(Math.random()*4.5).toFixed(2)+'s');
+    pyro.style.setProperty('--dur',(1 + Math.random()*0.45).toFixed(2)+'s');
+    pyro.style.setProperty('--cycle',(4.8 + Math.random()*2.1).toFixed(2)+'s');
+    pyro.innerHTML='<div class="before"></div><div class="after"></div>';
+    layer.appendChild(pyro);
   }
-  for(let i=0;i<6;i++){
-    const fw=document.createElement('div');
-    fw.className='bg-firework';
-    fw.style.left=(8 + Math.random()*84)+'%';
-    fw.style.top=(6 + Math.random()*28)+'%';
-    fw.style.setProperty('--delay', (Math.random()*4).toFixed(2)+'s');
-    fw.style.setProperty('--dur', (2.5 + Math.random()*2).toFixed(2)+'s');
-    fw.style.setProperty('--size', (26 + Math.random()*34).toFixed(0)+'px');
-    layer.appendChild(fw);
-  }
-  for(let i=0;i<8;i++){
+  for(let i=0;i<9;i++){
     const lantern=document.createElement('div');
     lantern.className='sky-lantern';
     lantern.style.left=(4 + Math.random()*92)+'%';
-    lantern.style.bottom=(-8 - Math.random()*14)+'%';
-    lantern.style.setProperty('--delay',(Math.random()*9).toFixed(2)+'s');
+    lantern.style.bottom=(24 + Math.random()*8)+'%';
+    lantern.style.setProperty('--delay',(Math.random()*10).toFixed(2)+'s');
     lantern.style.setProperty('--dur',(12 + Math.random()*9).toFixed(2)+'s');
-    lantern.style.setProperty('--drift',(-28 + Math.random()*56).toFixed(0)+'px');
+    lantern.style.setProperty('--drift',(-24 + Math.random()*48).toFixed(0)+'px');
+    lantern.style.setProperty('--sway',(1.8 + Math.random()*1.4).toFixed(2)+'s');
     layer.appendChild(lantern);
   }
   sea.appendChild(layer);
