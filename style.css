@@ -302,3 +302,66 @@ main{padding-bottom:18px}
   .ticker-head{font-size:12px}
   .wish-ticker{font-size:13px;padding:13px 14px;min-height:74px}
 }
+
+
+/* V10: tighten krathong composition so the base/flower/candle stack has no floating gaps */
+.krathong-art{
+  width:1.42em;
+  height:1.16em;
+  overflow:visible;
+}
+.art-stack{
+  inset:auto 0 0 0;
+  height:1.12em;
+  transform:translateY(.02em);
+}
+.art-base-box,.art-flower-box,.art-candle-box{
+  inset:0;
+  transform-origin:50% 100%;
+}
+.art-base-box{transform:translateY(.12em) scale(1.04)}
+.art-flower-box{transform:translateY(.24em) scale(1.03)}
+.art-candle-box{transform:translateY(.31em) scale(.96)}
+
+/* fine tune each layer */
+.base-shape{filter:drop-shadow(0 2px 3px rgba(0,0,0,.15))}
+.flower-shape{
+  top:.38em;
+  font-size:.66em;
+  filter:drop-shadow(0 0 3px rgba(255,255,255,.25)) drop-shadow(0 2px 2px rgba(0,0,0,.18));
+}
+.flower-lotus{font-size:.68em}
+.flower-rose,.flower-orchid,.flower-sunflower{font-size:.62em}
+.flower-jasmine,.flower-tulip{font-size:.61em}
+
+.candle-classic{top:.19em}
+.candle-pair{top:.18em}
+.candle-incense{top:.16em}
+.candle-golden{top:.2em}
+.candle-lantern{top:.19em}
+.candle-sparkle{top:.2em}
+
+/* preview/layout specific balancing */
+.krathong-preview{
+  width:1.42em;
+  height:1.16em;
+  top:61%;
+  font-size:108px;
+}
+.preview-sky{display:flex;align-items:flex-end;justify-content:center}
+#krathongPreview{left:auto;transform:translateY(-50%)}
+.krathong-preview .avatar{bottom:18px;left:17px}
+.preview-name{bottom:-18px}
+
+/* floating sea and dialog use same tighter layout */
+.sea-item .krathong-art{font-size:40px}
+.wish-symbol .krathong-art,.dialog-art{font-size:82px}
+.side-avatar{top:34px}
+
+@media (max-width:760px){
+  .krathong-preview{font-size:72px;top:58%}
+  .krathong-preview .avatar{width:28px;height:28px;left:11px;bottom:14px}
+  .preview-name{bottom:-16px;font-size:12px;padding:4px 8px;max-width:150px}
+  .sea-item .krathong-art{font-size:34px}
+  .wish-symbol .krathong-art,.dialog-art{font-size:72px}
+}
