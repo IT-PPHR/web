@@ -408,3 +408,63 @@ main{padding-bottom:18px}
   .candle-incense{top:0}
   .krathong-preview .art-candle-box{transform:translateY(.08em) scale(1.08)}
 }
+
+
+/* V12: tablets/iPads use the same single-column mobile layout (portrait and landscape).
+   Desktop with a fine pointer above 1180px retains its desktop presentation. */
+@media (min-width:761px) and (max-width:1180px),
+       (min-width:761px) and (max-width:1400px) and (pointer:coarse) {
+  html,body{max-width:100%;overflow-x:hidden}
+  header{padding:12px 3vw;gap:10px;flex-wrap:nowrap}
+  .brand{font-size:14px;letter-spacing:1.5px;white-space:normal}
+  .brand span{font-size:10px;letter-spacing:1.2px}
+  .brand em{display:block;width:100%;font-size:10px;letter-spacing:1.4px}
+  header nav{display:flex;gap:6px}
+  .navbtn{margin:0;padding:10px 14px;font-size:13px;white-space:nowrap}
+
+  .hero-sea{display:flex;flex-direction:column;min-height:0;gap:16px;padding:10px 3vw 25px}
+  .hero-copy{display:contents;padding:0}
+  .hero-copy .eyebrow,.hero-copy h1,.hero-copy p{display:none}
+  .sea-stage{order:1;width:100%;min-height:55svh;border-radius:20px}
+  .moon{width:clamp(76px,11vw,115px);height:clamp(76px,11vw,115px)}
+  .hero-actions{order:2;display:block;width:100%;max-width:none;margin:0}
+  .hero-actions .btn{width:100%;max-width:none;font-size:16px;padding:16px 12px}
+  .stats-row{order:3;display:grid;grid-template-columns:1fr;gap:8px;width:100%;max-width:none}
+  .stats-row .stat-box{text-align:center;padding:13px}
+  .stat-box strong{font-size:26px}
+
+  .wish-ticker-wrap{width:94%;max-width:none;padding:0;margin:0 auto 24px;display:flex;flex-direction:column;align-items:stretch;gap:8px;text-align:center}
+  .ticker-head{width:100%;text-align:center;margin:0}
+  .wish-ticker{width:100%;font-size:15px;padding:14px 16px;line-height:1.6;min-height:60px}
+
+  .modal{padding:0;align-items:stretch;justify-content:center}
+  .modal .dialog,.modal .dialog.wide,.modal .dialog.hrwide{width:100%;max-width:100%;height:100dvh;max-height:100dvh;border-radius:0;padding:calc(18px + env(safe-area-inset-top)) 3vw calc(22px + env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain}
+  #builderModal .dialog.wide{height:100dvh;max-height:100dvh}
+  .popup-head{padding-right:35px}
+  .popup-head h3{font-size:27px;margin-bottom:12px}
+  .x{position:sticky;float:right;top:0;z-index:10;background:#102a44;border-radius:50%;height:42px;width:42px;font-size:30px}
+  .builder-grid{grid-template-columns:1fr;gap:14px}
+  .preview-card{padding:12px}
+  .preview-sky{min-height:220px;border-radius:14px}
+  .mini-moon{width:55px;height:55px;top:16px;right:25px}
+  .krathong-preview{font-size:94px;top:58%}
+  .krathong-preview .avatar{width:35px;height:35px;left:13px;bottom:19px}
+  .preview-card p{margin:7px 0 0}
+  .builder-form label{margin:12px 0 8px;font-size:15px}
+  .choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:8px 0 16px}
+  .choice{min-width:0;min-height:85px;padding:12px 6px}
+  .choice .emoji{font-size:32px}
+  .choice b{font-size:13px;overflow-wrap:anywhere}
+  .twocol{grid-template-columns:1fr;gap:6px}
+  .actions{position:sticky;bottom:calc(-22px - env(safe-area-inset-bottom));z-index:8;background:#102a44;box-shadow:0 -9px 20px #102a44;padding:12px 0 calc(12px + env(safe-area-inset-bottom));margin-bottom:-16px;gap:8px;flex-direction:column;align-items:stretch}
+  .action-right{display:grid;grid-template-columns:1fr 1.5fr;gap:10px}
+  .action-right .btn{width:100%;padding:14px 12px}
+  #status{padding:0}
+  .loginrow,.hr-top,.hr-actions{gap:10px;flex-direction:column;align-items:stretch}
+  .sea-item .krathong-art{font-size:38px}
+}
+@media (min-width:761px) and (max-width:1180px) and (orientation:landscape),
+       (min-width:761px) and (max-width:1400px) and (pointer:coarse) and (orientation:landscape){
+  .sea-stage{min-height:65svh}
+  .preview-sky{min-height:190px}
+}
