@@ -179,36 +179,63 @@ function displayWish(item){
   openModal('dialog');
 }
 
+// V7: all atmospheric objects live in a sky-only layer above the horizon (42%).
 function initSeaDecor(){
   const sea=$('seaBoard');
   if(sea.dataset.decorReady) return;
   sea.dataset.decorReady='1';
-  const layer=document.createElement('div');
-  layer.className='bg-decor';
+  const sky=document.createElement('div');
+  sky.className='atmosphere-sky';
+  sky.setAttribute('aria-hidden','true');
 
-  for(let i=0;i<5;i++){
+  // Slow, staggered fireworks. Each new cycle starts at a randomized position.
+  for(let i=0;i<3;i++){
     const pyro=document.createElement('div');
-    pyro.className='pyro';
-    pyro.style.left=(8 + Math.random()*84)+'%';
-    pyro.style.top=(7 + Math.random()*24)+'%';
-    pyro.style.setProperty('--delay',(Math.random()*4.5).toFixed(2)+'s');
-    pyro.style.setProperty('--dur',(1 + Math.random()*0.45).toFixed(2)+'s');
-    pyro.style.setProperty('--cycle',(4.8 + Math.random()*2.1).toFixed(2)+'s');
+    pyro.className='pyro v7-pyro';
     pyro.innerHTML='<div class="before"></div><div class="after"></div>';
-    layer.appendChild(pyro);
+    pyro.style.setProperty('--cycle',(10+Math.random()*7).toFixed(2)+'s');
+    pyro.style.setProperty('--delay',(-Math.random()*15).toFixed(2)+'s');
+    const relocate=()=>{
+      pyro.style.left=(12+Math.random()*76).toFixed(2)+'%';
+      pyro.style.top=(16+Math.random()*50).toFixed(2)+'%';
+      pyro.style.setProperty('--burst-scale',(0.42+Math.random()*0.33).toFixed(2));
+    };
+    relocate();
+    pyro.addEventListener('animationiteration',e=>{if(e.animationName==='v7Firework') relocate();});
+    sky.appendChild(pyro);
   }
+  // Drifting clouds in both directions, entirely within the sky.
+  for(let i=0;i<5;i++){
+    const cloud=document.createElement('div');
+    cloud.className='v7-cloud '+(i%2===0?'v7-cloud-right':'v7-cloud-left');
+    cloud.style.top=(8+Math.random()*55).toFixed(1)+'%';
+    cloud.style.setProperty('--cloud-scale',(0.65+Math.random()*0.9).toFixed(2));
+    cloud.style.setProperty('--cloud-duration',(34+Math.random()*35).toFixed(1)+'s');
+    cloud.style.setProperty('--cloud-delay',(-Math.random()*60).toFixed(1)+'s');
+    sky.appendChild(cloud);
+  }
+  // Lanterns are created at the horizon and can never enter the sea layer.
   for(let i=0;i<9;i++){
     const lantern=document.createElement('div');
-    lantern.className='sky-lantern';
-    lantern.style.left=(4 + Math.random()*92)+'%';
-    lantern.style.bottom=(24 + Math.random()*8)+'%';
-    lantern.style.setProperty('--delay',(Math.random()*10).toFixed(2)+'s');
-    lantern.style.setProperty('--dur',(12 + Math.random()*9).toFixed(2)+'s');
-    lantern.style.setProperty('--drift',(-24 + Math.random()*48).toFixed(0)+'px');
-    lantern.style.setProperty('--sway',(1.8 + Math.random()*1.4).toFixed(2)+'s');
-    layer.appendChild(lantern);
+    lantern.className='sky-lantern v7-lantern';
+    const reset=()=>{
+      lantern.style.left=(5+Math.random()*88).toFixed(2)+'%';
+      lantern.style.setProperty('--lantern-size',(12+Math.random()*20).toFixed(1)+'px');
+      lantern.style.setProperty('--lantern-drift',(-55+Math.random()*110).toFixed(1)+'px');
+      lantern.style.setProperty('--lantern-travel',(sky.clientHeight+75)+'px');
+    };
+    reset();
+    lantern.style.setProperty('--lantern-duration',(15+Math.random()*17).toFixed(1)+'s');
+    lantern.style.setProperty('--lantern-delay',(-Math.random()*30).toFixed(1)+'s');
+    lantern.addEventListener('animationiteration',e=>{if(e.animationName==='v7LanternRise')reset();});
+    sky.appendChild(lantern);
   }
-  sea.appendChild(layer);
+  sea.appendChild(sky);
+  window.addEventListener('resize',()=>{
+    for(const lantern of sky.querySelectorAll('.v7-lantern'))
+      lantern.style.setProperty('--lantern-travel',(sky.clientHeight+75)+'px');
+  },{passive:true});
+  // The sea remains rendered below the sky; no islands are created.
 }
 function randomPosition(sea){ return {x:sea.clientWidth*(.08+Math.random()*.84), y:sea.clientHeight*(.54+Math.random()*.34)}; }
 function seaItemHTML(item){
