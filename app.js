@@ -27,6 +27,7 @@ function updatePreview(){
   $('previewArt').innerHTML=artHTML(state);
   $('krathongPreview').style.setProperty('--glow',state.color);
   $('photoBadge').hidden=!state.photo;
+  $('previewName').textContent=$('name').value.trim()||'ชื่อผู้ลอย';
   if(state.photo)$('photoBadge').style.backgroundImage=`url("${state.photo}")`;
 }
 function renderChoices(id,values,key){
@@ -48,8 +49,6 @@ function initChoices(){
 function openModal(id){$(id).hidden=false; document.body.classList.add('noscroll');}
 function closeModal(id){$(id).hidden=true; if([...document.querySelectorAll('.modal')].every(m=>m.hidden))document.body.classList.remove('noscroll');}
 $('openBuilder').onclick=() => openModal('builderModal');
-$('openBuilderTop').onclick=() => openModal('builderModal');
-$('openHr').onclick=() => openModal('hrModal');
 $('openHrTop').onclick=() => openModal('hrModal');
 $('closeBuilder').onclick=() => closeModal('builderModal');
 $('cancelBuilder').onclick=() => closeModal('builderModal');
@@ -59,16 +58,57 @@ $('builderModal').onclick=e=>{ if(e.target===$('builderModal')) closeModal('buil
 $('hrModal').onclick=e=>{ if(e.target===$('hrModal')) closeModal('hrModal'); };
 $('dialog').onclick=e=>{ if(e.target===$('dialog')) closeModal('dialog'); };
 
+// iOS Safari-friendly upload: no forced camera capture, FileReader fallback,
+// canvas resizing + quality adjustment to stay within GAS / Worker limits.
+$('name').addEventListener('input',updatePreview);
 $('photo').addEventListener('change',async e=>{
-  const f=e.target.files?.[0]; if(!f)return;
-  if(!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>8*1024*1024){alert('รองรับ JPG/PNG/WEBP ไม่เกิน 8MB'); e.target.value=''; return;}
-  try{state.photo=await shrink(f); updatePreview();}catch(err){alert('อ่านรูปไม่สำเร็จ');}
+  const f=e.target.files?.[0];
+  if(!f)return;
+  if(f.size>12*1024*1024){$('photoStatus').textContent='ไฟล์ใหญ่เกิน 12 MB';e.target.value='';return;}
+  state.photoProcessing=true; $('release').disabled=true;
+  $('photoStatus').textContent='กำลังเตรียมรูป...';
+  try{
+    const data=await shrink(f);
+    if(!safePhoto(data))throw Error('รูปแบบภาพไม่รองรับ');
+    state.photo=data;
+    $('photoStatus').textContent='✓ แนบรูปเรียบร้อย (พร้อมแสดงบนกระทง)';
+    $('photoStatus').textContent='✓ แนบรูปแล้ว กรุณาติ๊กยินยอมให้แสดงรูปบนกระทง';
+    $('clearPhoto').hidden=false;
+    updatePreview();
+  }catch(err){
+    console.error('Photo processing failed:',err);
+    $('photoStatus').textContent='ไม่สามารถอ่านรูปนี้ได้ ลองใช้รูป JPG/PNG หรือแปลง HEIC เป็น JPG';
+    e.target.value='';state.photo='';$('clearPhoto').hidden=true;updatePreview();
+  }finally{state.photoProcessing=false;$('release').disabled=false;}
 });
+$('clearPhoto').onclick=()=>{
+  state.photo='';$('photo').value='';$('photoPublic').checked=false;
+  $('photoStatus').textContent='ยังไม่ได้เลือกรูป';$('clearPhoto').hidden=true;updatePreview();
+};
+function readDataUrl(file){return new Promise((resolve,reject)=>{
+  const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('อ่านรูปไม่ได้'));reader.readAsDataURL(file);
+});}
+function imageFromUrl(url){return new Promise((resolve,reject)=>{
+  const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(Error('เปิดรูปไม่ได้'));img.src=url;
+});}
 async function shrink(file){
-  const bitmap=await createImageBitmap(file); const max=320,scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));
-  const c=document.createElement('canvas'); c.width=Math.round(bitmap.width*scale); c.height=Math.round(bitmap.height*scale);
-  c.getContext('2d').drawImage(bitmap,0,0,c.width,c.height); bitmap.close();
-  return c.toDataURL('image/jpeg',.72);
+  const src=await readDataUrl(file);
+  const img=await imageFromUrl(src); // supports iOS photo library better than createImageBitmap()
+  if(!img.naturalWidth||!img.naturalHeight)throw Error('Invalid image');
+  let edge=240;
+  for(let attempt=0;attempt<6;attempt++){
+    const scale=Math.min(1,edge/Math.max(img.naturalWidth,img.naturalHeight));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+    canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    const result=canvas.toDataURL('image/jpeg',Math.max(.43,.77-attempt*.065));
+    if(result.length<150000)return result;
+    edge=Math.round(edge*.8);
+  }
+  throw Error('Photo exceeds upload limit');
 }
 
 async function request(action,data={},method='POST'){
@@ -89,14 +129,17 @@ function displayWish(item){
 const drifters=new Map();
 let lastFrame=0;
 function randomPosition(sea){return {x:sea.clientWidth*(.08+Math.random()*.84),y:sea.clientHeight*(.52+Math.random()*.39)};}
+function seaItemHTML(item){
+  const photo=safePhoto(item.photo);
+  return `<span class="sea-bob"><span class="krathong-art">${artHTML(item)}</span>${photo?`<img src="${photo}" class="tiny-avatar" alt="รูปผู้ลอย">`:''}<span class="sea-name">${esc(item.name||'ไม่ระบุชื่อ')}</span></span>`;
+}
 function addDrifter(item){
   const sea=$('seaBoard');
   const b=document.createElement('button');
   b.type='button';b.className='sea-item';
   b.setAttribute('aria-label','กระทงของ '+item.name);
   b.style.setProperty('--glow',/^#[0-9a-f]{6}$/i.test(item.color||'')?item.color:'#ffc977');
-  const photo=safePhoto(item.photo);
-  b.innerHTML=`<span class="sea-bob"><span class="krathong-art">${artHTML(item)}</span>${photo?`<img src="${photo}" class="tiny-avatar" alt="">`:''}</span>`;
+  b.innerHTML=seaItemHTML(item);
   b.onclick=()=>displayWish(item);
   sea.appendChild(b);
   const pos=randomPosition(sea),angle=Math.random()*Math.PI*2;
@@ -108,7 +151,12 @@ function renderSea(){
   for(const [id,v] of drifters)if(!ids.has(id)){v.el.remove();drifters.delete(id);}
   sea.querySelectorAll('.empty').forEach(x=>x.remove());
   if(!state.items.length)sea.insertAdjacentHTML('beforeend','<div class="empty">ยังไม่มีกระทง มาเป็นคนแรกกันเถอะ 🪷</div>');
-  visible.forEach(item=>{const id=String(item.id);if(!drifters.has(id))addDrifter(item);else drifters.get(id).item=item;});
+  visible.forEach(item=>{const id=String(item.id);if(!drifters.has(id))addDrifter(item);else{
+    const old=drifters.get(id);
+    const changed=old.item.name!==item.name||old.item.photo!==item.photo||old.item.type!==item.type||old.item.flower!==item.flower||old.item.candle!==item.candle;
+    old.item=item;
+    if(changed)old.el.querySelector('.sea-bob').outerHTML=seaItemHTML(item);
+  }});
   $('wishCards').innerHTML=state.items.slice(0,12).map((item,i)=>{
     const photo=safePhoto(item.photo);
     return `<button class="wish-card" data-index="${i}" style="text-align:left;color:inherit;cursor:pointer"><div class="wc-head">${photo?`<img class="face" src="${photo}" alt="">`:''}<b>${getParts(item).flower[1]} ${esc(item.name)}</b></div><p>${esc(item.wish)}</p><small>${esc(item.department)} • ${new Date(item.createdAt).toLocaleString('th-TH')}</small></button>`;
@@ -139,16 +187,16 @@ async function loadSea(){
     const out=await request('list',{limit:'100'},'GET');
     state.items=out.items||[];state.total=Number(out.total??state.items.length);
     renderSea();
-    $('loadInfo').textContent='อัปเดต '+new Date().toLocaleTimeString('th-TH');
-  }catch(e){$('loadInfo').textContent='โหลดไม่สำเร็จ';console.error(e);}
+  }catch(e){console.error('Automatic sea refresh failed:',e);}
   finally{loadSea.busy=false;}
 }
-$('refresh').onclick=loadSea;
 
 $('release').onclick=async()=>{
   const name=$('name').value.trim(), employeeId=$('employeeId').value.trim(), department=$('dept').value, wish=$('wish').value.trim();
+  if(state.photoProcessing){$('status').textContent='กำลังประมวลผลรูป โปรดลองอีกครั้ง';return;}
   if(!name||!department||!wish){$('status').textContent='กรุณากรอกชื่อ แผนก และคำอธิษฐาน'; return;}
   if(!$('consent').checked){$('status').textContent='โปรดยืนยันการยินยอมก่อนส่ง'; return;}
+  if(state.photo&&!$('photoPublic').checked){$('status').textContent='โปรดยินยอมให้แสดงรูปบนกระทง หรือกดลบรูปที่เลือก';return;}
   $('release').disabled=true; $('status').textContent='กำลังปล่อยกระทง...';
   try{
     const out=await request('create',{name,employeeId,department,wish,type:state.type,flower:state.flower,candle:state.candle,color:state.color,photo:state.photo,photoPublic:!!state.photo&&$('photoPublic').checked,consent:true});
@@ -166,7 +214,8 @@ function resetBuilder(){
   state.type='lotus';state.flower='lotus';state.candle='classic';state.color='#ffc977';state.photo='';
   [['choices','lotus'],['flowerChoices','lotus'],['candleChoices','classic']].forEach(([id,key])=>$(id).querySelectorAll('.choice').forEach(x=>{const selected=x.dataset.value===key;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',String(selected));}));
   document.querySelectorAll('.color').forEach((x,i)=>x.classList.toggle('active',i===0));
-  updatePreview(); $('status').textContent='';
+  $('photoStatus').textContent='เลือกรูปจากอัลบั้มหรือถ่ายรูปใหม่ (สูงสุด 12 MB) ระบบจะย่อรูปให้อัตโนมัติ';
+  $('clearPhoto').hidden=true; updatePreview(); $('status').textContent='';
 }
 
 async function hrLogin(){

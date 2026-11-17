@@ -52,3 +52,21 @@ footer{text-align:center;padding:28px 10px 36px;color:#a8b9c9;font-size:11px;let
 @media(max-width:360px){.navbtn{font-size:10px;padding:7px}.brand{font-size:11px}.hero-actions .btn{font-size:11px}.choice b{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.sea-bob{animation:none}}
 @media(max-width:760px){#builderModal .dialog.wide{height:100dvh;max-height:100dvh}}
+
+/* V4: compact controls and photo/name badges on each moving krathong */
+.hero-actions{max-width:390px}.stats-row{grid-template-columns:1fr;max-width:390px}
+.sea-item{min-width:100px;min-height:80px;z-index:5;filter:drop-shadow(0 0 7px var(--glow))}
+.sea-item .sea-bob{position:relative;display:flex;align-items:center;justify-content:center;min-width:96px;min-height:85px}
+.sea-item .krathong-art{font-size:36px}
+.sea-item .tiny-avatar{width:29px;height:29px;position:absolute;left:50%;top:20px;transform:translateX(-50%);border:2px solid #f5d497;border-radius:50%;box-shadow:0 2px 7px #02162b;object-fit:cover;background:#132940;z-index:4;margin:0}
+.sea-name{display:block;position:relative;z-index:5;max-width:120px;min-width:38px;margin-top:-3px;padding:2px 7px;border-radius:8px;background:#06192edb;color:#fff8df;border:1px solid #e3bf7c99;font-size:10px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;text-align:center;text-shadow:0 1px 3px #000}
+.krathong-preview{overflow:visible}.preview-name{display:block;position:absolute;z-index:6;bottom:-13px;left:50%;transform:translateX(-50%);background:#071a31e8;color:#fff7e8;border:1px solid #f0cc87;border-radius:10px;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis;font-size:13px;padding:5px 10px;font-weight:700}
+.krathong-preview .avatar{bottom:28px;left:50%;z-index:5}
+.photo-clear{display:block;margin-top:7px;padding:7px 11px;border-radius:8px;background:#294961;color:#fff;border:1px solid #597c99;font-size:12px}
+.photo-clear[hidden]{display:none}
+@media(max-width:760px){
+  .hero-actions{display:block;margin:0;max-width:none}.hero-actions .btn{width:100%;font-size:14px;padding:14px 12px}
+  .stats-row{display:grid;grid-template-columns:1fr}.stats-row .stat-box{text-align:center}
+  .sea-item .krathong-art{font-size:31px}.sea-name{font-size:9px;max-width:92px;padding:2px 4px}
+  .krathong-preview .avatar{bottom:17px}
+}

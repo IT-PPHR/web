@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#081b36">
   <title>Phi Phi • Loy Krathong 2026</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <div class="stars"></div>
   <header>
     <a href="#top" class="brand">✦ PHI PHI <span>HOLIDAY RESORT</span></a>
     <nav>
-      <button class="navbtn" id="openBuilderTop">สร้างกระทง</button>
       <button class="navbtn ghost" id="openHrTop">HR Login</button>
     </nav>
   </header>
@@ -25,11 +24,9 @@
         <p>หน้าหลักคือทะเลแห่งคำอธิษฐาน ให้ทุกคนเห็นกระทงที่ลอยอยู่แล้วทันที และร่วมลอยกระทงผ่านป๊อปอัปได้เลย</p>
         <div class="hero-actions">
           <button class="btn primary" id="openBuilder">🪷 สร้างกระทงของฉัน</button>
-          <button class="btn ghost" id="openHr">🎁 HR Lucky Draw</button>
         </div>
         <div class="stats-row">
           <div class="stat-box"><strong id="total">—</strong><small>กระทงที่ลอยอยู่ในทะเล</small></div>
-          <div class="stat-box"><strong id="loadInfo">พร้อมใช้งาน</strong><small>สถานะระบบ</small></div>
         </div>
       </div>
       <div class="sea-stage" id="seaBoard">
@@ -47,14 +44,11 @@
         <h2>คำอธิษฐานล่าสุด</h2>
         <p>กดที่กระทงในทะเล หรือเลือกจากรายการด้านล่างเพื่อดูรายละเอียด</p>
       </div>
-      <div class="toolbar">
-        <button class="btn ghost" id="refresh">↻ อัปเดตกระทง</button>
-      </div>
       <div id="wishCards" class="wish-cards"></div>
     </section>
   </main>
 
-  <footer>PHI PHI HOLIDAY RESORT · ONLINE LOY KRATHONG 2026 <span>V3 • Mobile builder 6×6×6 + living sea + HR lucky draw</span></footer>
+  <footer>PHI PHI HOLIDAY RESORT · ONLINE LOY KRATHONG 2026 <span>V4 • Mobile + photo + floating names</span></footer>
 
   <!-- Wish detail -->
   <div id="dialog" class="modal" hidden>
@@ -78,7 +72,7 @@
         <div class="preview-card">
           <div class="preview-sky">
             <div class="mini-moon"></div>
-            <div id="krathongPreview" class="krathong-preview"><div id="previewArt" class="krathong-art"></div><div id="photoBadge" class="avatar" hidden></div></div>
+            <div id="krathongPreview" class="krathong-preview"><div id="previewArt" class="krathong-art"></div><div id="photoBadge" class="avatar" hidden></div><span id="previewName" class="preview-name">ชื่อผู้ลอย</span></div>
           </div>
           <p>ตัวอย่างกระทงของคุณ</p>
         </div>
@@ -124,11 +118,12 @@
           <div class="twocol">
             <div>
               <label for="photo">รูปใบหน้าของคุณ (ไม่บังคับ)</label>
-              <input type="file" id="photo" accept="image/jpeg,image/png,image/webp" capture="user">
-              <small>ระบบจะย่อรูปอัตโนมัติ</small>
+              <input type="file" id="photo" accept="image/*,.heic,.heif">
+              <small id="photoStatus">เลือกรูปจากอัลบั้มหรือถ่ายรูปใหม่ (สูงสุด 12 MB) ระบบจะย่อรูปให้อัตโนมัติ</small>
+              <button type="button" id="clearPhoto" class="photo-clear" hidden>ลบรูปที่เลือก</button>
             </div>
             <div class="consentcol">
-              <label class="switchline"><input id="photoPublic" type="checkbox"><span>ยินยอมให้คนอื่นเห็นรูปบนกระทง</span></label>
+              <label class="switchline"><input id="photoPublic" type="checkbox"><span>ยินยอมให้แสดงรูปบนกระทงต่อผู้เข้าชมทุกคน</span></label>
               <label class="switchline"><input type="checkbox" id="consent"><span>ยินยอมให้ระบบบันทึกข้อมูลสำหรับกิจกรรมนี้</span></label>
             </div>
           </div>
@@ -186,6 +181,6 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
