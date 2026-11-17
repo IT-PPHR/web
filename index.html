@@ -1,7 +1,187 @@
-<!doctype html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#081b36"><title>Phi Phi • Loy Krathong 2026</title><link rel="stylesheet" href="style.css"></head><body>
-<div class="stars"></div><header><a href="#home" class="brand">✦ PHI PHI <span>HOLIDAY RESORT</span></a><nav><a href="#create">สร้างกระทง</a><a href="#sea">ทะเลคำอธิษฐาน</a></nav></header>
-<main id="home"><section class="hero"><div class="moon"></div><div class="island left"></div><div class="island right"></div><div class="hero-content"><div class="eyebrow">✧ A NIGHT OF WISHES ✧</div><h1>ลอยกระทง<span>ออนไลน์</span></h1><p>ส่งคำอธิษฐานจากใจ ให้ลอยไปกับแสงจันทร์ ณ ทะเลเกาะพีพี</p><div class="hero-actions"><a class="btn primary" href="#create">🪷 สร้างกระทงของฉัน</a><a class="btn ghost" href="#sea">ชมกระทงทั้งหมด</a></div><div class="stat"><strong id="total">—</strong><small>คำอธิษฐานที่ลอยไปแล้ว</small></div></div><div class="waterhero"><div class="floating-symbol s1">🪷</div><div class="floating-symbol s2">🪷</div><div class="floating-symbol s3">🪷</div></div></section>
-<section class="builder" id="create"><div class="section-head"><div class="eyebrow">CREATE YOUR WISH</div><h2>สร้างกระทงในแบบของคุณ</h2><p>3 ขั้นตอนง่าย ๆ แล้วปล่อยคำอธิษฐานของคุณลงสู่ทะเล</p></div><div class="stepper"><span class="active" data-s="1">01 เลือกกระทง</span><span data-s="2">02 ตกแต่ง & แนบรูป</span><span data-s="3">03 คำอธิษฐาน</span></div><div class="workarea"><div class="preview"><div class="preview-sky"><div class="mini-moon"></div><div id="krathongPreview" class="krathong"><div id="photoBadge" class="avatar" hidden></div><span id="krathongEmoji">🪷</span><span class="flame">✨</span></div></div><p>ตัวอย่างกระทงของคุณ</p></div><div class="panel"><div class="pane" data-pane="1"><h3>เลือกกระทงที่คุณชอบ</h3><p>เลือก 1 ใน 6 รูปแบบ</p><div class="choices" id="choices"></div></div><div class="pane" data-pane="2" hidden><h3>ตกแต่งกระทงของคุณ</h3><label>โทนสีแสง</label><div class="colors" id="colors"><button class="color active" data-color="#ffc977" style="--c:#ffc977" aria-label="สีทอง"></button><button class="color" data-color="#ff8fbd" style="--c:#ff8fbd" aria-label="สีชมพู"></button><button class="color" data-color="#7fe5ed" style="--c:#7fe5ed" aria-label="สีฟ้า"></button><button class="color" data-color="#c6a4ff" style="--c:#c6a4ff" aria-label="สีม่วง"></button></div><label for="photo">รูปใบหน้าของคุณ (ไม่บังคับ)</label><input type="file" id="photo" accept="image/jpeg,image/png,image/webp" capture="user"><small>ปรับรูปบนอุปกรณ์ของคุณก่อนอัปโหลด • ระบบย่อภาพให้อัตโนมัติ</small><label class="switchline"><input id="photoPublic" type="checkbox"><span>ยินยอมให้คนอื่นเห็นรูปของฉันบนกระทง</span></label><small>หากไม่เลือก รูปจะไม่ปรากฏในทะเลรวม แต่ผู้ดูแลยังเข้าถึงไฟล์ที่จัดเก็บได้</small></div><div class="pane" data-pane="3" hidden><h3>เขียนคำอธิษฐาน</h3><label for="name">ชื่อที่ต้องการแสดง</label><input id="name" maxlength="60" placeholder="ชื่อ / ชื่อเล่น" required><label for="employeeId">รหัสพนักงาน</label><input id="employeeId" maxlength="32" placeholder="รหัสพนักงาน (ไม่แสดงต่อคนอื่น)"><label for="dept">แผนก</label><select id="dept"><option value="">เลือกแผนก</option><option>Front Office</option><option>Housekeeping</option><option>Food & Beverage</option><option>Kitchen</option><option>Engineering</option><option>Human Resources</option><option>Finance</option><option>IT</option><option>Sales & Marketing</option><option>Other</option></select><label for="wish">คำอธิษฐาน</label><textarea id="wish" rows="4" maxlength="240" placeholder="ขอให้ปีนี้เต็มไปด้วยความสุข..."></textarea><label class="switchline"><input type="checkbox" id="consent"><span>ฉันยินยอมให้ระบบบันทึกข้อมูลสำหรับกิจกรรมนี้ และรับทราบว่า ชื่อ แผนก และคำอธิษฐานจะปรากฏต่อผู้ร่วมกิจกรรม</span></label><small>รูปถ่ายเป็นทางเลือก สามารถขอลบข้อมูลได้โดยติดต่อผู้จัดกิจกรรม</small></div><div class="actions"><button id="prev" class="btn ghost" hidden>ย้อนกลับ</button><button id="next" class="btn primary">ถัดไป →</button><button id="release" class="btn primary" hidden>🪷 ปล่อยกระทง</button></div><div id="status" role="status" aria-live="polite"></div></div></div></section>
-<section id="sea" class="sea-section"><div class="section-head"><div class="eyebrow">SEA OF WISHES</div><h2>ทะเลแห่งคำอธิษฐาน</h2><p>ทุกกระทงมีเรื่องราวและความหวังอยู่ข้างใน</p></div><div class="sea-board" id="seaBoard"><div class="sea-moon"></div><div class="empty">กำลังโหลดกระทง...</div></div><div class="sea-controls"><button class="btn ghost" id="refresh">↻ อัปเดตกระทง</button><span id="loadInfo"></span></div><div id="wishCards" class="wish-cards"></div></section></main>
-<footer>PHI PHI HOLIDAY RESORT · ONLINE LOY KRATHONG 2026 <span>สร้างขึ้นสำหรับกิจกรรมของโรงแรม</span></footer>
-<div id="dialog" class="modal" hidden><div class="dialog"><button id="closeDialog" aria-label="ปิด" class="x">×</button><div id="dialogBody"></div></div></div><div id="launch" class="launch" hidden><div class="launch-k">🪷</div><div>คำอธิษฐานของคุณกำลังลอยไปกับสายน้ำ...</div></div><script src="config.js"></script><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#081b36">
+  <title>Phi Phi • Loy Krathong 2026</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="stars"></div>
+  <header>
+    <a href="#top" class="brand">✦ PHI PHI <span>HOLIDAY RESORT</span></a>
+    <nav>
+      <button class="navbtn" id="openBuilderTop">สร้างกระทง</button>
+      <button class="navbtn ghost" id="openHrTop">HR Login</button>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero-sea">
+      <div class="hero-copy">
+        <div class="eyebrow">✧ A NIGHT OF WISHES ✧</div>
+        <h1>ลอยกระทง<br><span>ออนไลน์</span></h1>
+        <p>หน้าหลักคือทะเลแห่งคำอธิษฐาน ให้ทุกคนเห็นกระทงที่ลอยอยู่แล้วทันที และร่วมลอยกระทงผ่านป๊อปอัปได้เลย</p>
+        <div class="hero-actions">
+          <button class="btn primary" id="openBuilder">🪷 สร้างกระทงของฉัน</button>
+          <button class="btn ghost" id="openHr">🎁 HR Lucky Draw</button>
+        </div>
+        <div class="stats-row">
+          <div class="stat-box"><strong id="total">—</strong><small>กระทงที่ลอยอยู่ในทะเล</small></div>
+          <div class="stat-box"><strong id="loadInfo">พร้อมใช้งาน</strong><small>สถานะระบบ</small></div>
+        </div>
+      </div>
+      <div class="sea-stage" id="seaBoard">
+        <div class="moon"></div>
+        <div class="island left"></div>
+        <div class="island right"></div>
+        <div class="sea-surface"></div>
+        <div class="empty">กำลังโหลดกระทง...</div>
+      </div>
+    </section>
+
+    <section class="latest-section">
+      <div class="section-head compact">
+        <div class="eyebrow">SEA OF WISHES</div>
+        <h2>คำอธิษฐานล่าสุด</h2>
+        <p>กดที่กระทงในทะเล หรือเลือกจากรายการด้านล่างเพื่อดูรายละเอียด</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost" id="refresh">↻ อัปเดตกระทง</button>
+      </div>
+      <div id="wishCards" class="wish-cards"></div>
+    </section>
+  </main>
+
+  <footer>PHI PHI HOLIDAY RESORT · ONLINE LOY KRATHONG 2026 <span>V2 • Sea-first experience + popup builder + HR lucky draw</span></footer>
+
+  <!-- Wish detail -->
+  <div id="dialog" class="modal" hidden>
+    <div class="dialog small">
+      <button id="closeDialog" aria-label="ปิด" class="x">×</button>
+      <div id="dialogBody"></div>
+    </div>
+  </div>
+
+  <!-- Builder popup -->
+  <div id="builderModal" class="modal" hidden>
+    <div class="dialog wide">
+      <button id="closeBuilder" aria-label="ปิด" class="x">×</button>
+      <div class="popup-head">
+        <div>
+          <div class="eyebrow">CREATE YOUR KRATHONG</div>
+          <h3>สร้างกระทงของคุณ</h3>
+        </div>
+      </div>
+      <div class="builder-grid">
+        <div class="preview-card">
+          <div class="preview-sky">
+            <div class="mini-moon"></div>
+            <div id="krathongPreview" class="krathong-preview"><div id="photoBadge" class="avatar" hidden></div><span id="krathongEmoji">🌸</span><span class="flame">✨</span></div>
+          </div>
+          <p>ตัวอย่างกระทงของคุณ</p>
+        </div>
+        <form id="builderForm" class="builder-form" onsubmit="return false;">
+          <label>เลือกรูปแบบกระทง</label>
+          <div class="choices" id="choices"></div>
+
+          <label>โทนสีแสง</label>
+          <div class="colors" id="colors">
+            <button type="button" class="color active" data-color="#ffc977" style="--c:#ffc977" aria-label="สีทอง"></button>
+            <button type="button" class="color" data-color="#ff8fbd" style="--c:#ff8fbd" aria-label="สีชมพู"></button>
+            <button type="button" class="color" data-color="#7fe5ed" style="--c:#7fe5ed" aria-label="สีฟ้า"></button>
+            <button type="button" class="color" data-color="#c6a4ff" style="--c:#c6a4ff" aria-label="สีม่วง"></button>
+            <button type="button" class="color" data-color="#9fe77c" style="--c:#9fe77c" aria-label="สีเขียว"></button>
+          </div>
+
+          <div class="twocol">
+            <div>
+              <label for="name">ชื่อที่ต้องการแสดง</label>
+              <input id="name" maxlength="60" placeholder="ชื่อ / ชื่อเล่น" required>
+            </div>
+            <div>
+              <label for="employeeId">รหัสพนักงาน</label>
+              <input id="employeeId" maxlength="32" placeholder="รหัสพนักงาน (ไม่แสดงต่อคนอื่น)">
+            </div>
+          </div>
+
+          <label for="dept">แผนก</label>
+          <select id="dept">
+            <option value="">เลือกแผนก</option>
+            <option>Front Office</option><option>Housekeeping</option><option>Food & Beverage</option><option>Kitchen</option>
+            <option>Engineering</option><option>Human Resources</option><option>Finance</option><option>IT</option>
+            <option>Sales & Marketing</option><option>Other</option>
+          </select>
+
+          <label for="wish">คำอธิษฐาน</label>
+          <textarea id="wish" rows="4" maxlength="240" placeholder="ขอให้ปีนี้เต็มไปด้วยความสุข..."></textarea>
+
+          <div class="twocol">
+            <div>
+              <label for="photo">รูปใบหน้าของคุณ (ไม่บังคับ)</label>
+              <input type="file" id="photo" accept="image/jpeg,image/png,image/webp" capture="user">
+              <small>ระบบจะย่อรูปอัตโนมัติ</small>
+            </div>
+            <div class="consentcol">
+              <label class="switchline"><input id="photoPublic" type="checkbox"><span>ยินยอมให้คนอื่นเห็นรูปบนกระทง</span></label>
+              <label class="switchline"><input type="checkbox" id="consent"><span>ยินยอมให้ระบบบันทึกข้อมูลสำหรับกิจกรรมนี้</span></label>
+            </div>
+          </div>
+
+          <div class="actions sticky-actions">
+            <span id="status" role="status" aria-live="polite"></span>
+            <div class="action-right">
+              <button type="button" class="btn ghost" id="cancelBuilder">ยกเลิก</button>
+              <button type="button" class="btn primary" id="release">🪷 ปล่อยกระทง</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- HR popup -->
+  <div id="hrModal" class="modal" hidden>
+    <div class="dialog hrwide">
+      <button id="closeHr" aria-label="ปิด" class="x">×</button>
+      <div class="popup-head"><div><div class="eyebrow">HR PANEL</div><h3>Lucky Draw / ผู้ร่วมกิจกรรม</h3></div></div>
+
+      <div id="hrLoginBox">
+        <label for="hrPin">รหัส PIN สำหรับ HR</label>
+        <div class="loginrow">
+          <input id="hrPin" type="password" placeholder="กรอกรหัส PIN">
+          <button class="btn primary" id="hrLoginBtn">Login</button>
+        </div>
+        <div id="hrLoginStatus" class="hint"></div>
+      </div>
+
+      <div id="hrPanel" hidden>
+        <div class="hr-top">
+          <div class="stat-box"><strong id="hrTotal">0</strong><small>ผู้ร่วมกิจกรรมทั้งหมด</small></div>
+          <div class="hr-actions">
+            <button class="btn ghost" id="hrRefresh">รีเฟรชรายชื่อ</button>
+            <button class="btn primary" id="drawBtn">🎁 สุ่มรางวัล</button>
+            <button class="btn ghost" id="hrLogoutBtn">Logout</button>
+          </div>
+        </div>
+        <div id="winnerBox" class="winner-box emptywinner">กด “สุ่มรางวัล” เพื่อเลือกผู้โชคดี</div>
+        <div class="admin-list-wrap">
+          <table class="admin-table">
+            <thead><tr><th>ชื่อ</th><th>แผนก</th><th>คำอธิษฐาน</th><th>เวลา</th></tr></thead>
+            <tbody id="hrList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="launch" class="launch" hidden>
+    <div class="launch-k">🪷</div>
+    <div>กระทงของคุณลอยสู่ทะเลแล้ว...</div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
