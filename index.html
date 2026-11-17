@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#081b36">
   <title>Phi Phi • Loy Krathong 2026</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <div class="stars"></div>
@@ -54,7 +54,7 @@
     </section>
   </main>
 
-  <footer>PHI PHI HOLIDAY RESORT · ONLINE LOY KRATHONG 2026 <span>V2 • Sea-first experience + popup builder + HR lucky draw</span></footer>
+  <footer>PHI PHI HOLIDAY RESORT · ONLINE LOY KRATHONG 2026 <span>V3 • Mobile builder 6×6×6 + living sea + HR lucky draw</span></footer>
 
   <!-- Wish detail -->
   <div id="dialog" class="modal" hidden>
@@ -78,13 +78,17 @@
         <div class="preview-card">
           <div class="preview-sky">
             <div class="mini-moon"></div>
-            <div id="krathongPreview" class="krathong-preview"><div id="photoBadge" class="avatar" hidden></div><span id="krathongEmoji">🌸</span><span class="flame">✨</span></div>
+            <div id="krathongPreview" class="krathong-preview"><div id="previewArt" class="krathong-art"></div><div id="photoBadge" class="avatar" hidden></div></div>
           </div>
           <p>ตัวอย่างกระทงของคุณ</p>
         </div>
         <form id="builderForm" class="builder-form" onsubmit="return false;">
-          <label>เลือกรูปแบบกระทง</label>
+          <label>1. เลือกฐานกระทง (6 แบบ)</label>
           <div class="choices" id="choices"></div>
+          <label>2. เลือกดอกไม้ (6 แบบ)</label>
+          <div class="choices" id="flowerChoices"></div>
+          <label>3. เลือกธูปเทียน (6 แบบ)</label>
+          <div class="choices" id="candleChoices"></div>
 
           <label>โทนสีแสง</label>
           <div class="colors" id="colors">
@@ -182,6 +186,6 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

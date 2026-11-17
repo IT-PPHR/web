@@ -1,23 +1,48 @@
 const TYPES=[
-  ['lotus','🌸','ดอกบัวหวาน'],['orchid','🌺','กล้วยไม้'],['jasmine','🌼','มะลิ'],['rose','🌹','กุหลาบ'],['leaf','🍃','ใบตอง'],
-  ['gold','🏵️','สีทอง'],['sea','🐚','ทะเลอันดามัน'],['heart','💖','หัวใจ'],['star','⭐','แสงดาว'],['crown','👑','มงกุฎ']
+  ['lotus','🪷','ฐานดอกบัว'],['orchid','🌿','ฐานใบตองพับ'],['jasmine','🍀','ฐานใบไม้'],
+  ['rose','🧺','ฐานตะกร้า'],['leaf','🌱','ฐานธรรมชาติ'],['gold','🏵️','ฐานสีทอง'],
+  ['sea','🐚','ทะเลอันดามัน'],['heart','💖','หัวใจ'],['star','⭐','แสงดาว'],['crown','👑','มงกุฎ']
 ];
-const state={type:'lotus',color:'#ffc977',photo:'',items:[],adminToken:localStorage.getItem('phiPhiHrToken')||''};
+const BASES=TYPES.slice(0,6);
+const FLOWERS=[['lotus','🪷','บัวชมพู'],['rose','🌹','กุหลาบ'],['orchid','🌺','กล้วยไม้'],['jasmine','🌼','มะลิ'],['tulip','🌷','ทิวลิป'],['sunflower','🌻','ทานตะวัน']];
+const CANDLES=[['classic','🕯️','เทียนเดี่ยว'],['pair','🕯️','เทียนคู่'],['incense','🎋','ธูป 3 ดอก'],['golden','✨','แสงทอง'],['lantern','🏮','โคมไฟ'],['sparkle','🎇','แสงประกาย']];
+const state={type:'lotus',flower:'lotus',candle:'classic',color:'#ffc977',photo:'',items:[],total:0,adminToken:localStorage.getItem('phiPhiHrToken')||''};
 const $=id=>document.getElementById(id);
 const API=(window.APP_CONFIG||{}).API_URL||'';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
+const safePhoto=s=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(String(s||''))?s:'';
+function getParts(item){
+  return {
+    base:TYPES.find(t=>t[0]===item.type)||BASES[0],
+    flower:FLOWERS.find(t=>t[0]===item.flower)||FLOWERS.find(t=>t[0]===item.type)||FLOWERS[0],
+    candle:CANDLES.find(t=>t[0]===item.candle)||CANDLES[0]
+  };
+}
+function artHTML(item){
+  const {base,flower,candle}=getParts(item);
+  const candleSymbol=candle[0]==='pair'?'🕯️🕯️':candle[1];
+  return `<span class="art-base">${base[1]}</span><span class="art-flower">${flower[1]}</span><span class="art-candle">${candleSymbol}</span>`;
+}
 function updatePreview(){
-  const t=TYPES.find(t=>t[0]===state.type) || TYPES[0];
-  $('krathongEmoji').textContent=t[1];
-  $('krathongPreview').style.filter=`drop-shadow(0 12px 36px ${state.color})`;
+  $('previewArt').innerHTML=artHTML(state);
+  $('krathongPreview').style.setProperty('--glow',state.color);
   $('photoBadge').hidden=!state.photo;
   if(state.photo)$('photoBadge').style.backgroundImage=`url("${state.photo}")`;
 }
+function renderChoices(id,values,key){
+  $(id).innerHTML=values.map(([k,e,n])=>`<button type="button" class="choice ${k===state[key]?'active':''}" data-value="${k}" aria-pressed="${k===state[key]}"><div class="emoji">${e}</div><b>${n}</b></button>`).join('');
+  $(id).addEventListener('click',e=>{
+    const b=e.target.closest('[data-value]');if(!b)return;
+    state[key]=b.dataset.value;
+    $(id).querySelectorAll('.choice').forEach(x=>{const chosen=x===b;x.classList.toggle('active',chosen);x.setAttribute('aria-pressed',String(chosen));});
+    updatePreview();
+  });
+}
 function initChoices(){
-  $('choices').innerHTML=TYPES.map(([k,e,n])=>`<button type="button" class="choice ${k===state.type?'active':''}" data-type="${k}"><div class="emoji">${e}</div><b>${n}</b></button>`).join('');
-  $('choices').addEventListener('click',e=>{const b=e.target.closest('[data-type]'); if(!b)return; state.type=b.dataset.type; document.querySelectorAll('.choice').forEach(x=>x.classList.toggle('active',x===b)); updatePreview();});
-  $('colors').addEventListener('click',e=>{const b=e.target.closest('.color'); if(!b)return; state.color=b.dataset.color; document.querySelectorAll('.color').forEach(x=>x.classList.toggle('active',x===b)); updatePreview();});
+  renderChoices('choices',BASES,'type');
+  renderChoices('flowerChoices',FLOWERS,'flower');
+  renderChoices('candleChoices',CANDLES,'candle');
+  $('colors').addEventListener('click',e=>{const b=e.target.closest('.color');if(!b)return;state.color=b.dataset.color;document.querySelectorAll('.color').forEach(x=>x.classList.toggle('active',x===b));updatePreview();});
 }
 
 function openModal(id){$(id).hidden=false; document.body.classList.add('noscroll');}
@@ -56,43 +81,67 @@ async function request(action,data={},method='POST'){
 }
 
 function displayWish(item){
-  const symbol=TYPES.find(t=>t[0]===item.type)?.[1]||'🌸';
-  $('dialogBody').innerHTML=`<div class="wish-symbol">${symbol}</div>${item.photo?`<img class="wish-face" src="${item.photo}" alt="รูปผู้ร่วมกิจกรรม">`:''}<h3>${esc(item.name)}</h3><small>${esc(item.department)}</small><p>${esc(item.wish)}</p><small>${new Date(item.createdAt).toLocaleString('th-TH')}</small>`;
+  const photo=safePhoto(item.photo);
+  $('dialogBody').innerHTML=`<div class="wish-symbol"><div class="krathong-art">${artHTML(item)}</div></div>${photo?`<img class="wish-face" src="${photo}" alt="รูปผู้ร่วมกิจกรรม">`:''}<h3>${esc(item.name)}</h3><small>${esc(item.department)}</small><p>${esc(item.wish)}</p><small>${new Date(item.createdAt).toLocaleString('th-TH')}</small>`;
   openModal('dialog');
 }
 
-function renderSea(){
-  $('total').textContent=state.items.length.toLocaleString('th-TH');
+const drifters=new Map();
+let lastFrame=0;
+function randomPosition(sea){return {x:sea.clientWidth*(.08+Math.random()*.84),y:sea.clientHeight*(.52+Math.random()*.39)};}
+function addDrifter(item){
   const sea=$('seaBoard');
-  sea.querySelectorAll('.sea-item,.empty').forEach(x=>x.remove());
-  if(!state.items.length){sea.insertAdjacentHTML('beforeend','<div class="empty">ยังไม่มีกระทง มาเป็นคนแรกกันเถอะ 🪷</div>');}
-  state.items.slice(0,56).forEach((item,i)=>{
-    const b=document.createElement('button');
-    const symbol=TYPES.find(t=>t[0]===item.type)?.[1]||'🌸';
-    b.className='sea-item';
-    b.style.setProperty('--left',`${6+((i*17)%85)}%`);
-    b.style.setProperty('--top',`${48+((i*11)%35)}%`);
-    b.style.setProperty('--dur',`${7+(i%6)}s`);
-    b.style.setProperty('--delay',`-${i%7}s`);
-    b.style.setProperty('--glow',item.color||'#ffc977');
-    b.innerHTML=`<span class="k-emoji">${symbol}</span>${item.photo?`<img src="${item.photo}" class="tiny-avatar" alt="">`:''}`;
-    b.onclick=()=>displayWish(item);
-    sea.appendChild(b);
-  });
-  $('wishCards').innerHTML=state.items.slice(0,12).map((item,i)=>`<button class="wish-card" data-index="${i}" style="text-align:left;color:inherit;cursor:pointer"><div class="wc-head">${item.photo?`<img class="face" src="${item.photo}" alt="">`:''}<b>${TYPES.find(t=>t[0]===item.type)?.[1]||'🌸'} ${esc(item.name)}</b></div><p>${esc(item.wish)}</p><small>${esc(item.department)} • ${new Date(item.createdAt).toLocaleString('th-TH')}</small></button>`).join('');
-  [...$('wishCards').querySelectorAll('[data-index]')].forEach(b=>b.onclick=()=>displayWish(state.items[+b.dataset.index]));
+  const b=document.createElement('button');
+  b.type='button';b.className='sea-item';
+  b.setAttribute('aria-label','กระทงของ '+item.name);
+  b.style.setProperty('--glow',/^#[0-9a-f]{6}$/i.test(item.color||'')?item.color:'#ffc977');
+  const photo=safePhoto(item.photo);
+  b.innerHTML=`<span class="sea-bob"><span class="krathong-art">${artHTML(item)}</span>${photo?`<img src="${photo}" class="tiny-avatar" alt="">`:''}</span>`;
+  b.onclick=()=>displayWish(item);
+  sea.appendChild(b);
+  const pos=randomPosition(sea),angle=Math.random()*Math.PI*2;
+  drifters.set(String(item.id),{el:b,item,x:pos.x,y:pos.y,vx:Math.cos(angle)*9,vy:Math.sin(angle)*5,turn:0,phase:Math.random()*7});
 }
-
+function renderSea(){
+  $('total').textContent=Number(state.total||state.items.length).toLocaleString('th-TH');
+  const sea=$('seaBoard'),visible=state.items.slice(0,80), ids=new Set(visible.map(x=>String(x.id)));
+  for(const [id,v] of drifters)if(!ids.has(id)){v.el.remove();drifters.delete(id);}
+  sea.querySelectorAll('.empty').forEach(x=>x.remove());
+  if(!state.items.length)sea.insertAdjacentHTML('beforeend','<div class="empty">ยังไม่มีกระทง มาเป็นคนแรกกันเถอะ 🪷</div>');
+  visible.forEach(item=>{const id=String(item.id);if(!drifters.has(id))addDrifter(item);else drifters.get(id).item=item;});
+  $('wishCards').innerHTML=state.items.slice(0,12).map((item,i)=>{
+    const photo=safePhoto(item.photo);
+    return `<button class="wish-card" data-index="${i}" style="text-align:left;color:inherit;cursor:pointer"><div class="wc-head">${photo?`<img class="face" src="${photo}" alt="">`:''}<b>${getParts(item).flower[1]} ${esc(item.name)}</b></div><p>${esc(item.wish)}</p><small>${esc(item.department)} • ${new Date(item.createdAt).toLocaleString('th-TH')}</small></button>`;
+  }).join('');
+  $('wishCards').querySelectorAll('[data-index]').forEach(b=>b.onclick=()=>displayWish(state.items[+b.dataset.index]));
+}
+function animateSea(ts){
+  const dt=Math.min(.05,Math.max(0,(ts-lastFrame)/1000||0));lastFrame=ts;
+  const sea=$('seaBoard');
+  if(!document.hidden&&sea.clientWidth){
+    const w=sea.clientWidth,h=sea.clientHeight;
+    for(const v of drifters.values()){
+      v.turn+=dt;v.phase+=dt;
+      if(v.turn>2.2+Math.random()*.1){v.turn=0;const a=Math.atan2(v.vy,v.vx)+(Math.random()-.5)*1.25;v.vx=Math.cos(a)*(6+Math.random()*8);v.vy=Math.sin(a)*(3+Math.random()*6);}
+      v.x+=v.vx*dt;v.y+=v.vy*dt;
+      const minX=Math.min(28,w*.08),maxX=Math.max(minX,w-28),minY=h*.47,maxY=h*.94;
+      if(v.x<minX){v.x=minX;v.vx=Math.abs(v.vx);}if(v.x>maxX){v.x=maxX;v.vx=-Math.abs(v.vx);}
+      if(v.y<minY){v.y=minY;v.vy=Math.abs(v.vy);}if(v.y>maxY){v.y=maxY;v.vy=-Math.abs(v.vy);}
+      v.el.style.left=v.x+'px';v.el.style.top=(v.y+Math.sin(v.phase*2)*2.5)+'px';
+    }
+  }
+  requestAnimationFrame(animateSea);
+}
 async function loadSea(){
+  if(loadSea.busy)return;
+  loadSea.busy=true;
   try{
-    const out=await request('list',{limit:'80'},'GET');
-    state.items=out.items||[];
+    const out=await request('list',{limit:'100'},'GET');
+    state.items=out.items||[];state.total=Number(out.total??state.items.length);
     renderSea();
     $('loadInfo').textContent='อัปเดต '+new Date().toLocaleTimeString('th-TH');
-  }catch(e){
-    $('loadInfo').textContent='โหลดไม่สำเร็จ';
-    console.error(e);
-  }
+  }catch(e){$('loadInfo').textContent='โหลดไม่สำเร็จ';console.error(e);}
+  finally{loadSea.busy=false;}
 }
 $('refresh').onclick=loadSea;
 
@@ -102,8 +151,8 @@ $('release').onclick=async()=>{
   if(!$('consent').checked){$('status').textContent='โปรดยืนยันการยินยอมก่อนส่ง'; return;}
   $('release').disabled=true; $('status').textContent='กำลังปล่อยกระทง...';
   try{
-    const out=await request('create',{name,employeeId,department,wish,type:state.type,color:state.color,photo:state.photo,photoPublic:!!state.photo&&$('photoPublic').checked,consent:true});
-    if(out.item){ state.items.unshift(out.item); renderSea(); }
+    const out=await request('create',{name,employeeId,department,wish,type:state.type,flower:state.flower,candle:state.candle,color:state.color,photo:state.photo,photoPublic:!!state.photo&&$('photoPublic').checked,consent:true});
+    if(out.item){ state.items.unshift(out.item);state.total+=1;renderSea(); }
     $('launch').hidden=false;
     setTimeout(()=>{$('launch').hidden=true;},2300);
     $('status').textContent='กระทงของคุณลอยอยู่ในทะเลแล้ว!';
@@ -114,8 +163,8 @@ $('release').onclick=async()=>{
 };
 function resetBuilder(){
   $('builderForm').reset();
-  state.type='lotus'; state.color='#ffc977'; state.photo='';
-  document.querySelectorAll('.choice').forEach(x=>x.classList.toggle('active',x.dataset.type==='lotus'));
+  state.type='lotus';state.flower='lotus';state.candle='classic';state.color='#ffc977';state.photo='';
+  [['choices','lotus'],['flowerChoices','lotus'],['candleChoices','classic']].forEach(([id,key])=>$(id).querySelectorAll('.choice').forEach(x=>{const selected=x.dataset.value===key;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',String(selected));}));
   document.querySelectorAll('.color').forEach((x,i)=>x.classList.toggle('active',i===0));
   updatePreview(); $('status').textContent='';
 }
@@ -142,7 +191,7 @@ async function drawWinner(){
   try{
     const out=await request('draw',{token:state.adminToken});
     const w=out.winner;
-    const symbol=TYPES.find(t=>t[0]===w.type)?.[1]||'🌸';
+    const symbol=getParts(w).flower[1];
     $('winnerBox').classList.remove('emptywinner');
     $('winnerBox').innerHTML=`<div class="winner-tag">ผู้โชคดี</div><div class="winner-symbol">${symbol}</div>${w.photo?`<img class="winner-face" src="${w.photo}" alt="">`:''}<h4>${esc(w.name)}</h4><p>${esc(w.department)}</p><small>รหัสพนักงาน: ${esc(w.employeeId||'-')}</small><div class="winner-wish">“${esc(w.wish)}”</div><small>สุ่มจากผู้เข้าร่วมทั้งหมด ${out.poolSize.toLocaleString('th-TH')} คน</small>`;
   }catch(e){ alert(e.message); }
@@ -158,4 +207,4 @@ $('drawBtn').onclick=drawWinner;
 $('hrRefresh').onclick=()=>loadAdminList().catch(err=>alert(err.message));
 $('hrLogoutBtn').onclick=logoutHr;
 
-initChoices(); updatePreview(); syncHrUi(); loadSea(); setInterval(loadSea,25000);
+initChoices();updatePreview();syncHrUi();loadSea();requestAnimationFrame(animateSea);setInterval(()=>{if(!document.hidden)loadSea();},10000);document.addEventListener('visibilitychange',()=>{lastFrame=0;if(!document.hidden)loadSea();});
