@@ -18,62 +18,6 @@ const $=id=>document.getElementById(id);
 const API=(window.APP_CONFIG||{}).API_URL||'';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safePhoto=s=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(String(s||''))?s:'';
-// Launch schedule (UTC instants corresponding to Asia/Bangkok 08:00–23:59 on 24 Nov 2026).
-const LAUNCH_START=Date.parse('2026-11-24T01:00:00Z');
-const LAUNCH_END=Date.parse('2026-11-24T17:00:00Z'); // Exclusive: 25 Nov 00:00 Thailand.
-const launchState={phase:'checking',serverOffset:0,verified:false};
-function launchNow(){return Date.now()+launchState.serverOffset;}
-function phaseFromServerTime(t){return t<LAUNCH_START?'before':t>=LAUNCH_END?'after':'open';}
-function applyLaunchPhase(phase){
-  launchState.phase=phase;
-  const gate=$('launchGate'), title=$('launchGateTitle'), msg=$('launchGateMessage'),count=$('launchGateCountdown');
-  const open=phase==='open';
-  document.body.classList.toggle('launch-gated',!open);
-  if(gate)gate.hidden=open;
-  $('openBuilder').disabled=!open;
-  if(phase==='before'){
-    title.textContent='กิจกรรมกำลังจะเริ่มต้น';
-    msg.textContent='เปิดให้ร่วมลอยกระทงวันที่ 24 พฤศจิกายน 2569 เวลา 08:00 น.';
-    count.hidden=false;
-  }else if(phase==='after'){
-    title.textContent='ปิดรับกระทงแล้ว';
-    msg.textContent='ขอบคุณทุกคนที่ร่วมกิจกรรมลอยกระทงออนไลน์';
-    count.hidden=true;
-  }else if(phase==='checking'){
-    title.textContent='กำลังตรวจสอบเวลาเปิดกิจกรรม';
-    msg.textContent='กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต';
-    count.hidden=true;
-  }else{
-    count.hidden=true;
-  }
-  if(open){if(!applyLaunchPhase.initialLoaded){applyLaunchPhase.initialLoaded=true;loadSea();}}
-  else if(!$('builderModal').hidden)closeModal('builderModal');
-}
-function updateLaunchCountdown(){
-  if(launchState.phase!=='before')return;
-  const diff=Math.max(0,LAUNCH_START-launchNow());
-  const seconds=Math.ceil(diff/1000);
-  $('launchDays').textContent=String(Math.floor(seconds/86400)).padStart(2,'0');
-  $('launchHours').textContent=String(Math.floor(seconds%86400/3600)).padStart(2,'0');
-  $('launchMinutes').textContent=String(Math.floor(seconds%3600/60)).padStart(2,'0');
-  $('launchSeconds').textContent=String(seconds%60).padStart(2,'0');
-}
-async function refreshLaunchStatus(){
-  try{
-    const sent=Date.now();
-    const data=await request('status',{},'GET');
-    const received=Date.now();
-    if(!data.serverTime||!['before','open','after'].includes(data.phase))throw Error('Invalid launch status');
-    launchState.serverOffset=Number(data.serverTime)-(sent+received)/2;
-    launchState.verified=true;
-    applyLaunchPhase(data.phase);
-    updateLaunchCountdown();
-  }catch(err){
-    console.error('Launch check failed:',err);
-    launchState.verified=false;
-    applyLaunchPhase('checking');
-  }
-}
 const drifters=new Map();
 let lastFrame=0;
 const sharkState={el:null,timeout:null,busy:false};
@@ -162,7 +106,7 @@ function initChoices(){
 
 function openModal(id){ $(id).hidden=false; document.body.classList.add('noscroll'); }
 function closeModal(id){ $(id).hidden=true; if([...document.querySelectorAll('.modal')].every(m=>m.hidden)) document.body.classList.remove('noscroll'); }
-$('openBuilder').onclick=()=>{if(launchState.verified&&launchState.phase==='open')openModal('builderModal');};
+$('openBuilder').onclick=()=>openModal('builderModal');
 $('openHrTop').onclick=()=>openModal('hrModal');
 $('closeBuilder').onclick=()=>closeModal('builderModal');
 $('cancelBuilder').onclick=()=>closeModal('builderModal');
@@ -304,9 +248,9 @@ function ensureShark(){
   if(sharkState.el?.isConnected) return sharkState.el;
   const sea=$('seaBoard');
   const el=document.createElement('div');
-  el.className='sea-shark fin-only';
+  el.className='sea-shark';
   el.setAttribute('aria-hidden','true');
-  el.innerHTML='    <span class="shark-wake"></span>    <span class="shark-fin-solo"></span>    <div class="shark-body">      <span class="shark-tail"></span>      <span class="shark-fin"></span>      <span class="shark-mouth"></span>      <span class="shark-eye"></span>    </div>';
+  el.innerHTML='<div class="shark-body"><span class="shark-tail"></span><span class="shark-fin"></span><span class="shark-mouth"></span><span class="shark-eye"></span></div>';
   sea.appendChild(el);
   sharkState.el=el;
   return el;
@@ -334,53 +278,34 @@ async function runSharkAttack(){
   const target=candidates[Math.floor(Math.random()*candidates.length)];
   if(!target) return;
   sharkState.busy=true;
-
   const fromLeft=Math.random()<0.5;
   const startX=fromLeft ? -120 : sea.clientWidth+120;
   const exitX=fromLeft ? sea.clientWidth+150 : -150;
-  const approachX=target.x + (fromLeft ? -78 : 78);
-  const breachX=target.x + (fromLeft ? -20 : 20);
-  const surfaceY=Math.max(sea.clientHeight*0.60, Math.min(sea.clientHeight*0.87, target.y + 12 + (Math.random()*10-5)));
-  const breachY=Math.max(sea.clientHeight*0.50, target.y - 8);
-
-  el.classList.remove('active','from-right','bite','breach');
-  el.classList.add('fin-only');
+  const biteX=target.x + (fromLeft ? -42 : 42);
+  const trackY=Math.max(sea.clientHeight*0.56, Math.min(sea.clientHeight*0.87, target.y + (Math.random()*26-13)));
+  el.classList.remove('active','from-right','bite');
   if(!fromLeft) el.classList.add('from-right');
   el.style.left=startX+'px';
-  el.style.top=surfaceY+'px';
+  el.style.top=trackY+'px';
   el.style.opacity='0';
   el.style.transitionDuration='0s';
   void el.offsetWidth;
-
   el.classList.add('active');
   el.style.opacity='1';
-  el.style.transitionDuration='3.1s';
-  el.style.left=approachX+'px';
-  el.style.top=surfaceY+'px';
-  await sleep(2800);
-
-  el.classList.add('breach','bite');
-  el.classList.remove('fin-only');
-  el.style.transitionDuration='.38s';
-  el.style.left=breachX+'px';
-  el.style.top=breachY+'px';
-  await sleep(180);
+  el.style.transitionDuration='2.8s';
+  el.style.left=biteX+'px';
+  el.style.top=(trackY-4)+'px';
+  await sleep(2450);
   target.el.classList.add('krathong-bitten');
-  await sleep(760);
-
+  el.classList.add('bite');
+  await sleep(900);
+  el.classList.remove('bite');
   target.el.classList.remove('krathong-bitten');
-  el.classList.remove('bite','breach');
-  el.classList.add('fin-only');
-  el.style.transitionDuration='.45s';
-  el.style.left=(breachX + (fromLeft ? 24 : -24))+'px';
-  el.style.top=(surfaceY+2)+'px';
-  await sleep(380);
-
-  el.style.transitionDuration='2.4s';
+  el.style.transitionDuration='2.1s';
   el.style.left=exitX+'px';
-  el.style.top=(surfaceY + (Math.random()*20-10))+'px';
-  await sleep(2200);
-  el.classList.remove('active','from-right','fin-only');
+  el.style.top=(trackY+(Math.random()*34-17))+'px';
+  await sleep(2100);
+  el.classList.remove('active','from-right');
   el.style.opacity='0';
   sharkState.busy=false;
 }
@@ -489,7 +414,6 @@ async function loadSea(){
 }
 
 $('release').onclick=async()=>{
-  if(!launchState.verified || launchState.phase!=='open'){$('status').textContent='ยังไม่อยู่ในช่วงเปิดรับกระทง';return;}
   const name=$('name').value.trim(), employeeId=$('employeeId').value.trim(), department=$('dept').value, wish=$('wish').value.trim();
   if(state.photoProcessing){ $('status').textContent='กำลังประมวลผลรูป โปรดลองอีกครั้ง'; return; }
   if(!name || !department || !wish){ $('status').textContent='กรุณากรอกชื่อ แผนก และคำอธิษฐาน'; return; }
@@ -581,11 +505,8 @@ initChoices();
 updatePreview();
 syncHrUi();
 initSeaDecor();
-applyLaunchPhase('checking');
-refreshLaunchStatus();
+loadSea();
 requestAnimationFrame(animateSea);
 setInterval(()=>{state.tickerIndex++;renderWishTicker();},8000);
-setInterval(()=>{ if(!document.hidden && launchState.verified && launchState.phase==='open') loadSea(); },10000);
-setInterval(updateLaunchCountdown,1000);
-setInterval(()=>{if(!document.hidden)refreshLaunchStatus();},15000);
-document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hidden) refreshLaunchStatus(); });
+setInterval(()=>{ if(!document.hidden) loadSea(); },10000);
+document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hidden) loadSea(); });
