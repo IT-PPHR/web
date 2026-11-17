@@ -248,9 +248,9 @@ function ensureShark(){
   if(sharkState.el?.isConnected) return sharkState.el;
   const sea=$('seaBoard');
   const el=document.createElement('div');
-  el.className='sea-shark';
+  el.className='sea-shark fin-only';
   el.setAttribute('aria-hidden','true');
-  el.innerHTML='<div class="shark-body"><span class="shark-tail"></span><span class="shark-fin"></span><span class="shark-mouth"></span><span class="shark-eye"></span></div>';
+  el.innerHTML='    <span class="shark-wake"></span>    <span class="shark-fin-solo"></span>    <div class="shark-body">      <span class="shark-tail"></span>      <span class="shark-fin"></span>      <span class="shark-mouth"></span>      <span class="shark-eye"></span>    </div>';
   sea.appendChild(el);
   sharkState.el=el;
   return el;
@@ -278,34 +278,53 @@ async function runSharkAttack(){
   const target=candidates[Math.floor(Math.random()*candidates.length)];
   if(!target) return;
   sharkState.busy=true;
+
   const fromLeft=Math.random()<0.5;
   const startX=fromLeft ? -120 : sea.clientWidth+120;
   const exitX=fromLeft ? sea.clientWidth+150 : -150;
-  const biteX=target.x + (fromLeft ? -42 : 42);
-  const trackY=Math.max(sea.clientHeight*0.56, Math.min(sea.clientHeight*0.87, target.y + (Math.random()*26-13)));
-  el.classList.remove('active','from-right','bite');
+  const approachX=target.x + (fromLeft ? -78 : 78);
+  const breachX=target.x + (fromLeft ? -20 : 20);
+  const surfaceY=Math.max(sea.clientHeight*0.60, Math.min(sea.clientHeight*0.87, target.y + 12 + (Math.random()*10-5)));
+  const breachY=Math.max(sea.clientHeight*0.50, target.y - 8);
+
+  el.classList.remove('active','from-right','bite','breach');
+  el.classList.add('fin-only');
   if(!fromLeft) el.classList.add('from-right');
   el.style.left=startX+'px';
-  el.style.top=trackY+'px';
+  el.style.top=surfaceY+'px';
   el.style.opacity='0';
   el.style.transitionDuration='0s';
   void el.offsetWidth;
+
   el.classList.add('active');
   el.style.opacity='1';
-  el.style.transitionDuration='2.8s';
-  el.style.left=biteX+'px';
-  el.style.top=(trackY-4)+'px';
-  await sleep(2450);
+  el.style.transitionDuration='3.1s';
+  el.style.left=approachX+'px';
+  el.style.top=surfaceY+'px';
+  await sleep(2800);
+
+  el.classList.add('breach','bite');
+  el.classList.remove('fin-only');
+  el.style.transitionDuration='.38s';
+  el.style.left=breachX+'px';
+  el.style.top=breachY+'px';
+  await sleep(180);
   target.el.classList.add('krathong-bitten');
-  el.classList.add('bite');
-  await sleep(900);
-  el.classList.remove('bite');
+  await sleep(760);
+
   target.el.classList.remove('krathong-bitten');
-  el.style.transitionDuration='2.1s';
+  el.classList.remove('bite','breach');
+  el.classList.add('fin-only');
+  el.style.transitionDuration='.45s';
+  el.style.left=(breachX + (fromLeft ? 24 : -24))+'px';
+  el.style.top=(surfaceY+2)+'px';
+  await sleep(380);
+
+  el.style.transitionDuration='2.4s';
   el.style.left=exitX+'px';
-  el.style.top=(trackY+(Math.random()*34-17))+'px';
-  await sleep(2100);
-  el.classList.remove('active','from-right');
+  el.style.top=(surfaceY + (Math.random()*20-10))+'px';
+  await sleep(2200);
+  el.classList.remove('active','from-right','fin-only');
   el.style.opacity='0';
   sharkState.busy=false;
 }
