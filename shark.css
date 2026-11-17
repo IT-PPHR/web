@@ -1,7 +1,7 @@
 /* กำหนดขนาดฉลามให้ใหญ่ขึ้น 3 เท่าตัว */
 .friendly-shark {
   position: absolute;
-  width: 360px; /* ขยายจากขนาดเดิมประมาณ 3 เท่า */
+  width: 800px; /* ขยายจากขนาดเดิมประมาณ 3 เท่า */
   height: auto;
   transform: translate(-50%, -50%);
   pointer-events: none;
