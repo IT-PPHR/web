@@ -547,3 +547,22 @@ header .brand-event{display:block;white-space:normal;max-width:240px;font-size:1
   #dialog .dialog.small{width:min(85vw,480px);max-width:480px;height:auto;max-height:78dvh;border-radius:22px;padding:25px 26px;overflow-y:auto}
   #dialog .dialog.small .x{position:absolute;float:none;top:9px;right:10px}
 }
+
+/* V16: larger event title while preserving hotel logo and HR button */
+header .brand-event{font-weight:800;line-height:1.24;color:#f3cc80;text-wrap:balance;}
+@media (min-width:1181px){
+ header .brand-event{font-size:clamp(18px,1.45vw,23px);letter-spacing:1.4px;max-width:260px}
+}
+@media (min-width:761px) and (max-width:1180px){
+ header .brand-event{font-size:clamp(17px,2.15vw,22px);letter-spacing:1px;max-width:260px}
+}
+@media (max-width:760px){
+ header .brand-with-logo{gap:9px;flex:1 1 auto;max-width:calc(100% - 93px)}
+ header .brand-event{font-size:clamp(13px,3.65vw,17px);line-height:1.2;letter-spacing:.25px;max-width:none;min-width:0;overflow-wrap:normal}
+ header .hotel-logo{height:64px}
+}
+@media(max-width:380px){
+ header .brand-event{font-size:13px;letter-spacing:0}
+ header .hotel-logo{height:56px}
+ header .brand-with-logo{gap:6px}
+}
