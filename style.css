@@ -831,3 +831,15 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
 @media(prefers-reduced-motion:reduce){
   .marine-fish .fish-tail,.marine-fish .fish-fin,.marine-turtle .turtle-flipper,.marine-ray .ray-wing,.marine-ray .ray-tail,.marine-dolphin .dolphin-tail,.marine-dolphin .dolphin-fin{animation:none!important}
 }
+
+
+/* V28: single directional flip only. Marine SVGs face right in source artwork;
+   the outer JS-controlled actor flips leftward swimmers. Do not flip SVG again. */
+.marine-animal svg,
+.marine-animal:nth-child(2n) svg,
+.marine-fish svg,.marine-turtle svg,.marine-ray svg,.marine-dolphin svg{
+  transform:none !important;
+  animation:none !important;
+}
+.marine-animal .marine-body{transform:none;animation:marineGlide 4s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.marine-animal .marine-body{animation:none}}

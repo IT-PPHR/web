@@ -592,7 +592,25 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
   const ring=actor.querySelector('.shark-ring'), drops=actor.querySelector('.shark-drops');
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
-  const MOUTH_X=.478, MOUTH_Y=1.238;
+  // Use a real SVG mouth landmark after all rotations/translations are applied.
+  // Hardcoded offsets are inaccurate whenever the shark breaches or turns.
+  const svg=actor.querySelector('.shark-svg');
+  const marker=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  marker.setAttribute('cx','61');
+  marker.setAttribute('cy','124');
+  marker.setAttribute('r','1');
+  marker.setAttribute('opacity','0');
+  marker.setAttribute('pointer-events','none');
+  svg.appendChild(marker);
+  function alignMouth(mouthX,mouthY){
+    const stage=sea.getBoundingClientRect();
+    const actual=marker.getBoundingClientRect();
+    if(!actual.width && !actual.height) return;
+    const dx=stage.left+mouthX-(actual.left+actual.width/2);
+    const dy=stage.top+mouthY-(actual.top+actual.height/2);
+    actor.style.left=(parseFloat(actor.style.left)+dx)+'px';
+    actor.style.top=(parseFloat(actor.style.top)+dy)+'px';
+  }
   const APPROACH=2100, BREACH=500, CHOMP=720, DRAG=980, FADE=420, TOTAL=APPROACH+BREACH+CHOMP+DRAG+FADE;
   let busy=false;
   function getTargetPoint(v){
@@ -669,8 +687,9 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
           busy=false; resolve(true); return;
         }
         const point=getTargetPoint(target);
-        const biteX=clamp(point.x+2, sw*.3, W-sw*.25);
-        const biteY=clamp(point.y+1, waterline + sw*.02, H*.84);
+        // Never clamp the bite target: clamping makes a shark miss edge krathongs.
+        const biteX=point.x+2;
+        const biteY=point.y+1;
         const dragX=biteX - sw*.34;
         const dragY=clamp(point.y + sw*.78, waterline + sw*.30, H*.98);
         let mouthX=biteX, mouthY=biteY, bodyDip=.22, rot=0, jawDeg=0, opacity=1;
@@ -712,12 +731,15 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
           rot=-3 - z*10;
           opacity=1-z;
         }
-        actor.style.left=(mouthX - sw*MOUTH_X)+'px';
-        actor.style.top=(mouthY - sw*MOUTH_Y)+'px';
+        // Establish a rough position, then measure and correct the mouth in screen space.
+        // The correction includes the flip wrapper and the current rig rotation.
+        actor.style.left=(mouthX-sw*.60)+'px';
+        actor.style.top=(mouthY-sw*1.22)+'px';
         actor.style.opacity=opacity;
         actor.classList.add('on');
         rig.style.transform=`translateY(${bodyDip*sw*.55}px) rotate(${rot}deg)`;
         jaw.style.transform=`rotate(${jawDeg}deg)`;
+        alignMouth(mouthX,mouthY);
         requestAnimationFrame(frame);
       }
       requestAnimationFrame(frame);
