@@ -948,25 +948,44 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
 }
 
 
-/* V38 – taller sea on phones/tablets; the release button and footer follow the expanded scene.
-   Use viewport units instead of blank spacer blocks so the additional space belongs to the sea. */
+/* V39 – responsive sea height capped to actual usable viewport.
+   Avoid 680px/88svh minimum from V38 that pushed controls below iPhone view. */
 @media (max-width:760px){
-  .hero-sea{min-height:0;gap:16px;padding-bottom:14px}
+  html,body{max-width:100%;overflow-x:clip}
+  .hero-sea{min-width:0;max-width:100%;gap:12px;padding-bottom:10px}
   .hero-sea > .sea-stage{
-    min-height:680px;
-    min-height:max(680px,88svh);
-    height:auto;
+    box-sizing:border-box;
+    width:100%;max-width:100%;
+    height:clamp(440px,64svh,620px);
+    min-height:0;
+    max-height:620px;
+    overflow:hidden;
   }
-  .hero-sea .hero-actions{margin-top:2px}
+  .hero-sea .hero-actions{margin-top:0}
   main{padding-bottom:0}
-  footer{padding-top:22px;padding-bottom:max(36px,env(safe-area-inset-bottom));}
+  footer{padding-top:16px;padding-bottom:max(22px,env(safe-area-inset-bottom))}
+}
+@media (max-width:760px) and (max-height:720px){
+  .hero-sea > .sea-stage{
+    height:clamp(390px,59svh,490px);
+    max-height:490px;
+  }
 }
 @media (min-width:761px) and (max-width:1180px),
        (min-width:761px) and (max-width:1400px) and (pointer:coarse){
-  .hero-sea > .sea-stage{min-height:max(700px,80svh)}
-  .hero-sea{padding-bottom:18px}
+  .hero-sea{padding-bottom:12px}
+  .hero-sea > .sea-stage{
+    box-sizing:border-box;
+    height:clamp(530px,70svh,740px);
+    min-height:0;
+    max-height:740px;
+  }
 }
 @media (min-width:761px) and (max-width:1180px) and (orientation:landscape),
        (min-width:761px) and (max-width:1400px) and (pointer:coarse) and (orientation:landscape){
-  .hero-sea > .sea-stage{min-height:max(560px,82svh)}
+  .hero-sea > .sea-stage{
+    height:clamp(400px,72svh,600px);
+    min-height:0;
+    max-height:600px;
+  }
 }
