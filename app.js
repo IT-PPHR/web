@@ -12,7 +12,7 @@ const CANDLES=[
 ];
 const state={
   type:'lotus',flower:'lotus',candle:'classic',color:'#ffc977',photo:'',photoProcessing:false,
-  items:[],recentItems:[],total:0,minute:null,ownItem:null,ownUntil:0,tickerIndex:0,adminToken:localStorage.getItem('phiPhiHrToken')||'',hrPool:[]
+  items:[],recentItems:[],total:0,minute:null,ownItem:null,ownUntil:0,tickerIndex:0,adminToken:localStorage.getItem('phiPhiHrToken')||'',hrPool:[],renderToken:0
 };
 const $=id=>document.getElementById(id);
 const API=(window.APP_CONFIG||{}).API_URL||'';
@@ -271,10 +271,10 @@ function initSeaDecor(){
 
 // Lightweight SVG sea life on the water layer: decorative only, no interaction with participants.
 const SEA_LIFE_ART={
-  turtle:`<svg viewBox="0 0 150 85" aria-hidden="true"><defs><linearGradient id="turtleShell" x2="0" y2="1"><stop stop-color="#7ed4ad"/><stop offset="1" stop-color="#286f77"/></linearGradient></defs><path d="M28 40 Q4 22 3 40 Q5 57 29 48 M92 35 Q128 9 130 23 Q131 40 101 47 M38 58 Q15 78 29 80 Q45 72 56 61 M94 58 Q119 80 130 73 Q130 61 105 52" fill="#66b6a5" opacity=".85"/><ellipse cx="72" cy="45" rx="46" ry="28" fill="url(#turtleShell)"/><path d="M46 35 L72 21 L97 35 L101 51 L73 66 L44 51 Z M72 21 L73 66 M46 35 L101 51" fill="none" stroke="#b8e2ba" stroke-width="3" opacity=".55"/><circle cx="130" cy="43" r="18" fill="#74c9b1"/><circle cx="138" cy="38" r="3" fill="#102e40"/></svg>`,
-  ray:`<svg viewBox="0 0 180 95" aria-hidden="true"><defs><linearGradient id="rayShade" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#83bcd1"/><stop offset="1" stop-color="#326d8c"/></linearGradient></defs><path d="M15 49 Q41 3 91 34 Q127 3 165 46 Q136 52 121 68 Q102 83 89 72 Q66 83 51 63 Q31 49 15 49" fill="url(#rayShade)" stroke="#b8e5ee" stroke-width="2" opacity=".96"/><path d="M90 71 Q94 83 90 95" fill="none" stroke="#5ea4ba" stroke-width="4"/><circle cx="75" cy="47" r="3" fill="#102d40"/><circle cx="103" cy="47" r="3" fill="#102d40"/></svg>`,
-  dolphin:`<svg viewBox="0 0 180 95" aria-hidden="true"><defs><linearGradient id="dolphinSkin" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#91c5da"/><stop offset="1" stop-color="#317193"/></linearGradient></defs><path d="M15 58 Q30 50 36 32 Q34 56 57 50 Q75 13 110 26 L124 12 L127 35 Q144 43 154 52 L176 50 L154 62 Q125 85 90 72 L70 86 L74 66 Q44 70 15 58" fill="url(#dolphinSkin)" stroke="#afdbe7" stroke-width="2"/><path d="M63 62 Q103 76 141 57" stroke="#c8e9ec" stroke-width="4" opacity=".6" fill="none"/><circle cx="141" cy="48" r="3" fill="#092d40"/></svg>`,
-  fish:`<svg viewBox="0 0 130 80" aria-hidden="true"><defs><linearGradient id="fishShade" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffdc8f"/><stop offset="1" stop-color="#e27c63"/></linearGradient></defs><path d="M30 40 L4 14 L5 65 Z" fill="#e99663"/><ellipse cx="76" cy="41" rx="48" ry="29" fill="url(#fishShade)" stroke="#ffe3b1" stroke-width="2"/><path d="M64 13 Q70 35 64 68 M86 14 Q91 40 85 67" fill="none" stroke="#fff1bc" stroke-width="7" opacity=".65"/><circle cx="106" cy="33" r="4" fill="#253545"/></svg>`
+  turtle:`<svg viewBox="0 0 150 85" aria-hidden="true"><defs><linearGradient id="turtleShell" x2="0" y2="1"><stop stop-color="#7ed4ad"/><stop offset="1" stop-color="#286f77"/></linearGradient></defs><path class="turtle-flipper front-a" d="M27 41 Q5 22 4 40 Q6 56 29 48" fill="#66b6a5" opacity=".92"/><path class="turtle-flipper front-b" d="M92 35 Q129 9 131 23 Q132 40 101 47" fill="#66b6a5" opacity=".92"/><path class="turtle-flipper back-a" d="M38 58 Q15 78 29 80 Q45 72 56 61" fill="#59a796" opacity=".88"/><path class="turtle-flipper back-b" d="M94 58 Q119 80 130 73 Q130 61 105 52" fill="#59a796" opacity=".88"/><ellipse class="turtle-shell" cx="72" cy="45" rx="46" ry="28" fill="url(#turtleShell)"/><path d="M46 35 L72 21 L97 35 L101 51 L73 66 L44 51 Z M72 21 L73 66 M46 35 L101 51" fill="none" stroke="#b8e2ba" stroke-width="3" opacity=".55"/><circle class="turtle-head" cx="130" cy="43" r="18" fill="#74c9b1"/><circle cx="138" cy="38" r="3" fill="#102e40"/></svg>`,
+  ray:`<svg viewBox="0 0 180 95" aria-hidden="true"><defs><linearGradient id="rayShade" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#83bcd1"/><stop offset="1" stop-color="#326d8c"/></linearGradient></defs><path class="ray-wing wing-left" d="M15 49 Q41 3 91 34 Q76 49 69 66 Q33 57 15 49" fill="url(#rayShade)" stroke="#b8e5ee" stroke-width="2" opacity=".96"/><path class="ray-wing wing-right" d="M91 34 Q127 3 165 46 Q136 52 121 68 Q102 83 89 72 Q85 52 91 34" fill="url(#rayShade)" stroke="#b8e5ee" stroke-width="2" opacity=".96"/><path class="ray-tail" d="M90 71 Q94 83 90 95" fill="none" stroke="#5ea4ba" stroke-width="4"/><circle cx="75" cy="47" r="3" fill="#102d40"/><circle cx="103" cy="47" r="3" fill="#102d40"/></svg>`,
+  dolphin:`<svg viewBox="0 0 180 95" aria-hidden="true"><defs><linearGradient id="dolphinSkin" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#91c5da"/><stop offset="1" stop-color="#317193"/></linearGradient></defs><path class="dolphin-body" d="M15 58 Q30 50 36 32 Q34 56 57 50 Q75 13 110 26 L124 12 L127 35 Q144 43 154 52 L176 50 L154 62 Q125 85 90 72 L70 86 L74 66 Q44 70 15 58" fill="url(#dolphinSkin)" stroke="#afdbe7" stroke-width="2"/><path class="dolphin-tail" d="M15 58 Q30 50 36 32 Q34 56 57 50 Q43 60 15 58" fill="#5f95b1" opacity=".95"/><path class="dolphin-fin" d="M91 38 Q104 23 111 32 Q100 37 96 48" fill="#5f95b1" opacity=".92"/><path d="M63 62 Q103 76 141 57" stroke="#c8e9ec" stroke-width="4" opacity=".6" fill="none"/><circle cx="141" cy="48" r="3" fill="#092d40"/></svg>`,
+  fish:`<svg viewBox="0 0 130 80" aria-hidden="true"><defs><linearGradient id="fishShade" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffdc8f"/><stop offset="1" stop-color="#e27c63"/></linearGradient></defs><path class="fish-tail" d="M30 40 L4 14 L5 65 Z" fill="#e99663"/><ellipse class="fish-body" cx="76" cy="41" rx="48" ry="29" fill="url(#fishShade)" stroke="#ffe3b1" stroke-width="2"/><path class="fish-fin" d="M61 37 Q50 22 39 31 Q50 38 58 46" fill="#f1a36d" opacity=".92"/><path d="M64 13 Q70 35 64 68 M86 14 Q91 40 85 67" fill="none" stroke="#fff1bc" stroke-width="7" opacity=".65"/><circle cx="106" cy="33" r="4" fill="#253545"/></svg>`
 };
 function initSeaLife(){
   const sea=$('seaBoard');
@@ -327,6 +327,25 @@ function initSeaLife(){
 function randomPosition(sea){
   return {x:sea.clientWidth*(.10+Math.random()*.80), y:sea.clientHeight*(.58+Math.random()*.27)};
 }
+function hydrateSeaItemAssets(el){
+  const img=el.querySelector('.side-avatar');
+  if(!img) return;
+  el.classList.add('photo-pending');
+  const done=()=>el.classList.remove('photo-pending');
+  img.addEventListener('load',done,{once:true});
+  img.addEventListener('error',done,{once:true});
+  if(img.complete) done();
+}
+function seaItemKey(item){
+  return [item.id,item.name,item.photo,item.type,item.flower,item.candle,item.color].join('|');
+}
+function patchDrifterNode(node,item){
+  node.style.setProperty('--glow',/^#[0-9a-f]{6}$/i.test(item.color||'')?item.color:'#ffc977');
+  node.innerHTML=seaItemHTML(item);
+  node.onclick=()=>displayWish(item);
+  node.dataset.itemKey=seaItemKey(item);
+  hydrateSeaItemAssets(node);
+}
 function seaItemHTML(item){
   const photo=safePhoto(item.photo);
   return `<span class="sea-bob"><span class="krathong-art">${artHTML(item)}</span>${photo?`<img src="${photo}" class="side-avatar" alt="รูปผู้ลอย">`:''}<span class="sea-name">${esc(item.name||'ไม่ระบุชื่อ')}</span></span>`;
@@ -336,9 +355,7 @@ function addDrifter(item){
   const b=document.createElement('button');
   b.type='button'; b.className='sea-item';
   b.setAttribute('aria-label','กระทงของ '+(item.name||''));
-  b.style.setProperty('--glow',/^#[0-9a-f]{6}$/i.test(item.color||'')?item.color:'#ffc977');
-  b.innerHTML=seaItemHTML(item);
-  b.onclick=()=>displayWish(item);
+  patchDrifterNode(b,item);
   sea.appendChild(b);
   const pos=randomPosition(sea);
   const direction=1;
@@ -358,23 +375,30 @@ function renderSea(){
   const ids=new Set(visible.map(x=>String(x.id)));
   for(const [id,v] of drifters) if(!ids.has(id)){ v.el.remove(); drifters.delete(id); }
   sea.querySelectorAll('.empty').forEach(x=>x.remove());
-  if(!state.items.length) sea.insertAdjacentHTML('beforeend','<div class="empty">ยังไม่มีกระทง มาเป็นคนแรกกันเถอะ 🪷</div>');
+  if(!state.items.length){
+    sea.insertAdjacentHTML('beforeend','<div class="empty">ยังไม่มีกระทง มาเป็นคนแรกกันเถอะ 🪷</div>');
+    renderWishTicker();
+    return;
+  }
 
-  visible.forEach(item=>{
-    const id=String(item.id);
-    if(!drifters.has(id)) addDrifter(item);
-    else {
-      const old=drifters.get(id);
-      const changed=old.item.name!==item.name || old.item.photo!==item.photo || old.item.type!==item.type || old.item.flower!==item.flower || old.item.candle!==item.candle || old.item.color!==item.color;
-      old.item=item;
-      if(changed){
-        old.el.style.setProperty('--glow',/^#[0-9a-f]{6}$/i.test(item.color||'')?item.color:'#ffc977');
-        old.el.innerHTML=seaItemHTML(item);
-        old.el.onclick=()=>displayWish(item);
+  const token=++state.renderToken;
+  let queue=visible.slice();
+  const pump=()=>{
+    if(token!==state.renderToken) return;
+    const start=performance.now();
+    while(queue.length && performance.now()-start<9){
+      const item=queue.shift();
+      const id=String(item.id);
+      if(!drifters.has(id)) addDrifter(item);
+      else {
+        const old=drifters.get(id);
+        old.item=item;
+        if(old.el.dataset.itemKey!==seaItemKey(item)) patchDrifterNode(old.el,item);
       }
     }
-  });
-
+    if(queue.length) requestAnimationFrame(pump);
+  };
+  pump();
   renderWishTicker();
 }
 function animateSea(ts){
@@ -443,15 +467,18 @@ async function loadSea(){
     const out=await request('list',{limit:'20',random:'20'},'GET');
     const nextMinute=out.minute ?? Math.floor(Date.now()/60000);
     const nextItems=out.items||[];
-    const needRerender=state.minute!==nextMinute || nextItems.map(x=>String(x.id)).join('|')!==state.items.map(x=>String(x.id)).join('|');
+    const nextKey=nextItems.map(x=>String(x.id)).join('|');
+    const prevKey=state.items.map(x=>String(x.id)).join('|');
+    const structureChanged=state.minute!==nextMinute || nextKey!==prevKey || nextItems.some((x,i)=>seaItemKey(x)!==seaItemKey(state.items[i]||{}));
     state.items=nextItems;
     state.recentItems=out.recent||nextItems;
     state.total=Number(out.total??nextItems.length);
     state.minute=nextMinute;
     initSeaDecor();
-    if(needRerender){renderSea();}else{
+    if(structureChanged){
+      renderSea();
+    }else{
       $('total').textContent=state.total.toLocaleString('th-TH');
-      // Refresh recent wishes without restarting sea animation.
       renderWishTicker();
     }
   }catch(e){ console.error('Automatic sea refresh failed:',e); }
@@ -556,7 +583,7 @@ setInterval(()=>{state.tickerIndex++;renderWishTicker();},8000);
 setInterval(()=>{ if(!document.hidden) loadSea(); },10000);
 document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hidden) loadSea(); });
 
-/* ===== Giant shark: approaches from underwater, snaps onto a krathong, then drags it below the surface. ===== */
+/* ===== Giant shark: homes in on the visible krathong art, bites exactly at the mouth, then drags it under. ===== */
 (function(){
   const actor=$('sharkActor');
   if(!actor || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -565,16 +592,25 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
   const ring=actor.querySelector('.shark-ring'), drops=actor.querySelector('.shark-drops');
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
-  const MOUTH_X=.48, MOUTH_Y=1.27;
-  const APPROACH=2200, BREACH=520, CHOMP=760, DRAG=1080, FADE=420, TOTAL=APPROACH+BREACH+CHOMP+DRAG+FADE;
+  const MOUTH_X=.478, MOUTH_Y=1.238;
+  const APPROACH=2100, BREACH=500, CHOMP=720, DRAG=980, FADE=420, TOTAL=APPROACH+BREACH+CHOMP+DRAG+FADE;
   let busy=false;
+  function getTargetPoint(v){
+    const seaRect=sea.getBoundingClientRect();
+    const art=v.el.querySelector('.krathong-art') || v.el;
+    const r=art.getBoundingClientRect();
+    return {
+      x:r.left-seaRect.left+r.width*.53,
+      y:r.top-seaRect.top+r.height*.54
+    };
+  }
   function splash(count){
     ring.classList.remove('go'); void ring.offsetWidth; ring.classList.add('go');
     const sw=parseFloat(actor.style.getPropertyValue('--sw'))||220;
     for(let i=0;i<count;i++){
       const d=document.createElement('i');
       const x=(Math.random()-.55)*sw*.85, up=28+Math.random()*sw*.22;
-      d.style.left=(sw*.55)+'px'; d.style.width=d.style.height=(3+Math.random()*6)+'px';
+      d.style.left=(sw*.50)+'px'; d.style.width=d.style.height=(3+Math.random()*6)+'px';
       drops.appendChild(d);
       d.animate([
         {transform:'translate(0,0) scale(1)',opacity:1},
@@ -587,7 +623,7 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
     if(v.sinking || !v.el.isConnected) return;
     v.sinking=true;
     v.el.classList.add('krathong-bitten');
-    setTimeout(()=>{ if(v.el.isConnected) v.el.classList.add('krathong-sinking'); },180);
+    setTimeout(()=>{ if(v.el.isConnected) v.el.classList.add('krathong-sinking'); },160);
     setTimeout(()=>{
       if(!v.el.isConnected) return;
       v.el.classList.remove('krathong-bitten','krathong-sinking');
@@ -605,12 +641,12 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
         v.respawnPending=false;
         v.el.classList.remove('krathong-respawning');
       },280);
-    },1720);
+    },1680);
   }
   async function attack(){
     if(busy || document.hidden) return false;
     const W=sea.clientWidth, H=sea.clientHeight;
-    const targets=[...drifters.values()].filter(v=>v.el.isConnected && !v.sinking && !v.respawnPending && v.x>W*.20 && v.x<W*.82 && v.y>H*.53 && v.y<H*.88);
+    const targets=[...drifters.values()].filter(v=>v.el.isConnected && !v.sinking && !v.respawnPending && v.x>W*.18 && v.x<W*.84 && v.y>H*.53 && v.y<H*.88);
     if(!targets.length) return false;
     busy=true;
     const target=targets[Math.floor(Math.random()*targets.length)];
@@ -620,12 +656,9 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
     actor.style.setProperty('--sw',sw+'px');
     actor.style.setProperty('--flip','1');
     const waterline=H*.545;
-    const mouthStartX=Math.max(W+sw*.55, target.x + sw*1.35);
-    const mouthBreachX=target.x + 6;
-    const mouthEndX=target.x - sw*.38;
-    const mouthStartY=clamp(target.y + sw*.58, waterline + sw*.45, H*.95);
-    const mouthSurfaceY=clamp(target.y - 4, waterline + sw*.02, H*.83);
-    const mouthDragY=clamp(target.y + sw*.78, waterline + sw*.30, H*.98);
+    const initial=getTargetPoint(target);
+    const mouthStartX=Math.max(W+sw*.62, initial.x + sw*1.38);
+    const mouthStartY=clamp(initial.y + sw*.64, waterline + sw*.48, H*.95);
     let start=null, biteDone=false, burst=false;
     return await new Promise(resolve=>{
       function frame(now){
@@ -635,41 +668,46 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
           actor.classList.remove('on'); actor.style.opacity='0'; jaw.style.transform=''; rig.style.transform='';
           busy=false; resolve(true); return;
         }
-        let mouthX=mouthBreachX, mouthY=mouthSurfaceY, bodyDip=.22, rot=0, jawDeg=0, opacity=1;
+        const point=getTargetPoint(target);
+        const biteX=clamp(point.x+2, sw*.3, W-sw*.25);
+        const biteY=clamp(point.y+1, waterline + sw*.02, H*.84);
+        const dragX=biteX - sw*.34;
+        const dragY=clamp(point.y + sw*.78, waterline + sw*.30, H*.98);
+        let mouthX=biteX, mouthY=biteY, bodyDip=.22, rot=0, jawDeg=0, opacity=1;
         if(t<APPROACH){
           const z=smooth(t/APPROACH);
-          mouthX=mouthStartX + (mouthBreachX - mouthStartX)*z;
-          mouthY=mouthStartY + (mouthSurfaceY + 12 - mouthStartY)*z;
-          bodyDip=.36 + Math.sin(t/210)*.05;
-          rot=-8 + z*16;
-          opacity=clamp(t/360,0,1);
+          mouthX=mouthStartX + (biteX - mouthStartX)*z;
+          mouthY=mouthStartY + (biteY + 12 - mouthStartY)*z;
+          bodyDip=.34 + Math.sin(t/210)*.05;
+          rot=-10 + z*18;
+          opacity=clamp(t/320,0,1);
         }else if(t<APPROACH+BREACH){
           const z=smooth((t-APPROACH)/BREACH);
-          mouthX=mouthBreachX + Math.sin(z*Math.PI)*5;
-          mouthY=(mouthSurfaceY + 8) + (mouthSurfaceY - (mouthSurfaceY + 8))*z;
-          bodyDip=.28 - z*.54;
-          rot=8 + z*17;
-          jawDeg=-10 - z*26;
+          mouthX=biteX + Math.sin(z*Math.PI)*4;
+          mouthY=(biteY + 8) + (biteY - (biteY + 8))*z;
+          bodyDip=.28 - z*.55;
+          rot=10 + z*18;
+          jawDeg=-12 - z*30;
           if(!burst){ burst=true; splash(18); }
         }else if(t<APPROACH+BREACH+CHOMP){
           const z=(t-APPROACH-BREACH)/CHOMP;
-          mouthX=mouthBreachX - z*6;
-          mouthY=mouthSurfaceY + Math.sin(z*Math.PI)*3;
-          bodyDip=-.26 + Math.sin(z*Math.PI*2.7)*.05;
-          rot=25 + Math.sin(z*Math.PI*3.2)*3.5;
-          jawDeg=-36 + Math.sin(z*Math.PI*4)*14;
-          if(z>.22 && !biteDone){ biteDone=true; splash(24); sinkKrathong(target); }
+          mouthX=biteX - z*4;
+          mouthY=biteY + Math.sin(z*Math.PI)*2;
+          bodyDip=-.26 + Math.sin(z*Math.PI*2.8)*.05;
+          rot=28 + Math.sin(z*Math.PI*3.1)*3.6;
+          jawDeg=-40 + Math.sin(z*Math.PI*4.2)*15;
+          if(z>.18 && !biteDone){ biteDone=true; splash(24); sinkKrathong(target); }
         }else if(t<APPROACH+BREACH+CHOMP+DRAG){
           const z=smooth((t-APPROACH-BREACH-CHOMP)/DRAG);
-          mouthX=mouthBreachX + (mouthEndX - mouthBreachX)*z;
-          mouthY=mouthSurfaceY + (mouthDragY - mouthSurfaceY)*z;
-          bodyDip=-.2 + z*.7;
-          rot=22 - z*22;
-          jawDeg=-6 + z*6;
+          mouthX=biteX + (dragX - biteX)*z;
+          mouthY=biteY + (dragY - biteY)*z;
+          bodyDip=-.2 + z*.72;
+          rot=24 - z*24;
+          jawDeg=-7 + z*7;
         }else{
           const z=smooth((t-APPROACH-BREACH-CHOMP-DRAG)/FADE);
-          mouthX=mouthEndX - sw*.1*z;
-          mouthY=mouthDragY + sw*.14*z;
+          mouthX=dragX - sw*.1*z;
+          mouthY=dragY + sw*.14*z;
           bodyDip=.5 + z*.25;
           rot=-3 - z*10;
           opacity=1-z;

@@ -800,3 +800,34 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
   .marine-animal,.marine-animal .marine-body,.marine-animal svg{animation:none!important;opacity:.18}
   .sea-stage>.sea-item.krathong-bitten .sea-bob,.sea-stage>.sea-item.krathong-sinking .sea-bob{animation:none!important}
 }
+
+
+/* V27: tighter shark bite alignment, animated sea-life limbs/tails, progressive krathong showing */
+.sea-item.photo-pending .side-avatar{opacity:.02;transform:scale(.92);filter:blur(2px)}
+.sea-item .side-avatar{transition:opacity .28s ease,transform .28s ease,filter .28s ease}
+.sea-item:not(.photo-pending) .side-avatar{opacity:1;transform:scale(1);filter:none}
+.marine-fish .fish-tail{transform-origin:30px 40px;animation:fishTailSwing .68s ease-in-out infinite}
+.marine-fish .fish-fin{transform-origin:58px 39px;animation:fishFinPaddle .86s ease-in-out infinite}
+.marine-turtle .turtle-flipper.front-a{transform-origin:28px 41px;animation:turtleFrontStroke 1.45s ease-in-out infinite}
+.marine-turtle .turtle-flipper.front-b{transform-origin:102px 35px;animation:turtleFrontStrokeB 1.45s ease-in-out infinite}
+.marine-turtle .turtle-flipper.back-a{transform-origin:44px 62px;animation:turtleBackStroke 1.8s ease-in-out infinite}
+.marine-turtle .turtle-flipper.back-b{transform-origin:102px 57px;animation:turtleBackStrokeB 1.8s ease-in-out infinite}
+.marine-ray .ray-wing.wing-left{transform-origin:91px 38px;animation:rayWingLeft 1.3s ease-in-out infinite}
+.marine-ray .ray-wing.wing-right{transform-origin:91px 38px;animation:rayWingRight 1.3s ease-in-out infinite}
+.marine-ray .ray-tail{transform-origin:90px 72px;animation:rayTailWave 1.9s ease-in-out infinite}
+.marine-dolphin .dolphin-tail{transform-origin:40px 52px;animation:dolphinTailKick .72s ease-in-out infinite}
+.marine-dolphin .dolphin-fin{transform-origin:98px 40px;animation:dolphinFinFlex 1.2s ease-in-out infinite}
+@keyframes fishTailSwing{0%,100%{transform:rotate(-10deg) translateX(0)}50%{transform:rotate(14deg) translateX(-1px)}}
+@keyframes fishFinPaddle{0%,100%{transform:rotate(-6deg) scaleY(1)}50%{transform:rotate(14deg) scaleY(.92)}}
+@keyframes turtleFrontStroke{0%,100%{transform:rotate(12deg)}50%{transform:rotate(-16deg)}}
+@keyframes turtleFrontStrokeB{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(16deg)}}
+@keyframes turtleBackStroke{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(12deg)}}
+@keyframes turtleBackStrokeB{0%,100%{transform:rotate(10deg)}50%{transform:rotate(-12deg)}}
+@keyframes rayWingLeft{0%,100%{transform:rotate(0deg) scaleY(1)}50%{transform:rotate(-7deg) scaleY(.88)}}
+@keyframes rayWingRight{0%,100%{transform:rotate(0deg) scaleY(1)}50%{transform:rotate(7deg) scaleY(.88)}}
+@keyframes rayTailWave{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes dolphinTailKick{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(8deg)}}
+@keyframes dolphinFinFlex{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(5deg)}}
+@media(prefers-reduced-motion:reduce){
+  .marine-fish .fish-tail,.marine-fish .fish-fin,.marine-turtle .turtle-flipper,.marine-ray .ray-wing,.marine-ray .ray-tail,.marine-dolphin .dolphin-tail,.marine-dolphin .dolphin-fin{animation:none!important}
+}
