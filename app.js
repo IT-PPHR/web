@@ -23,7 +23,9 @@ const drifters=new Map();
 // This prevents all 20 krathongs from appearing stacked at the left edge.
 let pendingSeaEntries=[];
 let nextSeaEntryAt=0;
-const SEA_ENTRY_GAP_MS=2600;
+const SEA_ENTRY_GAP_MS=800;
+const SEA_SAMPLE_SIZE=10;
+const SEA_REFRESH_MS=10000;
 const marineLife=[];
 let lastFrame=0;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -424,9 +426,9 @@ function addDrifter(item){
 function renderSea(){
   $('total').textContent=Number(state.total||state.items.length).toLocaleString('th-TH');
   const sea=$('seaBoard');
-  let visible=state.items.slice(0,20);
+  let visible=state.items.slice(0,SEA_SAMPLE_SIZE);
   if(state.ownItem && Date.now()<state.ownUntil && !visible.some(i=>String(i.id)===String(state.ownItem.id))){
-    visible=[state.ownItem,...visible.slice(0,19)];
+    visible=[state.ownItem,...visible.slice(0,SEA_SAMPLE_SIZE-1)];
   }
   const ids=new Set(visible.map(x=>String(x.id)));
   for(const [id,v] of drifters){
@@ -466,8 +468,8 @@ function releaseNextSeaEntry(now){
   if(now<nextSeaEntryAt) return;
   const item=pendingSeaEntries.shift();
   if(item && !drifters.has(String(item.id))) addDrifter(item);
-  // The spacing is temporal AND spatial: at 42–50 px/s this creates
-  // ~110–130 px between successive entries, rather than a left-edge pileup.
+  // Release krathongs quickly enough that a 10-item set can populate within
+  // each 10-second refresh window, while still keeping the staggered sail-in look.
   nextSeaEntryAt=now+SEA_ENTRY_GAP_MS;
 }
 
@@ -538,8 +540,9 @@ async function loadSea(){
   if(loadSea.busy) return;
   loadSea.busy=true;
   try{
-    // Backend selects 20 out of ALL live participants, stable per-minute.
-    const out=await request('list',{limit:'20',random:'20'},'GET');
+    // Refresh a lighter random set more frequently: 10 krathongs every 10 seconds.
+    // Newly released personal krathongs are still injected immediately on the client side.
+    const out=await request('list',{limit:String(SEA_SAMPLE_SIZE),random:String(SEA_SAMPLE_SIZE)},'GET');
     const nextMinute=out.minute ?? Math.floor(Date.now()/60000);
     const nextItems=out.items||[];
     const nextKey=nextItems.map(x=>String(x.id)).join('|');
@@ -656,7 +659,7 @@ initSeaDecor();
 loadSea();
 requestAnimationFrame(animateSea);
 setInterval(()=>{state.tickerIndex++;renderWishTicker();},8000);
-setInterval(()=>{ if(!document.hidden) loadSea(); },10000);
+setInterval(()=>{ if(!document.hidden) loadSea(); },SEA_REFRESH_MS);
 document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hidden) loadSea(); });
 
 /* ===== Giant shark: homes in on the visible krathong art, bites exactly at the mouth, then drags it under. ===== */
