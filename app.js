@@ -109,9 +109,54 @@ function initChoices(){
   });
 }
 
+let wizardStep=1;
+function showWizardStatus(message){ $('status').textContent=message; }
+function wizardValidateStep(step){
+  if(step===3){
+    if(!$('name').value.trim()){ showWizardStatus('กรุณากรอกชื่อที่ต้องการแสดง'); $('name').focus(); return false; }
+    if(!$('dept').value){ showWizardStatus('กรุณาเลือกแผนก'); $('dept').focus(); return false; }
+    if(!$('wish').value.trim()){ showWizardStatus('กรุณากรอกคำอธิษฐาน'); $('wish').focus(); return false; }
+    if(state.photoProcessing){ showWizardStatus('กำลังเตรียมรูป กรุณารอสักครู่'); return false; }
+  }
+  return true;
+}
+function wizardReview(){
+  const name=$('name').value.trim(), department=$('dept').value, wish=$('wish').value.trim();
+  const parts=getParts(state);
+  const rows=[['ฐานกระทง',parts.base[2]],['ดอกไม้',parts.flower[2]],['ธูปเทียน',parts.candle[2]],['ผู้ลอย',name],['แผนก',department],['คำอธิษฐาน',wish],['รูปใบหน้า',state.photo?'แนบรูปแล้ว':'ไม่ได้แนบรูป']];
+  $('wizardSummary').innerHTML=rows.map(([key,value])=>`<div class="wizard-summary-row"><span>${esc(key)}</span><strong>${esc(value)}</strong></div>`).join('');
+  const label=$('photoPublic').closest('label');
+  label.hidden=!state.photo;
+  if(!state.photo) $('photoPublic').checked=false;
+}
+function setWizardStep(step){
+  wizardStep=Math.max(1,Math.min(4,step));
+  document.querySelectorAll('#builderModal .wizard-step').forEach(el=>{el.hidden=Number(el.dataset.step)!==wizardStep;});
+  document.querySelectorAll('#builderModal .wizard-dot').forEach(el=>{
+    const n=Number(el.dataset.goStep);
+    el.classList.toggle('active',n===wizardStep);
+    el.classList.toggle('completed',n<wizardStep);
+    el.setAttribute('aria-current',n===wizardStep?'step':'false');
+  });
+  $('wizardPrev').hidden=wizardStep===1;
+  $('cancelBuilder').hidden=wizardStep!==1;
+  $('wizardNext').hidden=wizardStep===4;
+  $('release').hidden=wizardStep!==4;
+  $('status').textContent='';
+  if(wizardStep===4) wizardReview();
+  const shell=document.querySelector('#builderModal .dialog.wide');
+  if(shell) shell.scrollTo({top:0,behavior:'instant'});
+}
+$('wizardNext').onclick=()=>{if(wizardValidateStep(wizardStep)) setWizardStep(wizardStep+1);};
+$('wizardPrev').onclick=()=>setWizardStep(wizardStep-1);
+document.querySelectorAll('#builderModal .wizard-dot').forEach(btn=>btn.onclick=()=>{
+  const target=Number(btn.dataset.goStep);
+  if(target<wizardStep) setWizardStep(target);
+  else if(target===wizardStep+1 && wizardValidateStep(wizardStep)) setWizardStep(target);
+});
 function openModal(id){ $(id).hidden=false; document.body.classList.add('noscroll'); }
 function closeModal(id){ $(id).hidden=true; if([...document.querySelectorAll('.modal')].every(m=>m.hidden)) document.body.classList.remove('noscroll'); }
-$('openBuilder').onclick=()=>openModal('builderModal');
+$('openBuilder').onclick=()=>{ setWizardStep(1); openModal('builderModal'); };
 $('openHrTop').onclick=()=>openModal('hrModal');
 $('closeBuilder').onclick=()=>closeModal('builderModal');
 $('cancelBuilder').onclick=()=>closeModal('builderModal');
@@ -516,6 +561,7 @@ async function loadSea(){
 }
 
 $('release').onclick=async()=>{
+  if(wizardStep!==4) return;
   const name=$('name').value.trim(), employeeId=$('employeeId').value.trim(), department=$('dept').value, wish=$('wish').value.trim();
   if(state.photoProcessing){ $('status').textContent='กำลังประมวลผลรูป โปรดลองอีกครั้ง'; return; }
   if(!name || !department || !wish){ $('status').textContent='กรุณากรอกชื่อ แผนก และคำอธิษฐาน'; return; }
@@ -544,7 +590,7 @@ function resetBuilder(){
   [['choices','lotus'],['flowerChoices','lotus'],['candleChoices','classic']].forEach(([id,key])=>$(id).querySelectorAll('.choice').forEach(x=>{const selected=x.dataset.value===key;x.classList.toggle('active',selected);x.setAttribute('aria-pressed',String(selected));}));
   document.querySelectorAll('.color').forEach((x,i)=>x.classList.toggle('active',i===0));
   $('photoStatus').textContent='เลือกรูปจากอัลบั้มหรือถ่ายรูปใหม่ (สูงสุด 12 MB) ระบบจะย่อรูปให้อัตโนมัติ';
-  $('clearPhoto').hidden=true; $('status').textContent=''; updatePreview();
+  $('clearPhoto').hidden=true; $('status').textContent=''; updatePreview(); setWizardStep(1);
 }
 
 async function hrLogin(){

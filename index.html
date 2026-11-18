@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#081b36">
   <title>Phi Phi • Loy Krathong 2026</title>
-  <link rel="stylesheet" href="style.css?v=39">
+  <link rel="stylesheet" href="style.css?v=40">
 </head>
 <body>
   <div class="stars"></div>
@@ -127,6 +127,12 @@
           <div class="release-dots"><span></span><span></span><span></span></div>
         </div>
       </div>
+      <nav class="wizard-progress" aria-label="ขั้นตอนสร้างกระทง">
+        <button class="wizard-dot" type="button" data-go-step="1"><b>1</b><span>ฐานกระทง</span></button>
+        <button class="wizard-dot" type="button" data-go-step="2"><b>2</b><span>ตกแต่ง</span></button>
+        <button class="wizard-dot" type="button" data-go-step="3"><b>3</b><span>ข้อมูลผู้ลอย</span></button>
+        <button class="wizard-dot" type="button" data-go-step="4"><b>4</b><span>ตรวจสอบ</span></button>
+      </nav>
       <div class="builder-grid">
         <div class="preview-card">
           <div class="preview-sky">
@@ -136,11 +142,15 @@
           <p>ตัวอย่างกระทงของคุณ</p>
         </div>
         <form id="builderForm" class="builder-form" onsubmit="return false;">
-          <label>1. เลือกฐานกระทง (6 แบบ)</label>
+          <section class="wizard-step" data-step="1"><h4>ขั้นตอนที่ 1 · เลือกฐานกระทง</h4>
+          <p class="wizard-help">เลือกรูปแบบฐานกระทง 1 แบบจากทั้งหมด 6 แบบ</p>
+          <label>ฐานกระทง (6 แบบ)</label>
           <div class="choices" id="choices"></div>
-          <label>2. เลือกดอกไม้ (6 แบบ)</label>
+          </section>
+          <section class="wizard-step" data-step="2" hidden><h4>ขั้นตอนที่ 2 · ตกแต่งกระทง</h4>
+          <label>เลือกดอกไม้ (6 แบบ)</label>
           <div class="choices" id="flowerChoices"></div>
-          <label>3. เลือกธูปเทียน (6 แบบ)</label>
+          <label>เลือกธูปเทียน (6 แบบ)</label>
           <div class="choices" id="candleChoices"></div>
 
           <label>โทนสีแสง</label>
@@ -152,6 +162,8 @@
             <button type="button" class="color" data-color="#9fe77c" style="--c:#9fe77c" aria-label="สีเขียว"></button>
           </div>
 
+          </section>
+          <section class="wizard-step" data-step="3" hidden><h4>ขั้นตอนที่ 3 · ข้อมูลผู้ลอย</h4>
           <div class="twocol">
             <div>
               <label for="name">ชื่อที่ต้องการแสดง</label>
@@ -182,16 +194,25 @@
               <button type="button" id="clearPhoto" class="photo-clear" hidden>ลบรูปที่เลือก</button>
             </div>
             <div class="consentcol">
-              <label class="switchline"><input id="photoPublic" type="checkbox"><span>ยินยอมให้แสดงรูปบนกระทงต่อผู้เข้าชมทุกคน</span></label>
-              <label class="switchline"><input type="checkbox" id="consent"><span>ยินยอมให้ระบบบันทึกข้อมูลสำหรับกิจกรรมนี้</span></label>
+
             </div>
           </div>
 
+          </section>
+          <section class="wizard-step" data-step="4" hidden><h4>ขั้นตอนที่ 4 · ตรวจสอบและปล่อยกระทง</h4>
+            <div class="wizard-summary" id="wizardSummary" aria-live="polite"></div>
+            <div class="wizard-consents">
+              <label class="switchline"><input id="photoPublic" type="checkbox"><span>ยินยอมให้แสดงรูปบนกระทงต่อผู้เข้าชมทุกคน (เมื่อแนบรูป)</span></label>
+              <label class="switchline"><input type="checkbox" id="consent"><span>ยินยอมให้ระบบบันทึกข้อมูลสำหรับกิจกรรมนี้</span></label>
+            </div>
+          </section>
           <div class="actions sticky-actions">
             <span id="status" role="status" aria-live="polite"></span>
             <div class="action-right">
               <button type="button" class="btn ghost" id="cancelBuilder">ยกเลิก</button>
-              <button type="button" class="btn primary" id="release">🪷 ปล่อยกระทง</button>
+              <button type="button" class="btn ghost" id="wizardPrev" hidden>ย้อนกลับ</button>
+              <button type="button" class="btn primary" id="wizardNext">ถัดไป <span aria-hidden="true">→</span></button>
+              <button type="button" class="btn primary" id="release" hidden>🪷 ปล่อยกระทง</button>
             </div>
           </div>
         </form>
