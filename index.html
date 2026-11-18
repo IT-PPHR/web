@@ -1,20 +1,30 @@
 <!doctype html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#081b36">
   <title>Phi Phi • Loy Krathong 2026</title>
-  <link rel="stylesheet" href="style.css?v=42">
+  <link rel="stylesheet" href="style.css?v=46">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 </head>
+
 <body>
   <div class="stars"></div>
   <header>
-    <a href="#top" class="brand brand-with-logo" aria-label="Phi Phi Holiday Resort · Loykrathong Online"><img class="hotel-logo" src="assets/hotel-logo-light.png" alt="Phi Phi Holiday Resort" width="800" height="580"><span class="brand-event">LOYKRATHONG ONLINE</span></a>
+    <a href="#top" class="brand brand-with-logo" aria-label="Phi Phi Holiday Resort · Loykrathong Online"><img
+        class="hotel-logo" src="assets/hotel-logo-light.png" alt="Phi Phi Holiday Resort" width="800" height="580"><span
+        class="brand-event">LOYKRATHONG ONLINE</span></a>
     <nav>
       <button class="navbtn ghost" id="openHrTop">HR Login</button>
     </nav>
   </header>
+
+  <audio id="bgmAudio" loop preload="auto">
+    <source src="s4umusic--424040.mp3" type="audio/mpeg">
+    <source src="bgm.mp3" type="audio/mpeg">
+  </audio>
 
   <main id="top">
     <section class="hero-sea">
@@ -30,7 +40,9 @@
         <div class="moon"></div>
         <div class="island left"></div>
         <div class="island right"></div>
-        <div class="sea-surface"></div>
+        <div class="sea-surface">
+          <canvas id="seaWavesCanvas" class="sea-waves-canvas"></canvas>
+        </div>
         <!-- Participant count and rotating wishes live inside the sea scene. -->
         <div class="sea-hud">
           <div class="sea-participant-count" aria-live="polite">
@@ -38,49 +50,85 @@
             <strong id="total">—</strong>
           </div>
           <div class="wish-ticker-wrap sea-wishes">
-            <button id="wishTicker" class="wish-ticker" type="button" aria-label="แตะเพื่ออ่านคำอธิษฐานฉบับเต็ม">กำลังโหลดคำอธิษฐาน...</button>
+            <button id="wishTicker" class="wish-ticker" type="button"
+              aria-label="แตะเพื่ออ่านคำอธิษฐานฉบับเต็ม">กำลังโหลดคำอธิษฐาน...</button>
           </div>
         </div>
         <div id="sharkActor" class="shark-actor" aria-hidden="true">
-          <div class="shark-clip"><div class="shark-flip"><div class="shark-rig"><svg class="shark-svg" viewBox="0 0 420 230" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <defs>
-    <linearGradient id="sharkSkin" x1="0" y1="45" x2="0" y2="160" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#34495c"/><stop offset=".45" stop-color="#53697c"/>
-      <stop offset=".66" stop-color="#7d93a4"/><stop offset=".72" stop-color="#e9f0f4"/><stop offset="1" stop-color="#cfdbe3"/>
-    </linearGradient>
-    <linearGradient id="sharkFin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b5063"/><stop offset="1" stop-color="#5f7587"/></linearGradient>
-    <linearGradient id="sharkJaw" x1="0" y1="105" x2="0" y2="155" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#dfe8ee"/><stop offset="1" stop-color="#b9c8d2"/></linearGradient>
-    <radialGradient id="sharkMouth" cx=".4" cy=".4" r=".8"><stop offset="0" stop-color="#b3394a"/><stop offset="1" stop-color="#3d0c16"/></radialGradient>
-  </defs>
-  <!-- Tail and fins move independently of the body while swimming. -->
-  <g class="shark-tail-fin"><path d="M365 90 C378 70 392 40 408 18 C402 52 400 78 396 100 C402 128 408 150 416 188 C392 168 376 146 360 118 Z" fill="url(#sharkFin)"/></g>
-  <!-- mouth cavity -->
-  <path d="M95 135 C70 126 40 116 12 105 L36 150 L112 152 Z" fill="url(#sharkMouth)"/>
-  <!-- lower jaw (animated) -->
-  <g class="shark-jaw">
-    <path d="M95 134 L16 108 C26 132 58 152 112 152 L116 134 Z" fill="url(#sharkJaw)"/>
-    <path d="M16.0 108.0L20.0 99.3L23.4 110.6ZM24.2 110.9L28.2 102.2L31.6 113.5ZM32.4 113.8L36.4 105.1L39.8 116.4ZM40.7 116.7L44.7 108.0L48.1 119.3ZM48.9 119.6L52.9 110.9L56.3 122.2ZM57.1 122.4L61.1 113.7L64.5 125.0ZM65.3 125.3L69.3 116.6L72.7 127.9ZM73.6 128.2L77.6 119.5L81.0 130.8ZM81.8 131.1L85.8 122.4L89.2 133.7Z" fill="#fffdf4"/>
-    <path d="M34 124 C52 136 76 144 100 146" stroke="#9fb1be" stroke-width="1.5" fill="none" opacity=".7"/>
-  </g>
-  <!-- body + head -->
-  <path d="M12 105 C50 70 120 48 196 50 L222 6 C230 30 240 46 258 56 C306 60 346 76 372 92 L368 120 C330 132 280 142 232 150 C186 160 150 156 112 152 L95 135 C70 126 40 116 12 105 Z" fill="url(#sharkSkin)"/>
-  <!-- dorsal fin -->
-  <g class="shark-dorsal-fin"><path d="M190 52 C204 34 214 18 224 2 C228 26 238 44 258 58 Z" fill="url(#sharkFin)"/></g>
-  <!-- pectoral fin -->
-  <g class="shark-pectoral-fin"><path d="M150 136 C168 156 184 182 190 208 C168 194 142 176 120 150 Z" fill="url(#sharkFin)"/></g>
-  <!-- upper teeth -->
-  <path d="M16.0 107.0L19.4 118.3L23.4 109.7ZM24.2 110.0L27.6 121.3L31.6 112.7ZM32.4 113.0L35.8 124.3L39.8 115.7ZM40.7 116.0L44.1 127.3L48.1 118.7ZM48.9 119.0L52.3 130.3L56.3 121.7ZM57.1 122.0L60.5 133.3L64.5 124.7ZM65.3 125.0L68.7 136.3L72.7 127.7ZM73.6 128.0L77.0 139.3L81.0 130.7ZM81.8 131.0L85.2 142.3L89.2 133.7Z" fill="#fffdf4"/>
-  <!-- gills -->
-  <g stroke="#2a3c4b" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".75">
-    <path d="M118 84 C122 98 122 112 118 126"/><path d="M128 82 C132 97 132 112 128 128"/>
-    <path d="M138 81 C142 97 142 112 138 129"/><path d="M148 80 C152 96 152 112 148 130"/>
-    <path d="M158 80 C161 96 161 111 158 130"/>
-  </g>
-  <!-- nostril / snout highlight -->
-  <path d="M26 100 C50 82 90 66 140 58" stroke="#8aa0b2" stroke-width="2" fill="none" opacity=".45"/>
-  <!-- eye -->
-  <circle cx="66" cy="94" r="7" fill="#05080c"/><circle cx="64" cy="92" r="2" fill="#fff" opacity=".85"/>
-</svg></div></div></div>
+          <div class="shark-clip">
+            <div class="shark-flip">
+              <div class="shark-rig"><svg class="shark-svg" viewBox="0 0 420 230" xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true">
+                  <defs>
+                    <linearGradient id="sharkSkin" x1="0" y1="45" x2="0" y2="160" gradientUnits="userSpaceOnUse">
+                      <stop offset="0" stop-color="#34495c" />
+                      <stop offset=".45" stop-color="#53697c" />
+                      <stop offset=".66" stop-color="#7d93a4" />
+                      <stop offset=".72" stop-color="#e9f0f4" />
+                      <stop offset="1" stop-color="#cfdbe3" />
+                    </linearGradient>
+                    <linearGradient id="sharkFin" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="#3b5063" />
+                      <stop offset="1" stop-color="#5f7587" />
+                    </linearGradient>
+                    <linearGradient id="sharkJaw" x1="0" y1="105" x2="0" y2="155" gradientUnits="userSpaceOnUse">
+                      <stop offset="0" stop-color="#dfe8ee" />
+                      <stop offset="1" stop-color="#b9c8d2" />
+                    </linearGradient>
+                    <radialGradient id="sharkMouth" cx=".4" cy=".4" r=".8">
+                      <stop offset="0" stop-color="#b3394a" />
+                      <stop offset="1" stop-color="#3d0c16" />
+                    </radialGradient>
+                  </defs>
+                  <!-- Tail and fins move independently of the body while swimming. -->
+                  <g class="shark-tail-fin">
+                    <path
+                      d="M365 90 C378 70 392 40 408 18 C402 52 400 78 396 100 C402 128 408 150 416 188 C392 168 376 146 360 118 Z"
+                      fill="url(#sharkFin)" />
+                  </g>
+                  <!-- mouth cavity -->
+                  <path d="M95 135 C70 126 40 116 12 105 L36 150 L112 152 Z" fill="url(#sharkMouth)" />
+                  <!-- lower jaw (animated) -->
+                  <g class="shark-jaw">
+                    <path d="M95 134 L16 108 C26 132 58 152 112 152 L116 134 Z" fill="url(#sharkJaw)" />
+                    <path
+                      d="M16.0 108.0L20.0 99.3L23.4 110.6ZM24.2 110.9L28.2 102.2L31.6 113.5ZM32.4 113.8L36.4 105.1L39.8 116.4ZM40.7 116.7L44.7 108.0L48.1 119.3ZM48.9 119.6L52.9 110.9L56.3 122.2ZM57.1 122.4L61.1 113.7L64.5 125.0ZM65.3 125.3L69.3 116.6L72.7 127.9ZM73.6 128.2L77.6 119.5L81.0 130.8ZM81.8 131.1L85.8 122.4L89.2 133.7Z"
+                      fill="#fffdf4" />
+                    <path d="M34 124 C52 136 76 144 100 146" stroke="#9fb1be" stroke-width="1.5" fill="none"
+                      opacity=".7" />
+                  </g>
+                  <!-- body + head -->
+                  <path
+                    d="M12 105 C50 70 120 48 196 50 L222 6 C230 30 240 46 258 56 C306 60 346 76 372 92 L368 120 C330 132 280 142 232 150 C186 160 150 156 112 152 L95 135 C70 126 40 116 12 105 Z"
+                    fill="url(#sharkSkin)" />
+                  <!-- dorsal fin -->
+                  <g class="shark-dorsal-fin">
+                    <path d="M190 52 C204 34 214 18 224 2 C228 26 238 44 258 58 Z" fill="url(#sharkFin)" />
+                  </g>
+                  <!-- pectoral fin -->
+                  <g class="shark-pectoral-fin">
+                    <path d="M150 136 C168 156 184 182 190 208 C168 194 142 176 120 150 Z" fill="url(#sharkFin)" />
+                  </g>
+                  <!-- upper teeth -->
+                  <path
+                    d="M16.0 107.0L19.4 118.3L23.4 109.7ZM24.2 110.0L27.6 121.3L31.6 112.7ZM32.4 113.0L35.8 124.3L39.8 115.7ZM40.7 116.0L44.1 127.3L48.1 118.7ZM48.9 119.0L52.3 130.3L56.3 121.7ZM57.1 122.0L60.5 133.3L64.5 124.7ZM65.3 125.0L68.7 136.3L72.7 127.7ZM73.6 128.0L77.0 139.3L81.0 130.7ZM81.8 131.0L85.2 142.3L89.2 133.7Z"
+                    fill="#fffdf4" />
+                  <!-- gills -->
+                  <g stroke="#2a3c4b" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".75">
+                    <path d="M118 84 C122 98 122 112 118 126" />
+                    <path d="M128 82 C132 97 132 112 128 128" />
+                    <path d="M138 81 C142 97 142 112 138 129" />
+                    <path d="M148 80 C152 96 152 112 148 130" />
+                    <path d="M158 80 C161 96 161 111 158 130" />
+                  </g>
+                  <!-- nostril / snout highlight -->
+                  <path d="M26 100 C50 82 90 66 140 58" stroke="#8aa0b2" stroke-width="2" fill="none" opacity=".45" />
+                  <!-- eye -->
+                  <circle cx="66" cy="94" r="7" fill="#05080c" />
+                  <circle cx="64" cy="92" r="2" fill="#fff" opacity=".85" />
+                </svg></div>
+            </div>
+          </div>
           <span class="shark-foam"></span><span class="shark-ring"></span>
           <div class="shark-drops"></div>
         </div>
@@ -137,73 +185,88 @@
         <div class="preview-card">
           <div class="preview-sky">
             <div class="mini-moon"></div>
-            <div id="krathongPreview" class="krathong-preview"><div id="previewArt" class="krathong-art"></div><div id="photoBadge" class="avatar" hidden></div><span id="previewName" class="preview-name">ชื่อผู้ลอย</span></div>
+            <div id="krathongPreview" class="krathong-preview">
+              <div id="previewArt" class="krathong-art"></div>
+              <div id="photoBadge" class="avatar" hidden></div><span id="previewName"
+                class="preview-name">ชื่อผู้ลอย</span>
+            </div>
           </div>
           <p>ตัวอย่างกระทงของคุณ</p>
         </div>
         <form id="builderForm" class="builder-form" onsubmit="return false;">
-          <section class="wizard-step" data-step="1"><h4>ขั้นตอนที่ 1 · เลือกฐานกระทง</h4>
-          <p class="wizard-help">เลือกรูปแบบฐานกระทง 1 แบบจากทั้งหมด 6 แบบ</p>
-          <label>ฐานกระทง (6 แบบ)</label>
-          <div class="choices" id="choices"></div>
+          <section class="wizard-step" data-step="1">
+            <h4>ขั้นตอนที่ 1 · เลือกฐานกระทง</h4>
+            <p class="wizard-help">เลือกรูปแบบฐานกระทง 1 แบบจากทั้งหมด 6 แบบ</p>
+            <label>ฐานกระทง</label>
+            <div class="choices" id="choices"></div>
           </section>
-          <section class="wizard-step" data-step="2" hidden><h4>ขั้นตอนที่ 2 · ตกแต่งกระทง</h4>
-          <label>เลือกดอกไม้ (6 แบบ)</label>
-          <div class="choices" id="flowerChoices"></div>
-          <label>เลือกธูปเทียน (6 แบบ)</label>
-          <div class="choices" id="candleChoices"></div>
+          <section class="wizard-step" data-step="2" hidden>
+            <h4>ขั้นตอนที่ 2 · ตกแต่งกระทง</h4>
+            <label>เลือกดอกไม้ (6 แบบ)</label>
+            <div class="choices" id="flowerChoices"></div>
+            <label>เลือกธูปเทียนและของตกแต่ง</label>
+            <div class="choices" id="candleChoices"></div>
 
-          <label>โทนสีแสง</label>
-          <div class="colors" id="colors">
-            <button type="button" class="color active" data-color="#ffc977" style="--c:#ffc977" aria-label="สีทอง"></button>
-            <button type="button" class="color" data-color="#ff8fbd" style="--c:#ff8fbd" aria-label="สีชมพู"></button>
-            <button type="button" class="color" data-color="#7fe5ed" style="--c:#7fe5ed" aria-label="สีฟ้า"></button>
-            <button type="button" class="color" data-color="#c6a4ff" style="--c:#c6a4ff" aria-label="สีม่วง"></button>
-            <button type="button" class="color" data-color="#9fe77c" style="--c:#9fe77c" aria-label="สีเขียว"></button>
-          </div>
-
-          </section>
-          <section class="wizard-step" data-step="3" hidden><h4>ขั้นตอนที่ 3 · ข้อมูลผู้ลอย</h4>
-          <div class="twocol">
-            <div>
-              <label for="name">ชื่อที่ต้องการแสดง</label>
-              <input id="name" maxlength="60" placeholder="ชื่อ / ชื่อเล่น" required>
+            <label>โทนสีแสง</label>
+            <div class="colors" id="colors">
+              <button type="button" class="color active" data-color="#ffc977" style="--c:#ffc977"
+                aria-label="สีทอง"></button>
+              <button type="button" class="color" data-color="#ff8fbd" style="--c:#ff8fbd" aria-label="สีชมพู"></button>
+              <button type="button" class="color" data-color="#7fe5ed" style="--c:#7fe5ed" aria-label="สีฟ้า"></button>
+              <button type="button" class="color" data-color="#c6a4ff" style="--c:#c6a4ff" aria-label="สีม่วง"></button>
+              <button type="button" class="color" data-color="#9fe77c" style="--c:#9fe77c"
+                aria-label="สีเขียว"></button>
             </div>
-            <div>
-              <label for="employeeId">รหัสพนักงาน</label>
-              <input id="employeeId" maxlength="32" placeholder="รหัสพนักงาน (ไม่แสดงต่อคนอื่น)">
-            </div>
-          </div>
-
-          <label for="dept">แผนก</label>
-          <select id="dept">
-            <option value="">เลือกแผนก</option>
-            <option>Front Office</option><option>Housekeeping</option><option>Food & Beverage</option><option>Kitchen</option>
-            <option>Engineering</option><option>Human Resources</option><option>Finance</option><option>IT</option>
-            <option>Sales & Marketing</option><option>Other</option>
-          </select>
-
-          <label for="wish">คำอธิษฐาน</label>
-          <textarea id="wish" rows="4" maxlength="240" placeholder="ขอให้ปีนี้เต็มไปด้วยความสุข..."></textarea>
-
-          <div class="twocol">
-            <div>
-              <label for="photo">รูปใบหน้าของคุณ (ไม่บังคับ)</label>
-              <input type="file" id="photo" accept="image/*,.heic,.heif">
-              <small id="photoStatus">เลือกรูปจากอัลบั้มหรือถ่ายรูปใหม่ (สูงสุด 12 MB) ระบบจะย่อรูปให้อัตโนมัติ</small>
-              <button type="button" id="clearPhoto" class="photo-clear" hidden>ลบรูปที่เลือก</button>
-            </div>
-            <div class="consentcol">
-
-            </div>
-          </div>
 
           </section>
-          <section class="wizard-step" data-step="4" hidden><h4>ขั้นตอนที่ 4 · ตรวจสอบและปล่อยกระทง</h4>
+          <section class="wizard-step" data-step="3" hidden>
+            <h4>ขั้นตอนที่ 3 · ข้อมูลผู้ลอย</h4>
+            <div class="twocol">
+              <div>
+                <label for="name">ชื่อที่ต้องการแสดง</label>
+                <input id="name" maxlength="60" placeholder="ชื่อ / ชื่อเล่น" required>
+              </div>
+              <div>
+                <label for="employeeId">รหัสพนักงาน</label>
+                <input id="employeeId" maxlength="32" placeholder="รหัสพนักงาน (ไม่แสดงต่อคนอื่น)">
+              </div>
+            </div>
+
+            <label for="dept">แผนก</label>
+            <select id="dept" required>
+              <option value="">เลือกแผนก</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Exe.& Admin">Exe.& Admin</option>
+              <option value="Finance & Acct.">Finance & Acct.</option>
+              <option value="Food & Beverage">Food & Beverage</option>
+              <option value="Food Kitchen">Food Kitchen</option>
+              <option value="Front Office">Front Office</option>
+              <option value="Housekeeping">Housekeeping</option>
+              <option value="HR & Security">HR & Security</option>
+            </select>
+
+            <label for="wish">คำอธิษฐาน</label>
+            <textarea id="wish" rows="4" maxlength="240" placeholder="ขอให้ปีนี้เต็มไปด้วยความสุข..."></textarea>
+
+            <div class="twocol">
+              <div>
+                <label for="photo">รูปใบหน้าของคุณ (ไม่บังคับ)</label>
+                <input type="file" id="photo" accept="image/*,.heic,.heif">
+                <small id="photoStatus">เลือกรูปจากอัลบั้มหรือถ่ายรูปใหม่ (สูงสุด 12 MB)
+                  ระบบจะย่อรูปให้อัตโนมัติ</small>
+                <button type="button" id="clearPhoto" class="photo-clear" hidden>ลบรูปที่เลือก</button>
+              </div>
+              <div class="consentcol">
+
+              </div>
+            </div>
+
+          </section>
+          <section class="wizard-step" data-step="4" hidden>
+            <h4>ขั้นตอนที่ 4 · ตรวจสอบและปล่อยกระทง</h4>
             <div class="wizard-summary" id="wizardSummary" aria-live="polite"></div>
             <div class="wizard-consents">
-              <label class="switchline"><input id="photoPublic" type="checkbox"><span>ยินยอมให้แสดงรูปบนกระทงต่อผู้เข้าชมทุกคน (เมื่อแนบรูป)</span></label>
-              <label class="switchline"><input type="checkbox" id="consent"><span>ยินยอมให้ระบบบันทึกข้อมูลสำหรับกิจกรรมนี้</span></label>
+              <label class="switchline"><input id="photoPublic" type="checkbox" checked><span>ยินยอมให้แสดงรูปบนกระทงต่อผู้เข้าชมทุกคน (เมื่อแนบรูป)</span></label>
             </div>
           </section>
           <div class="actions sticky-actions">
@@ -224,10 +287,17 @@
   <div id="hrModal" class="modal" hidden>
     <div class="dialog hrwide">
       <button id="closeHr" aria-label="ปิด" class="x">×</button>
-      <div class="popup-head"><div><div class="eyebrow">HR PANEL</div><h3>Lucky Draw / ผู้ร่วมกิจกรรม</h3></div></div>
+      <div class="popup-head">
+        <div>
+          <div class="eyebrow">HR PANEL</div>
+          <h3>Lucky Draw / ผู้ร่วมกิจกรรม</h3>
+        </div>
+      </div>
 
       <div id="hrLoginBox">
-        <div class="hr-login-symbol" aria-hidden="true">🎁</div>
+        <div class="hr-login-symbol" aria-hidden="true">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#f6ce7c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+        </div>
         <div class="hr-login-eyebrow">PHI PHI HOLIDAY RESORT</div>
         <h3 class="hr-login-title">HR Lucky Draw</h3>
         <p class="hr-login-description">สำหรับฝ่ายทรัพยากรบุคคล<br>เข้าสู่ระบบเพื่อจัดการผู้ร่วมกิจกรรมและสุ่มรางวัล</p>
@@ -237,25 +307,111 @@
           <button class="btn primary" id="hrLoginBtn">เข้าสู่ระบบ <span aria-hidden="true">→</span></button>
         </div>
         <div id="hrLoginStatus" class="hint" role="status" aria-live="polite"></div>
-        <div class="hr-login-footnote">🔒 เฉพาะเจ้าหน้าที่ HR ที่ได้รับอนุญาต</div>
+        <div class="hr-login-footnote">เฉพาะเจ้าหน้าที่ HR ที่ได้รับอนุญาต</div>
       </div>
 
       <div id="hrPanel" hidden>
-        <div class="hr-top">
-          <div class="stat-box"><strong id="hrTotal">0</strong><small>ผู้ร่วมกิจกรรมทั้งหมด</small></div>
-          <div class="hr-actions">
-            <button class="btn ghost" id="hrRefresh">รีเฟรชรายชื่อ</button>
-            <button class="btn primary" id="drawBtn">🎁 สุ่มรางวัล</button>
-            <button class="btn ghost" id="hrLogoutBtn">Logout</button>
+        <!-- 3 Stat boxes -->
+        <div class="hr-stats-grid">
+          <div class="stat-box">
+            <strong>ทั้งหมด <span id="hrTotalStats">0</span> / เหลือ <span id="hrEligibleStats">0</span></strong>
+            <small>กระทงทั้งหมด / คงเหลือสุ่ม</small>
+          </div>
+          <div class="stat-box">
+            <strong><span id="hrWinnersStats">0</span> คน</strong>
+            <small>สุ่มได้รางวัลแล้ว</small>
+          </div>
+          <div class="stat-box">
+            <strong id="hrTopDept">—</strong>
+            <small id="hrTopDeptLabel">แผนกที่ร่วมลอยสูงสุด</small>
           </div>
         </div>
-        <div id="winnerBox" class="winner-box emptywinner">กด “สุ่มรางวัล” เพื่อเลือกผู้โชคดี</div>
+
+        <!-- Toolbar & Department Filter -->
+        <div class="hr-toolbar">
+          <div class="hr-filter-group">
+            <label for="hrDeptFilter">ตัวกรองแผนก:</label>
+            <select id="hrDeptFilter" class="hr-dept-filter">
+              <option value="ALL">ทุกแผนก (ALL)</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Exe.& Admin">Exe.& Admin</option>
+              <option value="Finance & Acct.">Finance & Acct.</option>
+              <option value="Food & Beverage">Food & Beverage</option>
+              <option value="Food Kitchen">Food Kitchen</option>
+              <option value="Front Office">Front Office</option>
+              <option value="Housekeeping">Housekeeping</option>
+              <option value="HR & Security">HR & Security</option>
+            </select>
+          </div>
+          <div class="hr-actions">
+            <button type="button" class="btn ghost music-toggle-btn" id="musicToggleBtn" aria-label="เปิดหรือปิดเสียงเพลง" aria-pressed="false" title="เปิด/ปิดเสียงเพลง">
+              <span class="music-icon" id="musicIcon" aria-hidden="true">🎵</span>
+              <span class="music-label" id="musicLabel">เปิดเสียงเพลง</span>
+            </button>
+            <button type="button" class="btn ghost" id="hrRefresh">รีเฟรชรายชื่อ</button>
+            <button type="button" class="btn primary draw-btn-glow" id="drawBtn">สุ่มรางวัล</button>
+            <button type="button" class="btn ghost" id="hrLogoutBtn">Logout</button>
+          </div>
+        </div>
+
+        <div id="winnerBox" class="winner-box emptywinner">
+          <div class="winner-placeholder">กด “สุ่มรางวัล” เพื่อเลือกผู้โชคดี</div>
+        </div>
+
+        <!-- Winner History Section -->
+        <div class="winner-history-section" id="winnerHistorySection">
+          <div class="winner-history-head">
+            <h4>ประวัติผู้ได้รับรางวัล (<span id="winnerHistoryCount">0</span> คน)</h4>
+            <button type="button" class="danger-outline" id="clearHistoryBtn">ล้างประวัติเพื่อเริ่มรอบใหม่</button>
+          </div>
+          <div id="winnerHistoryList" class="winner-history-list">
+            <div class="history-empty">ยังไม่มีประวัติผู้ได้รับรางวัล</div>
+          </div>
+        </div>
+
+        <!-- Participant List Table -->
         <div class="admin-list-wrap">
+          <div class="admin-table-head">
+            <h4>รายชื่อผู้เข้าร่วม (<span id="filteredTableCount">0</span> รายการ)</h4>
+          </div>
           <table class="admin-table">
-            <thead><tr><th>ชื่อ</th><th>แผนก</th><th>คำอธิษฐาน</th><th>เวลา</th></tr></thead>
+            <thead>
+              <tr>
+                <th style="width:115px;">สถานะ</th>
+                <th style="width:85px;">เวลา</th>
+                <th style="width:110px;">รหัสพนักงาน</th>
+                <th>ชื่อ-นามสกุล</th>
+                <th>แผนก</th>
+                <th>คำอธิษฐาน</th>
+              </tr>
+            </thead>
             <tbody id="hrList"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grand Winner Celebration Modal -->
+  <div id="celebrationModal" class="modal celebration-modal" hidden>
+    <div class="celebration-dialog">
+      <div class="winner-rays" aria-hidden="true"></div>
+      <button type="button" class="x" id="closeCelebration" aria-label="ปิด">×</button>
+      <div class="celebration-badge" id="celebrationPrizeRank">รางวัลที่ 1 • CONGRATULATIONS</div>
+      <div class="celebration-krathong" id="celebrationKrathong"></div>
+      <div class="celebration-body">
+        <h2 id="celebrationName" class="celebration-name">ชื่อผู้โชคดี</h2>
+        <div class="celebration-meta">
+          <span id="celebrationEmpId" class="meta-pill">รหัส: -</span>
+          <span id="celebrationDept" class="meta-pill">แผนก: -</span>
+        </div>
+        <div class="celebration-wish-box">
+          <div id="celebrationWish" class="celebration-wish">“คำอธิษฐาน”</div>
+        </div>
+      </div>
+      <div class="celebration-actions">
+        <button type="button" class="btn ghost" id="fireConfettiBtn">จุดพลุอีกครั้ง</button>
+        <button type="button" class="btn primary glow-btn" id="celebrationNextBtn">ตกลง / สุ่มคนต่อไป</button>
       </div>
     </div>
   </div>
@@ -266,6 +422,7 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=42"></script>
+  <script src="app.js?v=46"></script>
 </body>
+
 </html>
