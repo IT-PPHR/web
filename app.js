@@ -267,7 +267,10 @@ function initSeaDecor(){
   // The sea remains rendered below the sky; no islands are created.
 }
 
-function randomPosition(sea){ return {x:sea.clientWidth*(.08+Math.random()*.84), y:sea.clientHeight*(.54+Math.random()*.34)}; }
+// Start across the water surface. Each drifter has a stable horizontal direction.
+function randomPosition(sea){
+  return {x:sea.clientWidth*(.10+Math.random()*.80), y:sea.clientHeight*(.58+Math.random()*.27)};
+}
 function seaItemHTML(item){
   const photo=safePhoto(item.photo);
   return `<span class="sea-bob"><span class="krathong-art">${artHTML(item)}</span>${photo?`<img src="${photo}" class="side-avatar" alt="รูปผู้ลอย">`:''}<span class="sea-name">${esc(item.name||'ไม่ระบุชื่อ')}</span></span>`;
@@ -281,8 +284,13 @@ function addDrifter(item){
   b.innerHTML=seaItemHTML(item);
   b.onclick=()=>displayWish(item);
   sea.appendChild(b);
-  const pos=randomPosition(sea),angle=Math.random()*Math.PI*2;
-  drifters.set(String(item.id),{el:b,item,x:pos.x,y:pos.y,vx:Math.cos(angle)*9,vy:Math.sin(angle)*5,turn:0,phase:Math.random()*7});
+  const pos=randomPosition(sea);
+  const direction=Math.random()<.5?-1:1;
+  drifters.set(String(item.id),{
+    el:b,item,x:pos.x,y:pos.y,
+    vx:direction*(12+Math.random()*10),vy:0,
+    direction,flow:Math.random()*Math.PI*2,turn:0,phase:Math.random()*7
+  });
 }
 function renderSea(){
   $('total').textContent=Number(state.total||state.items.length).toLocaleString('th-TH');
@@ -319,20 +327,26 @@ function animateSea(ts){
   if(!document.hidden && sea.clientWidth){
     const w=sea.clientWidth,h=sea.clientHeight;
     for(const v of drifters.values()){
-      v.turn+=dt; v.phase+=dt;
-      if(v.turn>2.2+Math.random()*.1){
-        v.turn=0;
-        const a=Math.atan2(v.vy,v.vx)+(Math.random()-.5)*1.25;
-        v.vx=Math.cos(a)*(6+Math.random()*8); v.vy=Math.sin(a)*(3+Math.random()*6);
+      v.phase+=dt;
+      v.flow+=dt;
+      // Keep the entire body drifting in one direction instead of bouncing off the edges.
+      v.x+=v.vx*dt;
+      // Small natural wave motion; never drift up into the sky or below the sea.
+      v.y+=Math.sin(v.flow*.6)*dt*1.6;
+      const minY=h*.55, maxY=h*.88;
+      v.y=Math.max(minY,Math.min(maxY,v.y));
+      // Wrap only after the krathong has completely left the visible sea.
+      // Reappear from the opposite side with a fresh water lane.
+      const margin=90;
+      if(v.vx>0 && v.x>w+margin){
+        v.x=-margin;
+        v.y=h*(.58+Math.random()*.27);
+      }else if(v.vx<0 && v.x< -margin){
+        v.x=w+margin;
+        v.y=h*(.58+Math.random()*.27);
       }
-      v.x+=v.vx*dt; v.y+=v.vy*dt;
-      const minX=Math.min(40,w*.08), maxX=Math.max(minX,w-40), minY=h*.46, maxY=h*.9;
-      if(v.x<minX){ v.x=minX; v.vx=Math.abs(v.vx); }
-      if(v.x>maxX){ v.x=maxX; v.vx=-Math.abs(v.vx); }
-      if(v.y<minY){ v.y=minY; v.vy=Math.abs(v.vy); }
-      if(v.y>maxY){ v.y=maxY; v.vy=-Math.abs(v.vy); }
       v.el.style.left=v.x+'px';
-      v.el.style.top=(v.y+Math.sin(v.phase*2)*2.5)+'px';
+      v.el.style.top=(v.y+Math.sin(v.phase*1.7)*3)+'px';
     }
   }
   requestAnimationFrame(animateSea);
