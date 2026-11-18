@@ -19,6 +19,11 @@ const API=(window.APP_CONFIG||{}).API_URL||'';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safePhoto=s=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(String(s||''))?s:'';
 const drifters=new Map();
+// Pending items are NOT inserted into the DOM until their turn arrives.
+// This prevents all 20 krathongs from appearing stacked at the left edge.
+let pendingSeaEntries=[];
+let nextSeaEntryAt=0;
+const SEA_ENTRY_GAP_MS=2600;
 const marineLife=[];
 let lastFrame=0;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -351,7 +356,7 @@ function seaItemHTML(item){
   const photo=safePhoto(item.photo);
   return `<span class="sea-bob"><span class="krathong-art">${artHTML(item)}</span>${photo?`<img src="${photo}" class="side-avatar" alt="รูปผู้ลอย">`:''}<span class="sea-name">${esc(item.name||'ไม่ระบุชื่อ')}</span></span>`;
 }
-function addDrifter(item,entryIndex=0){
+function addDrifter(item){
   const sea=$('seaBoard');
   const b=document.createElement('button');
   b.type='button'; b.className='sea-item';
@@ -360,13 +365,12 @@ function addDrifter(item,entryIndex=0){
   sea.appendChild(b);
   const pos=randomPosition(sea);
   const direction=1;
-  // A new batch begins outside the left edge and enters one after another.
-  // Initial entry is slightly faster; regular drifting resumes once on screen.
+  // Only one new krathong is created each time the queue releases an item.
   const speed=16+Math.random()*9;
   drifters.set(String(item.id),{
     el:b,item,x:pos.x,y:pos.y,
-    vx:speed,vy:0,entrySpeed:30+Math.random()*12,
-    enterAt:performance.now()+entryIndex*410,
+    vx:speed,vy:0,entrySpeed:42+Math.random()*8,
+    entering:true,
     direction,flow:Math.random()*Math.PI*2,turn:0,phase:Math.random()*7
   });
   b.style.left=pos.x+'px';
@@ -380,40 +384,54 @@ function renderSea(){
     visible=[state.ownItem,...visible.slice(0,19)];
   }
   const ids=new Set(visible.map(x=>String(x.id)));
-  for(const [id,v] of drifters) if(!ids.has(id)){ v.el.remove(); drifters.delete(id); }
+  for(const [id,v] of drifters){
+    if(!ids.has(id)){ v.el.remove(); drifters.delete(id); }
+  }
   sea.querySelectorAll('.empty').forEach(x=>x.remove());
-  if(!state.items.length){
+  if(!visible.length){
+    pendingSeaEntries=[];
+    nextSeaEntryAt=0;
     sea.insertAdjacentHTML('beforeend','<div class="empty">ยังไม่มีกระทง มาเป็นคนแรกกันเถอะ 🪷</div>');
     renderWishTicker();
     return;
   }
 
-  const token=++state.renderToken;
-  let queue=visible.slice();
-  let nextEntry=0;
-  const pump=()=>{
-    if(token!==state.renderToken) return;
-    const start=performance.now();
-    while(queue.length && performance.now()-start<9){
-      const item=queue.shift();
-      const id=String(item.id);
-      if(!drifters.has(id)) addDrifter(item,nextEntry++);
-      else {
-        const old=drifters.get(id);
-        old.item=item;
-        if(old.el.dataset.itemKey!==seaItemKey(item)) patchDrifterNode(old.el,item);
-      }
+  // Preserve already-floating krathongs and their position on each API refresh.
+  // Queue new ones separately: there is no hidden stack of 20 objects at x=-105.
+  pendingSeaEntries=pendingSeaEntries.filter(x=>ids.has(String(x.id)) && !drifters.has(String(x.id)));
+  const pendingById=new Map(pendingSeaEntries.map(x=>[String(x.id),x]));
+  for(const item of visible){
+    const id=String(item.id);
+    const old=drifters.get(id);
+    if(old){
+      old.item=item;
+      if(old.el.dataset.itemKey!==seaItemKey(item)) patchDrifterNode(old.el,item);
+    }else if(pendingById.has(id)){
+      Object.assign(pendingById.get(id),item); // latest content, same queue position
+    }else{
+      pendingSeaEntries.push(item);
     }
-    if(queue.length) requestAnimationFrame(pump);
-  };
-  pump();
+  }
+  if(!nextSeaEntryAt && pendingSeaEntries.length) nextSeaEntryAt=performance.now();
   renderWishTicker();
 }
+
+function releaseNextSeaEntry(now){
+  if(!pendingSeaEntries.length){ nextSeaEntryAt=0; return; }
+  if(now<nextSeaEntryAt) return;
+  const item=pendingSeaEntries.shift();
+  if(item && !drifters.has(String(item.id))) addDrifter(item);
+  // The spacing is temporal AND spatial: at 42–50 px/s this creates
+  // ~110–130 px between successive entries, rather than a left-edge pileup.
+  nextSeaEntryAt=now+SEA_ENTRY_GAP_MS;
+}
+
 function animateSea(ts){
   const dt=Math.min(.05,Math.max(0,(ts-lastFrame)/1000||0)); lastFrame=ts;
   const sea=$('seaBoard');
   if(!document.hidden && sea.clientWidth){
     const w=sea.clientWidth,h=sea.clientHeight;
+    releaseNextSeaEntry(ts);
 
     for(const m of marineLife){
       m.phase+=dt*m.sway;
@@ -437,13 +455,12 @@ function animateSea(ts){
 
     for(const v of drifters.values()){
       if(v.sinking || v.respawnPending) continue;
-      if(v.enterAt && ts<v.enterAt) continue;
       v.phase+=dt;
       v.flow+=dt;
       // All krathongs flow LEFT -> RIGHT; no reversing.
       v.vx=Math.abs(v.vx)||18;
-      v.x+=(v.enterAt && v.x<105 ? v.entrySpeed : v.vx)*dt;
-      if(v.x>=105) v.enterAt=0;
+      v.x+=(v.entering ? v.entrySpeed : v.vx)*dt;
+      if(v.x>=105) v.entering=false;
       v.y+=Math.sin(v.flow*.6)*dt*1.6;
       v.y=Math.max(h*.55,Math.min(h*.88,v.y));
       const margin=110;
