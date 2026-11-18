@@ -969,3 +969,50 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
     width:calc(100% - 34px);
   }
 }
+
+
+/* V34: top-centre sea wishes. Override the old horizon positioning on all devices. */
+#seaBoard{position:relative}
+#seaBoard > .wish-ticker-wrap.sea-wishes{
+  position:absolute;
+  top:16px;
+  bottom:auto;
+  left:50%;
+  right:auto;
+  transform:translateX(-50%);
+  width:min(52%,620px);
+  max-width:620px;
+  margin:0;
+  padding:0;
+  z-index:20;
+  align-items:stretch;
+}
+#seaBoard > .sea-wishes > .ticker-head{
+  width:100%;
+  text-align:center;
+  margin:0 0 5px;
+}
+#seaBoard > .sea-wishes > .wish-ticker{
+  display:-webkit-box;
+  min-height:0;
+  text-align:center;
+}
+@media (min-width:761px) and (max-width:1180px){
+  #seaBoard > .wish-ticker-wrap.sea-wishes{top:16px;width:min(52%,540px)}
+}
+@media (max-width:760px){
+  /* Keep the wish above the horizon while avoiding the participant-count card. */
+  #seaBoard > .wish-ticker-wrap.sea-wishes{
+    top:136px;
+    left:50%;
+    transform:translateX(-50%);
+    width:calc(100% - 44px);
+    max-width:none;
+    gap:4px;
+  }
+  #seaBoard > .sea-wishes > .ticker-head{font-size:12px}
+  #seaBoard > .sea-wishes > .wish-ticker{font-size:12px;padding:8px 12px;max-height:58px}
+}
+@media (max-width:380px){
+  #seaBoard > .wish-ticker-wrap.sea-wishes{top:128px;width:calc(100% - 34px)}
+}
