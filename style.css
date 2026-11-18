@@ -947,3 +947,25 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
   #seaBoard .sea-wishes .ticker-head{font-size:11px}
   #seaBoard .sea-wishes .wish-ticker{font-size:11px;line-height:1.45;max-height:64px;padding:8px 11px;border-radius:12px}
 }
+
+
+/* V33 — wishes at the top centre of the sea (count remains top-left). */
+#seaBoard .wish-ticker-wrap.sea-wishes{
+  top:16px;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(50%,620px);
+  justify-content:flex-start;
+}
+@media (max-width:1040px){
+  #seaBoard .wish-ticker-wrap.sea-wishes{top:14px;width:min(54%,520px)}
+}
+@media (max-width:760px){
+  /* Put the ticker below the compact count to prevent overlap on narrow phones. */
+  #seaBoard .wish-ticker-wrap.sea-wishes{
+    top:86px;
+    left:50%;
+    transform:translateX(-50%);
+    width:calc(100% - 34px);
+  }
+}
