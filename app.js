@@ -19,6 +19,7 @@ const API=(window.APP_CONFIG||{}).API_URL||'';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safePhoto=s=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(String(s||''))?s:'';
 const drifters=new Map();
+const marineLife=[];
 let lastFrame=0;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
@@ -277,28 +278,49 @@ const SEA_LIFE_ART={
 };
 function initSeaLife(){
   const sea=$('seaBoard');
-  if(sea.querySelector('.marine-layer')) return;
-  const layer=document.createElement('div');
+  let layer=sea.querySelector('.marine-layer');
+  if(layer) return;
+  layer=document.createElement('div');
   layer.className='marine-layer';
   layer.setAttribute('aria-hidden','true');
-  const kinds=['turtle','ray','dolphin','fish','fish','ray','turtle'];
+  sea.appendChild(layer);
+  marineLife.length=0;
   const mobile=window.matchMedia('(max-width:760px)').matches;
-  kinds.slice(0,mobile?5:7).forEach((kind,i)=>{
+  const plan=mobile
+    ? ['fish','turtle','ray','fish']
+    : ['fish','turtle','dolphin','ray','fish','turtle','fish'];
+  const specs={
+    fish:{size:[40,58],speed:[14,22],amp:[5,10],depth:[.69,.89],tilt:8},
+    turtle:{size:[66,86],speed:[8,14],amp:[4,8],depth:[.65,.86],tilt:5},
+    ray:{size:[78,104],speed:[10,16],amp:[6,10],depth:[.62,.84],tilt:7},
+    dolphin:{size:[88,116],speed:[15,23],amp:[6,11],depth:[.58,.76],tilt:9}
+  };
+  const rr=(a,b)=>a+Math.random()*(b-a);
+  plan.forEach((kind,i)=>{
+    const spec=specs[kind];
+    const size=rr(spec.size[0],spec.size[1]);
+    const dir=(i%2===0)?1:-1;
+    const y=sea.clientHeight*rr(spec.depth[0],spec.depth[1]);
+    const x=dir>0 ? rr(-sea.clientWidth*.15, sea.clientWidth*.9) : rr(sea.clientWidth*.1, sea.clientWidth*1.15);
     const animal=document.createElement('span');
     animal.className=`marine-animal marine-${kind}`;
-    animal.innerHTML=SEA_LIFE_ART[kind];
-    animal.style.top=(53+(i*7.3)%33)+'%';
-    animal.style.setProperty('--marine-size',(kind==='dolphin'?80:kind==='turtle'?69:kind==='ray'?79:42)+(Math.random()*12)+'px');
-    animal.style.setProperty('--marine-duration',(24+Math.random()*30).toFixed(1)+'s');
-    animal.style.setProperty('--marine-delay',(-Math.random()*45).toFixed(1)+'s');
-    animal.style.setProperty('--travel',(sea.clientWidth+260)+'px');
-    animal.style.setProperty('--depth',(Math.random()*7-3).toFixed(1)+'px');
+    animal.innerHTML=`<span class="marine-body">${SEA_LIFE_ART[kind]}</span>`;
     layer.appendChild(animal);
+    marineLife.push({
+      el:animal, kind, size, dir, x, y,
+      speed:rr(spec.speed[0],spec.speed[1]), amp:rr(spec.amp[0],spec.amp[1]),
+      phase:Math.random()*Math.PI*2, sway:rr(.55,1.05),
+      tilt:rr(spec.tilt*.55,spec.tilt), lane:y, laneDrift:rr(3,11), lanePhase:Math.random()*Math.PI*2,
+      opacity: kind==='fish' ? rr(.52,.72) : kind==='dolphin' ? rr(.30,.48) : rr(.38,.6)
+    });
   });
-  sea.appendChild(layer);
-  window.addEventListener('resize',()=>{
-    layer.querySelectorAll('.marine-animal').forEach(el=>el.style.setProperty('--travel',(sea.clientWidth+260)+'px'));
-  },{passive:true});
+  function syncMarineBounds(){
+    for(const m of marineLife){
+      m.el.style.width=m.size+'px';
+    }
+  }
+  syncMarineBounds();
+  window.addEventListener('resize',syncMarineBounds,{passive:true});
 }
 
 // Start across the water surface. Each drifter has a stable horizontal direction.
@@ -360,6 +382,27 @@ function animateSea(ts){
   const sea=$('seaBoard');
   if(!document.hidden && sea.clientWidth){
     const w=sea.clientWidth,h=sea.clientHeight;
+
+    for(const m of marineLife){
+      m.phase+=dt*m.sway;
+      m.lanePhase+=dt*(m.sway*.55);
+      m.x+=m.speed*m.dir*dt;
+      const wobble=Math.sin(m.phase*2.1)*m.amp;
+      const drift=Math.sin(m.lanePhase)*m.laneDrift;
+      m.y=m.lane + wobble + drift;
+      const off=m.size*1.4;
+      if(m.dir>0 && m.x>w+off){
+        m.x=-off;
+        m.lane=h*((m.kind==='dolphin'?0.58:0.64)+Math.random()*(m.kind==='fish'?0.24:0.18));
+      }else if(m.dir<0 && m.x<-off){
+        m.x=w+off;
+        m.lane=h*((m.kind==='dolphin'?0.58:0.64)+Math.random()*(m.kind==='fish'?0.24:0.18));
+      }
+      const tilt=Math.sin(m.phase*1.55)*(m.tilt||6) + (m.dir>0?1:-1)*1.5;
+      m.el.style.opacity=m.opacity;
+      m.el.style.transform=`translate3d(${m.x}px,${m.y}px,0) scaleX(${m.dir>0?1:-1}) rotate(${tilt}deg)`;
+    }
+
     for(const v of drifters.values()){
       if(v.sinking || v.respawnPending) continue;
       v.phase+=dt;
@@ -380,6 +423,7 @@ function animateSea(ts){
   }
   requestAnimationFrame(animateSea);
 }
+
 function renderWishTicker(){
   const node=$('wishTicker');
   if(!node) return;
@@ -512,7 +556,7 @@ setInterval(()=>{state.tickerIndex++;renderWishTicker();},8000);
 setInterval(()=>{ if(!document.hidden) loadSea(); },10000);
 document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hidden) loadSea(); });
 
-/* ===== Giant shark: approaches underwater, breaches, bites and sinks the selected krathong. ===== */
+/* ===== Giant shark: approaches from underwater, snaps onto a krathong, then drags it below the surface. ===== */
 (function(){
   const actor=$('sharkActor');
   if(!actor || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -521,27 +565,32 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
   const ring=actor.querySelector('.shark-ring'), drops=actor.querySelector('.shark-drops');
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
-  const MOVE=2700,RISE=650,CHOMP=1100,SUBMERGE=1200,TOTAL=MOVE+RISE+CHOMP+SUBMERGE;
+  const MOUTH_X=.48, MOUTH_Y=1.27;
+  const APPROACH=2200, BREACH=520, CHOMP=760, DRAG=1080, FADE=420, TOTAL=APPROACH+BREACH+CHOMP+DRAG+FADE;
   let busy=false;
   function splash(count){
-    ring.classList.remove('go');void ring.offsetWidth;ring.classList.add('go');
-    const sw=parseFloat(actor.style.getPropertyValue('--sw'))||160;
+    ring.classList.remove('go'); void ring.offsetWidth; ring.classList.add('go');
+    const sw=parseFloat(actor.style.getPropertyValue('--sw'))||220;
     for(let i=0;i<count;i++){
       const d=document.createElement('i');
-      const x=(Math.random()-.5)*sw*.8,up=30+Math.random()*sw*.28;
-      d.style.left=(sw*.6)+'px';d.style.width=d.style.height=(3+Math.random()*5)+'px';
+      const x=(Math.random()-.55)*sw*.85, up=28+Math.random()*sw*.22;
+      d.style.left=(sw*.55)+'px'; d.style.width=d.style.height=(3+Math.random()*6)+'px';
       drops.appendChild(d);
-      d.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${x}px,${-up}px)`,opacity:.85,offset:.5},{transform:`translate(${x*1.4}px,12px)`,opacity:0}],{duration:700+Math.random()*350,easing:'ease-out'}).onfinish=()=>d.remove();
+      d.animate([
+        {transform:'translate(0,0) scale(1)',opacity:1},
+        {transform:`translate(${x*.7}px,${-up*.72}px) scale(1.05)`,opacity:.95,offset:.42},
+        {transform:`translate(${x}px,${12+Math.random()*10}px) scale(.7)`,opacity:0}
+      ],{duration:700+Math.random()*250,easing:'ease-out'}).onfinish=()=>d.remove();
     }
   }
   function sinkKrathong(v){
     if(v.sinking || !v.el.isConnected) return;
     v.sinking=true;
-    v.el.classList.add('krathong-sinking');
-    // Visual effect only: do NOT remove the participant or their data from the draw.
+    v.el.classList.add('krathong-bitten');
+    setTimeout(()=>{ if(v.el.isConnected) v.el.classList.add('krathong-sinking'); },180);
     setTimeout(()=>{
-      if(!v.el.isConnected)return;
-      v.el.classList.remove('krathong-sinking');
+      if(!v.el.isConnected) return;
+      v.el.classList.remove('krathong-bitten','krathong-sinking');
       v.el.classList.add('krathong-respawning');
       v.sinking=false;
       v.respawnPending=true;
@@ -555,63 +604,81 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
         if(!v.el.isConnected)return;
         v.respawnPending=false;
         v.el.classList.remove('krathong-respawning');
-      },250);
-    },1650);
+      },280);
+    },1720);
   }
   async function attack(){
-    if(busy||document.hidden) return false;
-    const W=sea.clientWidth,H=sea.clientHeight;
-    const targets=[...drifters.values()].filter(v=>v.el.isConnected&&!v.sinking&&!v.respawnPending&&v.x>W*.20&&v.x<W*.80&&v.y>H*.53&&v.y<H*.88);
+    if(busy || document.hidden) return false;
+    const W=sea.clientWidth, H=sea.clientHeight;
+    const targets=[...drifters.values()].filter(v=>v.el.isConnected && !v.sinking && !v.respawnPending && v.x>W*.20 && v.x<W*.82 && v.y>H*.53 && v.y<H*.88);
     if(!targets.length) return false;
     busy=true;
     const target=targets[Math.floor(Math.random()*targets.length)];
     const base=target.el.querySelector('.krathong-art');
-    const size=base?.getBoundingClientRect().width||76;
-    const sw=clamp(size*2.4,175,315);  // larger than the krathong, scales across mobile and desktop
+    const size=base?.getBoundingClientRect().width||82;
+    const sw=clamp(size*3.05, 210, 365);
     actor.style.setProperty('--sw',sw+'px');
-    const face=1;                       // shark travels right, its SVG head faces left
     actor.style.setProperty('--flip','1');
-    const waterline=H*.55;
-    let start=null,biteDone=false,burst=false;
-    const fromX=Math.max(W+sw, target.x+sw*1.7);
-    const targetX=target.x+sw*.3;
-    const y=clamp(target.y+sw*.05,waterline+sw*.05,H*.90);
+    const waterline=H*.545;
+    const mouthStartX=Math.max(W+sw*.55, target.x + sw*1.35);
+    const mouthBreachX=target.x + 6;
+    const mouthEndX=target.x - sw*.38;
+    const mouthStartY=clamp(target.y + sw*.58, waterline + sw*.45, H*.95);
+    const mouthSurfaceY=clamp(target.y - 4, waterline + sw*.02, H*.83);
+    const mouthDragY=clamp(target.y + sw*.78, waterline + sw*.30, H*.98);
+    let start=null, biteDone=false, burst=false;
     return await new Promise(resolve=>{
       function frame(now){
-        if(start===null)start=now;
+        if(start===null) start=now;
         const t=now-start;
-        if(t>=TOTAL||!target.el.isConnected){
-          if(!biteDone&&target.el.isConnected)target.el.classList.remove('krathong-sinking');
-          actor.classList.remove('on');actor.style.opacity='0';jaw.style.transform='';rig.style.transform='';
-          busy=false;resolve(true);return;
+        if(t>=TOTAL || !target.el.isConnected){
+          actor.classList.remove('on'); actor.style.opacity='0'; jaw.style.transform=''; rig.style.transform='';
+          busy=false; resolve(true); return;
         }
-        let cx=targetX,sub=.66,rot=0,jawDeg=0,opacity=1;
-        if(t<MOVE){
-          const z=smooth(t/MOVE);
-          cx=fromX+(targetX-fromX)*z;
-          sub=.70+Math.sin(t/170)*.035;
-          opacity=clamp(t/400,0,1);
-        }else if(t<MOVE+RISE){
-          const z=smooth((t-MOVE)/RISE);
-          sub=.70-z*.87;rot=z*29;jawDeg=-33*z;
-          if(!burst){burst=true;splash(14)}
-        }else if(t<MOVE+RISE+CHOMP){
-          const z=(t-MOVE-RISE)/CHOMP;
-          sub=-.17+Math.sin(z*13)*.024;
-          rot=29+Math.sin(z*11)*4;
-          jawDeg=-35+Math.sin(z*Math.PI*4)*18;
-          if(z>.22&&!biteDone){biteDone=true;splash(20);sinkKrathong(target)}
+        let mouthX=mouthBreachX, mouthY=mouthSurfaceY, bodyDip=.22, rot=0, jawDeg=0, opacity=1;
+        if(t<APPROACH){
+          const z=smooth(t/APPROACH);
+          mouthX=mouthStartX + (mouthBreachX - mouthStartX)*z;
+          mouthY=mouthStartY + (mouthSurfaceY + 12 - mouthStartY)*z;
+          bodyDip=.36 + Math.sin(t/210)*.05;
+          rot=-8 + z*16;
+          opacity=clamp(t/360,0,1);
+        }else if(t<APPROACH+BREACH){
+          const z=smooth((t-APPROACH)/BREACH);
+          mouthX=mouthBreachX + Math.sin(z*Math.PI)*5;
+          mouthY=(mouthSurfaceY + 8) + (mouthSurfaceY - (mouthSurfaceY + 8))*z;
+          bodyDip=.28 - z*.54;
+          rot=8 + z*17;
+          jawDeg=-10 - z*26;
+          if(!burst){ burst=true; splash(18); }
+        }else if(t<APPROACH+BREACH+CHOMP){
+          const z=(t-APPROACH-BREACH)/CHOMP;
+          mouthX=mouthBreachX - z*6;
+          mouthY=mouthSurfaceY + Math.sin(z*Math.PI)*3;
+          bodyDip=-.26 + Math.sin(z*Math.PI*2.7)*.05;
+          rot=25 + Math.sin(z*Math.PI*3.2)*3.5;
+          jawDeg=-36 + Math.sin(z*Math.PI*4)*14;
+          if(z>.22 && !biteDone){ biteDone=true; splash(24); sinkKrathong(target); }
+        }else if(t<APPROACH+BREACH+CHOMP+DRAG){
+          const z=smooth((t-APPROACH-BREACH-CHOMP)/DRAG);
+          mouthX=mouthBreachX + (mouthEndX - mouthBreachX)*z;
+          mouthY=mouthSurfaceY + (mouthDragY - mouthSurfaceY)*z;
+          bodyDip=-.2 + z*.7;
+          rot=22 - z*22;
+          jawDeg=-6 + z*6;
         }else{
-          const z=smooth((t-MOVE-RISE-CHOMP)/SUBMERGE);
-          sub=-.17+z*1.20;rot=29+z*15;jawDeg=0;
-          cx=targetX+sw*.35*z;opacity=1-clamp((z-.65)/.35,0,1);
+          const z=smooth((t-APPROACH-BREACH-CHOMP-DRAG)/FADE);
+          mouthX=mouthEndX - sw*.1*z;
+          mouthY=mouthDragY + sw*.14*z;
+          bodyDip=.5 + z*.25;
+          rot=-3 - z*10;
+          opacity=1-z;
         }
-        // The actor is an SVG scene, with the mouth close to target's waterline.
-        actor.style.left=(cx-sw*.95)+'px';
-        actor.style.top=(y-sw*1.5)+'px';
+        actor.style.left=(mouthX - sw*MOUTH_X)+'px';
+        actor.style.top=(mouthY - sw*MOUTH_Y)+'px';
         actor.style.opacity=opacity;
         actor.classList.add('on');
-        rig.style.transform=`translateY(${sub*sw*.55}px) rotate(${rot}deg)`;
+        rig.style.transform=`translateY(${bodyDip*sw*.55}px) rotate(${rot}deg)`;
         jaw.style.transform=`rotate(${jawDeg}deg)`;
         requestAnimationFrame(frame);
       }
@@ -619,10 +686,10 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
     });
   }
   async function loop(){
-    await sleep(5000);
+    await sleep(6500);
     while(true){
       const ok=await attack();
-      await sleep(ok?11000:2800);
+      await sleep(ok ? (9000 + Math.random()*7000) : 2800);
     }
   }
   loop();

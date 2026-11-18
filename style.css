@@ -752,3 +752,51 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
 }
 @media(max-width:760px){.marine-animal{opacity:.5}.marine-layer{z-index:3}}
 @media(prefers-reduced-motion:reduce){.marine-animal,.marine-animal svg{animation:none!important;opacity:.15}.sea-stage>.sea-item.krathong-sinking .sea-bob{animation:none!important}}
+
+
+/* V26: more realistic shark bite and sea-life swimming */
+.marine-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3;isolation:isolate}
+.marine-animal{position:absolute;left:0;top:0;width:72px;will-change:transform,opacity;transform:translate3d(-140px,-140px,0)}
+.marine-animal .marine-body{display:block;transform-origin:center;animation:marineGlide 4.6s ease-in-out infinite}
+.marine-animal svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 6px 6px rgba(3,26,40,.34))}
+.marine-fish .marine-body{animation-duration:1.4s}
+.marine-turtle .marine-body{animation-duration:3.8s}
+.marine-ray .marine-body{animation-duration:2.8s}
+.marine-dolphin .marine-body{animation-duration:2.2s}
+.marine-fish svg{animation:fishTail 1.05s ease-in-out infinite}
+.marine-turtle svg{animation:turtleSwim 2.9s ease-in-out infinite}
+.marine-ray svg{animation:rayGlide 2.6s ease-in-out infinite}
+.marine-dolphin svg{animation:dolphinSwim 2s ease-in-out infinite}
+@keyframes marineGlide{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes fishTail{0%,100%{transform:rotate(-3deg) scaleY(1)}50%{transform:rotate(3deg) scaleY(1.03)}}
+@keyframes turtleSwim{0%,100%{transform:rotate(-2deg) translateY(0)}50%{transform:rotate(2deg) translateY(-3px)}}
+@keyframes rayGlide{0%,100%{transform:scaleY(1) rotate(-1.5deg)}50%{transform:scaleY(.94) rotate(1.5deg)}}
+@keyframes dolphinSwim{0%,100%{transform:rotate(-4deg) translateY(0)}50%{transform:rotate(4deg) translateY(-4px)}}
+.shark-actor{z-index:9!important;filter:drop-shadow(0 14px 18px rgba(2,26,42,.68))}
+.shark-foam{opacity:.82;left:calc(var(--sw)*.22);bottom:calc(var(--sw)*-.02);width:calc(var(--sw)*1.18);height:calc(var(--sw)*.15)}
+.shark-ring{left:calc(var(--sw)*.2);bottom:calc(var(--sw)*-.04);width:calc(var(--sw)*1.25);height:calc(var(--sw)*.22)}
+.sea-stage>.sea-item.krathong-bitten{z-index:10!important;pointer-events:none}
+.sea-stage>.sea-item.krathong-bitten .sea-bob{animation:krathongBittenReal .28s ease-out forwards!important;transform-origin:52% 66%}
+.sea-stage>.sea-item.krathong-sinking{z-index:10!important;pointer-events:none}
+.sea-stage>.sea-item.krathong-sinking .sea-bob{animation:krathongSinkReal 1.48s ease-in forwards!important;transform-origin:52% 66%}
+.sea-stage>.sea-item.krathong-respawning{opacity:0!important;transition:none!important}
+@keyframes krathongBittenReal{
+  0%{transform:translate(0,0) rotate(0) scale(1);opacity:1;filter:brightness(1)}
+  45%{transform:translate(-10px,-8px) rotate(10deg) scale(1.06);opacity:1;filter:brightness(1.06)}
+  100%{transform:translate(-2px,12px) rotate(-16deg) scale(.93);opacity:.96;filter:brightness(.86)}
+}
+@keyframes krathongSinkReal{
+  0%{transform:translate(-2px,12px) rotate(-16deg) scale(.93);opacity:.96;filter:brightness(.86)}
+  30%{transform:translate(4px,44px) rotate(12deg) scale(.76);opacity:.74;filter:brightness(.62)}
+  68%{transform:translate(20px,98px) rotate(36deg) scale(.42);opacity:.3;filter:brightness(.38)}
+  100%{transform:translate(34px,150px) rotate(64deg) scale(.08);opacity:0;filter:brightness(.18)}
+}
+@media(max-width:760px){
+  .marine-animal{opacity:.56}
+  .marine-layer{z-index:3}
+  .shark-actor{filter:drop-shadow(0 11px 14px rgba(2,26,42,.58))}
+}
+@media(prefers-reduced-motion:reduce){
+  .marine-animal,.marine-animal .marine-body,.marine-animal svg{animation:none!important;opacity:.18}
+  .sea-stage>.sea-item.krathong-bitten .sea-bob,.sea-stage>.sea-item.krathong-sinking .sea-bob{animation:none!important}
+}
