@@ -323,9 +323,10 @@ function initSeaLife(){
   window.addEventListener('resize',syncMarineBounds,{passive:true});
 }
 
-// Start across the water surface. Each drifter has a stable horizontal direction.
+// New krathongs enter naturally from the LEFT instead of appearing in the middle.
+// Different lanes, gentle speed variation, and staggered entry prevent a sudden cluster.
 function randomPosition(sea){
-  return {x:sea.clientWidth*(.10+Math.random()*.80), y:sea.clientHeight*(.58+Math.random()*.27)};
+  return {x:-105, y:sea.clientHeight*(.58+Math.random()*.27)};
 }
 function hydrateSeaItemAssets(el){
   const img=el.querySelector('.side-avatar');
@@ -350,7 +351,7 @@ function seaItemHTML(item){
   const photo=safePhoto(item.photo);
   return `<span class="sea-bob"><span class="krathong-art">${artHTML(item)}</span>${photo?`<img src="${photo}" class="side-avatar" alt="รูปผู้ลอย">`:''}<span class="sea-name">${esc(item.name||'ไม่ระบุชื่อ')}</span></span>`;
 }
-function addDrifter(item){
+function addDrifter(item,entryIndex=0){
   const sea=$('seaBoard');
   const b=document.createElement('button');
   b.type='button'; b.className='sea-item';
@@ -359,11 +360,17 @@ function addDrifter(item){
   sea.appendChild(b);
   const pos=randomPosition(sea);
   const direction=1;
+  // A new batch begins outside the left edge and enters one after another.
+  // Initial entry is slightly faster; regular drifting resumes once on screen.
+  const speed=16+Math.random()*9;
   drifters.set(String(item.id),{
     el:b,item,x:pos.x,y:pos.y,
-    vx:14+Math.random()*11,vy:0,
+    vx:speed,vy:0,entrySpeed:30+Math.random()*12,
+    enterAt:performance.now()+entryIndex*410,
     direction,flow:Math.random()*Math.PI*2,turn:0,phase:Math.random()*7
   });
+  b.style.left=pos.x+'px';
+  b.style.top=pos.y+'px';
 }
 function renderSea(){
   $('total').textContent=Number(state.total||state.items.length).toLocaleString('th-TH');
@@ -383,13 +390,14 @@ function renderSea(){
 
   const token=++state.renderToken;
   let queue=visible.slice();
+  let nextEntry=0;
   const pump=()=>{
     if(token!==state.renderToken) return;
     const start=performance.now();
     while(queue.length && performance.now()-start<9){
       const item=queue.shift();
       const id=String(item.id);
-      if(!drifters.has(id)) addDrifter(item);
+      if(!drifters.has(id)) addDrifter(item,nextEntry++);
       else {
         const old=drifters.get(id);
         old.item=item;
@@ -429,11 +437,13 @@ function animateSea(ts){
 
     for(const v of drifters.values()){
       if(v.sinking || v.respawnPending) continue;
+      if(v.enterAt && ts<v.enterAt) continue;
       v.phase+=dt;
       v.flow+=dt;
       // All krathongs flow LEFT -> RIGHT; no reversing.
       v.vx=Math.abs(v.vx)||18;
-      v.x+=v.vx*dt;
+      v.x+=(v.enterAt && v.x<105 ? v.entrySpeed : v.vx)*dt;
+      if(v.x>=105) v.enterAt=0;
       v.y+=Math.sin(v.flow*.6)*dt*1.6;
       v.y=Math.max(h*.55,Math.min(h*.88,v.y));
       const margin=110;
