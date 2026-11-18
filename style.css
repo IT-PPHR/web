@@ -893,8 +893,9 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
 }
 
 
-/* V32: Sea scene HUD, count in top left and rotating wish at scene centre. */
-#seaBoard .sea-participant-count{
+/* V35: one definitive layout for the participant badge and top-centred wishes. */
+#seaBoard{position:relative}
+#seaBoard > .sea-participant-count{
   position:absolute;top:15px;left:15px;z-index:16;
   display:flex;flex-direction:column;align-items:flex-start;gap:2px;
   width:max-content;max-width:min(40%,260px);margin:0;
@@ -907,112 +908,52 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
 #seaBoard .sea-participant-caption{font-size:12px;line-height:1.35;color:#e1ebf3;font-weight:600}
 #seaBoard .sea-participant-count strong{font-size:28px;line-height:1.15;color:#f5d18d;font-variant-numeric:tabular-nums}
 #seaBoard .sea-participant-note{font-size:10px;line-height:1.3;color:#a9c6d6}
-#seaBoard .wish-ticker-wrap.sea-wishes{
-  position:absolute;left:50%;top:49%;z-index:16;
-  transform:translate(-50%,-50%);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:6px;margin:0;padding:0;
-  width:min(66%,620px);max-width:none;
-  text-align:center;pointer-events:none;
+#seaBoard > .wish-ticker-wrap.sea-wishes{
+  position:absolute;left:50%;right:auto;top:16px;bottom:auto;
+  transform:translateX(-50%);z-index:20;
+  display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
+  gap:5px;width:min(50%,620px);max-width:620px;
+  padding:0;margin:0;text-align:center;pointer-events:none;
 }
-#seaBoard .sea-wishes .ticker-head{
-  margin:0;width:auto;color:#f5d18d;font-size:12px;
-  font-weight:700;letter-spacing:.04em;text-align:center;
-  text-shadow:0 2px 7px rgba(0,0,0,.6);
+#seaBoard > .sea-wishes > .ticker-head{
+  color:#f5d18d;font-size:12px;line-height:1.4;font-weight:700;
+  letter-spacing:.04em;text-shadow:0 2px 7px rgba(0,0,0,.6);
+  text-align:center;margin:0;width:100%;white-space:normal;
 }
-#seaBoard .sea-wishes .wish-ticker{
-  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
-  line-clamp:2;overflow:hidden;
-  width:100%;min-height:0;max-height:75px;padding:10px 14px;margin:0;
-  border:1px solid rgba(200,225,238,.32);border-radius:14px;
-  background:rgba(6,28,48,.79);color:#fff0d4;
+#seaBoard > .sea-wishes > .wish-ticker{
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;
+  overflow:hidden;width:100%;min-height:0;max-height:75px;
+  padding:10px 14px;margin:0;border:1px solid rgba(200,225,238,.32);
+  border-radius:14px;background:rgba(6,28,48,.79);color:#fff0d4;
   -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
   box-shadow:0 5px 20px rgba(0,9,29,.18);
   font-size:13px;line-height:1.5;text-align:center;
   white-space:normal;overflow-wrap:anywhere;cursor:pointer;
   pointer-events:auto;
 }
-#seaBoard .sea-wishes .wish-ticker:hover{border-color:#f0cc87}
-@media (max-width:1040px){
-  #seaBoard .sea-participant-count{top:12px;left:12px;padding:8px 11px}
-  #seaBoard .sea-participant-count strong{font-size:24px}
-  #seaBoard .wish-ticker-wrap.sea-wishes{width:min(74%,540px);top:49%}
+#seaBoard > .sea-wishes > .wish-ticker:hover{border-color:#f0cc87}
+@media (min-width:761px) and (max-width:1180px){
+  #seaBoard > .wish-ticker-wrap.sea-wishes{width:min(51%,520px)}
 }
 @media (max-width:760px){
-  #seaBoard .sea-participant-count{top:10px;left:10px;max-width:50%;padding:7px 10px;gap:1px;border-radius:12px}
+  #seaBoard > .sea-participant-count{
+    top:10px;left:10px;max-width:50%;padding:7px 10px;
+    gap:1px;border-radius:12px;
+  }
   #seaBoard .sea-participant-caption{font-size:10px}
   #seaBoard .sea-participant-count strong{font-size:23px}
   #seaBoard .sea-participant-note{font-size:9px}
-  #seaBoard .wish-ticker-wrap.sea-wishes{width:calc(100% - 38px);max-width:none;top:49%;gap:4px}
-  #seaBoard .sea-wishes .ticker-head{font-size:11px}
-  #seaBoard .sea-wishes .wish-ticker{font-size:11px;line-height:1.45;max-height:64px;padding:8px 11px;border-radius:12px}
-}
-
-
-/* V33 — wishes at the top centre of the sea (count remains top-left). */
-#seaBoard .wish-ticker-wrap.sea-wishes{
-  top:16px;
-  left:50%;
-  transform:translateX(-50%);
-  width:min(50%,620px);
-  justify-content:flex-start;
-}
-@media (max-width:1040px){
-  #seaBoard .wish-ticker-wrap.sea-wishes{top:14px;width:min(54%,520px)}
-}
-@media (max-width:760px){
-  /* Put the ticker below the compact count to prevent overlap on narrow phones. */
-  #seaBoard .wish-ticker-wrap.sea-wishes{
-    top:86px;
-    left:50%;
-    transform:translateX(-50%);
-    width:calc(100% - 34px);
-  }
-}
-
-
-/* V34: top-centre sea wishes. Override the old horizon positioning on all devices. */
-#seaBoard{position:relative}
-#seaBoard > .wish-ticker-wrap.sea-wishes{
-  position:absolute;
-  top:16px;
-  bottom:auto;
-  left:50%;
-  right:auto;
-  transform:translateX(-50%);
-  width:min(52%,620px);
-  max-width:620px;
-  margin:0;
-  padding:0;
-  z-index:20;
-  align-items:stretch;
-}
-#seaBoard > .sea-wishes > .ticker-head{
-  width:100%;
-  text-align:center;
-  margin:0 0 5px;
-}
-#seaBoard > .sea-wishes > .wish-ticker{
-  display:-webkit-box;
-  min-height:0;
-  text-align:center;
-}
-@media (min-width:761px) and (max-width:1180px){
-  #seaBoard > .wish-ticker-wrap.sea-wishes{top:16px;width:min(52%,540px)}
-}
-@media (max-width:760px){
-  /* Keep the wish above the horizon while avoiding the participant-count card. */
+  /* On Retina iPhones 86 CSS px = ~172 screenshot pixels. This sits below the counter, well above the horizon. */
   #seaBoard > .wish-ticker-wrap.sea-wishes{
-    top:136px;
-    left:50%;
-    transform:translateX(-50%);
-    width:calc(100% - 44px);
-    max-width:none;
-    gap:4px;
+    top:86px;left:50%;transform:translateX(-50%);
+    width:calc(100% - 32px);max-width:none;gap:4px;
   }
   #seaBoard > .sea-wishes > .ticker-head{font-size:12px}
-  #seaBoard > .sea-wishes > .wish-ticker{font-size:12px;padding:8px 12px;max-height:58px}
+  #seaBoard > .sea-wishes > .wish-ticker{
+    font-size:12px;line-height:1.45;padding:8px 12px;
+    max-height:58px;border-radius:12px;
+  }
 }
 @media (max-width:380px){
-  #seaBoard > .wish-ticker-wrap.sea-wishes{top:128px;width:calc(100% - 34px)}
+  #seaBoard > .wish-ticker-wrap.sea-wishes{top:84px;width:calc(100% - 24px)}
 }
