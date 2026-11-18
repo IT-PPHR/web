@@ -843,3 +843,51 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
 }
 .marine-animal .marine-body{transform:none;animation:marineGlide 4s ease-in-out infinite}
 @media(prefers-reduced-motion:reduce){.marine-animal .marine-body{animation:none}}
+
+
+/* V31: shark swims half-submerged; articulated tail and fins plus subtle body roll. */
+.shark-actor{
+  isolation:isolate;
+}
+.shark-svg{
+  /* The lower half of the shark blends into the water, rather than floating above it. */
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 42%,rgba(0,0,0,.95) 48%,rgba(0,0,0,.62) 53%,rgba(0,0,0,.18) 59%,transparent 66%);
+  mask-image:linear-gradient(to bottom,#000 0%,#000 42%,rgba(0,0,0,.95) 48%,rgba(0,0,0,.62) 53%,rgba(0,0,0,.18) 59%,transparent 66%);
+  filter:drop-shadow(0 2px 2px rgba(0,20,36,.3));
+}
+.shark-actor.is-biting .shark-svg{
+  /* Reveal the jaws a little more for the bite, then submerge again. */
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 54%,rgba(0,0,0,.84) 61%,transparent 75%);
+  mask-image:linear-gradient(to bottom,#000 0%,#000 54%,rgba(0,0,0,.84) 61%,transparent 75%);
+}
+.shark-actor.is-diving .shark-svg{
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.85) 37%,transparent 57%);
+  mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.85) 37%,transparent 57%);
+}
+.shark-tail-fin{transform-box:view-box;transform-origin:365px 104px;animation:sharkTailPropel .65s ease-in-out infinite alternate;will-change:transform}
+.shark-pectoral-fin{transform-box:view-box;transform-origin:142px 146px;animation:sharkFinPaddle 1.25s ease-in-out infinite alternate}
+.shark-dorsal-fin{transform-box:view-box;transform-origin:218px 50px;animation:sharkFinGlide 2.3s ease-in-out infinite alternate}
+@keyframes sharkTailPropel{from{transform:rotate(-11deg) scaleX(.94)}to{transform:rotate(12deg) scaleX(1.04)}}
+@keyframes sharkFinPaddle{from{transform:rotate(-6deg) scaleY(.90)}to{transform:rotate(8deg) scaleY(1)}}
+@keyframes sharkFinGlide{from{transform:rotate(-2deg)}to{transform:rotate(2deg)}}
+/* Smaller, less luminous surface disturbance along the submerged body. */
+.shark-actor .shark-foam{
+  bottom:calc(var(--sw)*.22)!important;
+  left:calc(var(--sw)*.55)!important;
+  width:calc(var(--sw)*.95)!important;
+  height:calc(var(--sw)*.095)!important;
+  opacity:.48!important;
+  background:radial-gradient(ellipse at center,rgba(178,229,247,.45),rgba(112,188,218,.16) 50%,transparent 77%);
+  filter:blur(3px);
+  animation:sharkSurfaceRipple 1.25s ease-in-out infinite alternate;
+}
+.shark-actor .shark-ring{
+  bottom:calc(var(--sw)*.18)!important;
+  left:calc(var(--sw)*.51)!important;
+  width:calc(var(--sw)*1.00)!important;
+  height:calc(var(--sw)*.14)!important;
+}
+@keyframes sharkSurfaceRipple{from{transform:scaleX(.92);opacity:.3}to{transform:scaleX(1.06);opacity:.52}}
+@media(prefers-reduced-motion:reduce){
+ .shark-tail-fin,.shark-pectoral-fin,.shark-dorsal-fin,.shark-actor .shark-foam{animation:none!important}
+}

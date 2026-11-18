@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#081b36">
   <title>Phi Phi • Loy Krathong 2026</title>
-  <link rel="stylesheet" href="style.css?v=29">
+  <link rel="stylesheet" href="style.css?v=31">
 </head>
 <body>
   <div class="stars"></div>
@@ -45,8 +45,8 @@
     <linearGradient id="sharkJaw" x1="0" y1="105" x2="0" y2="155" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#dfe8ee"/><stop offset="1" stop-color="#b9c8d2"/></linearGradient>
     <radialGradient id="sharkMouth" cx=".4" cy=".4" r=".8"><stop offset="0" stop-color="#b3394a"/><stop offset="1" stop-color="#3d0c16"/></radialGradient>
   </defs>
-  <!-- tail -->
-  <path d="M365 90 C378 70 392 40 408 18 C402 52 400 78 396 100 C402 128 408 150 416 188 C392 168 376 146 360 118 Z" fill="url(#sharkFin)"/>
+  <!-- Tail and fins move independently of the body while swimming. -->
+  <g class="shark-tail-fin"><path d="M365 90 C378 70 392 40 408 18 C402 52 400 78 396 100 C402 128 408 150 416 188 C392 168 376 146 360 118 Z" fill="url(#sharkFin)"/></g>
   <!-- mouth cavity -->
   <path d="M95 135 C70 126 40 116 12 105 L36 150 L112 152 Z" fill="url(#sharkMouth)"/>
   <!-- lower jaw (animated) -->
@@ -58,9 +58,9 @@
   <!-- body + head -->
   <path d="M12 105 C50 70 120 48 196 50 L222 6 C230 30 240 46 258 56 C306 60 346 76 372 92 L368 120 C330 132 280 142 232 150 C186 160 150 156 112 152 L95 135 C70 126 40 116 12 105 Z" fill="url(#sharkSkin)"/>
   <!-- dorsal fin -->
-  <path d="M190 52 C204 34 214 18 224 2 C228 26 238 44 258 58 Z" fill="url(#sharkFin)"/>
+  <g class="shark-dorsal-fin"><path d="M190 52 C204 34 214 18 224 2 C228 26 238 44 258 58 Z" fill="url(#sharkFin)"/></g>
   <!-- pectoral fin -->
-  <path d="M150 136 C168 156 184 182 190 208 C168 194 142 176 120 150 Z" fill="url(#sharkFin)"/>
+  <g class="shark-pectoral-fin"><path d="M150 136 C168 156 184 182 190 208 C168 194 142 176 120 150 Z" fill="url(#sharkFin)"/></g>
   <!-- upper teeth -->
   <path d="M16.0 107.0L19.4 118.3L23.4 109.7ZM24.2 110.0L27.6 121.3L31.6 112.7ZM32.4 113.0L35.8 124.3L39.8 115.7ZM40.7 116.0L44.1 127.3L48.1 118.7ZM48.9 119.0L52.3 130.3L56.3 121.7ZM57.1 122.0L60.5 133.3L64.5 124.7ZM65.3 125.0L68.7 136.3L72.7 127.7ZM73.6 128.0L77.0 139.3L81.0 130.7ZM81.8 131.0L85.2 142.3L89.2 133.7Z" fill="#fffdf4"/>
   <!-- gills -->
@@ -239,6 +239,6 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=30"></script>
+  <script src="app.js?v=31"></script>
 </body>
 </html>

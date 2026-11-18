@@ -616,6 +616,7 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
   if(!actor || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const sea=$('seaBoard');
   const rig=actor.querySelector('.shark-rig'), jaw=actor.querySelector('.shark-jaw');
+  const tail=actor.querySelector('.shark-tail-fin');
   const ring=actor.querySelector('.shark-ring'), drops=actor.querySelector('.shark-drops');
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
@@ -710,7 +711,7 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
         if(start===null) start=now;
         const t=now-start;
         if(t>=TOTAL || !target.el.isConnected){
-          actor.classList.remove('on'); actor.style.opacity='0'; jaw.style.transform=''; rig.style.transform='';
+          actor.classList.remove('on','is-biting','is-diving'); actor.style.opacity='0'; jaw.style.transform=''; rig.style.transform='';
           busy=false; resolve(true); return;
         }
         const point=getTargetPoint(target);
@@ -720,34 +721,35 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
         const dragX=biteX - sw*.34;
         const dragY=clamp(point.y + sw*.78, waterline + sw*.30, H*.98);
         let mouthX=biteX, mouthY=biteY, bodyDip=.22, rot=0, jawDeg=0, opacity=1;
+        const swim=Math.sin(t/235), kick=Math.sin(t/160);
         if(t<APPROACH){
           const z=smooth(t/APPROACH);
           mouthX=mouthStartX + (biteX - mouthStartX)*z;
           mouthY=mouthStartY + (biteY + 12 - mouthStartY)*z;
-          bodyDip=.34 + Math.sin(t/210)*.05;
-          rot=-10 + z*18;
+          bodyDip=.34 + swim*.065;
+          rot=-10 + z*18 + swim*2.2;
           opacity=clamp(t/320,0,1);
         }else if(t<APPROACH+BREACH){
           const z=smooth((t-APPROACH)/BREACH);
           mouthX=biteX + Math.sin(z*Math.PI)*4;
           mouthY=(biteY + 8) + (biteY - (biteY + 8))*z;
-          bodyDip=.28 - z*.55;
-          rot=10 + z*18;
+          bodyDip=.28 - z*.55 + swim*.028;
+          rot=10 + z*18 + swim*1.8;
           jawDeg=-12 - z*30;
           if(!burst){ burst=true; splash(18); }
         }else if(t<APPROACH+BREACH+CHOMP){
           const z=(t-APPROACH-BREACH)/CHOMP;
           mouthX=biteX - z*4;
           mouthY=biteY + Math.sin(z*Math.PI)*2;
-          bodyDip=-.26 + Math.sin(z*Math.PI*2.8)*.05;
-          rot=28 + Math.sin(z*Math.PI*3.1)*3.6;
+          bodyDip=-.26 + Math.sin(z*Math.PI*2.8)*.045;
+          rot=28 + Math.sin(z*Math.PI*3.1)*3.6 + swim*.7;
           jawDeg=-40 + Math.sin(z*Math.PI*4.2)*15;
           if(z>.18 && !biteDone){ biteDone=true; splash(24); sinkKrathong(target); }
         }else if(t<APPROACH+BREACH+CHOMP+DRAG){
           const z=smooth((t-APPROACH-BREACH-CHOMP)/DRAG);
           mouthX=biteX + (dragX - biteX)*z;
           mouthY=biteY + (dragY - biteY)*z;
-          bodyDip=-.2 + z*.72;
+          bodyDip=-.2 + z*.72 + swim*.02;
           rot=24 - z*24;
           jawDeg=-7 + z*7;
         }else{
@@ -764,6 +766,9 @@ document.addEventListener('visibilitychange',()=>{ lastFrame=0; if(!document.hid
         actor.style.top=(mouthY-sw*1.22)+'px';
         actor.style.opacity=opacity;
         actor.classList.add('on');
+        actor.classList.toggle('is-biting',t>=APPROACH && t<APPROACH+BREACH+CHOMP);
+        actor.classList.toggle('is-diving',t>=APPROACH+BREACH+CHOMP);
+        actor.style.setProperty('--swim-kick',kick.toFixed(3));
         rig.style.transform=`translateY(${bodyDip*sw*.55}px) rotate(${rot}deg)`;
         jaw.style.transform=`rotate(${jawDeg}deg)`;
         alignMouth(mouthX,mouthY);
