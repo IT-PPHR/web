@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#081b36">
   <title>Phi Phi • Loy Krathong 2026</title>
-  <link rel="stylesheet" href="style.css?v=35">
+  <link rel="stylesheet" href="style.css?v=37">
 </head>
 <body>
   <div class="stars"></div>
@@ -32,14 +32,14 @@
         <div class="island right"></div>
         <div class="sea-surface"></div>
         <!-- Participant count and rotating wishes live inside the sea scene. -->
-        <div class="sea-participant-count" aria-live="polite">
-          <span class="sea-participant-caption">ผู้ร่วมลอยกระทงทั้งหมด</span>
-          <strong id="total">—</strong>
-          <span class="sea-participant-note">แสดงสุ่ม 20 ใบ/นาที</span>
-        </div>
-        <div class="wish-ticker-wrap sea-wishes">
-          <div class="ticker-head">💌 คำอธิษฐานหมุนเวียน</div>
-          <button id="wishTicker" class="wish-ticker" type="button" aria-label="เปิดคำอธิษฐาน">กำลังโหลดคำอธิษฐาน...</button>
+        <div class="sea-hud">
+          <div class="sea-participant-count" aria-live="polite">
+            <span class="sea-participant-caption">จำนวนกระทง</span>
+            <strong id="total">—</strong>
+          </div>
+          <div class="wish-ticker-wrap sea-wishes">
+            <button id="wishTicker" class="wish-ticker" type="button" aria-label="แตะเพื่ออ่านคำอธิษฐานฉบับเต็ม">กำลังโหลดคำอธิษฐาน...</button>
+          </div>
         </div>
         <div id="sharkActor" class="shark-actor" aria-hidden="true">
           <div class="shark-clip"><div class="shark-flip"><div class="shark-rig"><svg class="shark-svg" viewBox="0 0 420 230" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -245,6 +245,6 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=33"></script>
+  <script src="app.js?v=37"></script>
 </body>
 </html>

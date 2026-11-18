@@ -482,8 +482,11 @@ function renderWishTicker(){
   if(!source.length){node.textContent='ร่วมลอยกระทงเพื่อแบ่งปันคำอธิษฐานของคุณ';node.onclick=null;return;}
   state.tickerIndex%=source.length;
   const item=source[state.tickerIndex];
-  const short=String(item.wish).length>88?String(item.wish).slice(0,88)+'…':String(item.wish);
-  node.textContent='💫 '+(item.name||'ผู้ร่วมกิจกรรม')+' : '+short+'  ·  แตะเพื่ออ่านทั้งหมด';
+  const wish=String(item.wish).trim();
+  const name=String(item.name||'ผู้ร่วมกิจกรรม').trim();
+  const prefix=name+' : ';
+  const maxWishLength=Math.max(25,115-prefix.length);
+  node.textContent=prefix+(wish.length>maxWishLength?wish.slice(0,maxWishLength)+'…':wish);
   node.onclick=()=>displayWish(item);
 }
 async function loadSea(){

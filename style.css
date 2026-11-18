@@ -893,67 +893,56 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
 }
 
 
-/* V35: one definitive layout for the participant badge and top-centred wishes. */
+/* V36: compact single-row HUD, left count + wish-only compact card. */
 #seaBoard{position:relative}
-#seaBoard > .sea-participant-count{
-  position:absolute;top:15px;left:15px;z-index:16;
-  display:flex;flex-direction:column;align-items:flex-start;gap:2px;
-  width:max-content;max-width:min(40%,260px);margin:0;
-  padding:10px 15px 11px;border-radius:15px;
-  background:rgba(5,24,43,.76);border:1px solid rgba(194,219,231,.27);
+#seaBoard > .sea-hud{
+  position:absolute;top:12px;left:12px;right:12px;z-index:20;
+  display:flex;align-items:stretch;gap:10px;pointer-events:none;
+}
+#seaBoard .sea-hud > .sea-participant-count{
+  position:relative;top:auto;left:auto;right:auto;bottom:auto;transform:none;
+  flex:0 0 136px;min-width:0;max-width:none;width:136px;min-height:64px;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;
+  margin:0;padding:8px 10px;border-radius:14px;
+  background:rgba(5,24,43,.79);border:1px solid rgba(194,219,231,.30);
   box-shadow:0 7px 22px rgba(0,8,23,.2);
   -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
-  pointer-events:none;
+  text-align:center;pointer-events:none;
 }
-#seaBoard .sea-participant-caption{font-size:12px;line-height:1.35;color:#e1ebf3;font-weight:600}
-#seaBoard .sea-participant-count strong{font-size:28px;line-height:1.15;color:#f5d18d;font-variant-numeric:tabular-nums}
-#seaBoard .sea-participant-note{font-size:10px;line-height:1.3;color:#a9c6d6}
-#seaBoard > .wish-ticker-wrap.sea-wishes{
-  position:absolute;left:50%;right:auto;top:16px;bottom:auto;
-  transform:translateX(-50%);z-index:20;
-  display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
-  gap:5px;width:min(50%,620px);max-width:620px;
-  padding:0;margin:0;text-align:center;pointer-events:none;
+#seaBoard .sea-hud .sea-participant-caption{font-size:12px;line-height:1.3;color:#e1ebf3;font-weight:650;white-space:nowrap}
+#seaBoard .sea-hud .sea-participant-count strong{font-size:27px;line-height:1.12;color:#f5d18d;font-variant-numeric:tabular-nums;text-align:center}
+#seaBoard .sea-hud > .wish-ticker-wrap.sea-wishes{
+  position:relative;top:auto;left:auto;right:auto;bottom:auto;transform:none;
+  flex:1 1 auto;min-width:0;width:auto;max-width:440px;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto;padding:0;gap:0;pointer-events:none;
 }
-#seaBoard > .sea-wishes > .ticker-head{
-  color:#f5d18d;font-size:12px;line-height:1.4;font-weight:700;
-  letter-spacing:.04em;text-shadow:0 2px 7px rgba(0,0,0,.6);
-  text-align:center;margin:0;width:100%;white-space:normal;
-}
-#seaBoard > .sea-wishes > .wish-ticker{
+#seaBoard .sea-hud .sea-wishes .ticker-head{display:none!important}
+#seaBoard .sea-hud .sea-wishes > .wish-ticker{
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;
-  overflow:hidden;width:100%;min-height:0;max-height:75px;
-  padding:10px 14px;margin:0;border:1px solid rgba(200,225,238,.32);
-  border-radius:14px;background:rgba(6,28,48,.79);color:#fff0d4;
+  overflow:hidden;width:100%;max-width:440px;min-height:0;max-height:64px;
+  padding:10px 13px;margin:0;border:1px solid rgba(200,225,238,.32);
+  border-radius:14px;background:rgba(6,28,48,.83);color:#fff0d4;
   -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
   box-shadow:0 5px 20px rgba(0,9,29,.18);
-  font-size:13px;line-height:1.5;text-align:center;
-  white-space:normal;overflow-wrap:anywhere;cursor:pointer;
-  pointer-events:auto;
+  font-size:13px;line-height:1.45;text-align:center;
+  white-space:normal;overflow-wrap:anywhere;cursor:pointer;pointer-events:auto;
 }
-#seaBoard > .sea-wishes > .wish-ticker:hover{border-color:#f0cc87}
-@media (min-width:761px) and (max-width:1180px){
-  #seaBoard > .wish-ticker-wrap.sea-wishes{width:min(51%,520px)}
-}
-@media (max-width:760px){
-  #seaBoard > .sea-participant-count{
-    top:10px;left:10px;max-width:50%;padding:7px 10px;
-    gap:1px;border-radius:12px;
+#seaBoard .sea-hud .sea-wishes > .wish-ticker:hover{border-color:#f0cc87}
+@media(max-width:760px){
+  #seaBoard > .sea-hud{top:10px;left:10px;right:10px;gap:7px}
+  #seaBoard .sea-hud > .sea-participant-count{
+    flex-basis:105px;width:105px;min-height:54px;padding:7px 6px;border-radius:12px;gap:1px;
   }
-  #seaBoard .sea-participant-caption{font-size:10px}
-  #seaBoard .sea-participant-count strong{font-size:23px}
-  #seaBoard .sea-participant-note{font-size:9px}
-  /* On Retina iPhones 86 CSS px = ~172 screenshot pixels. This sits below the counter, well above the horizon. */
-  #seaBoard > .wish-ticker-wrap.sea-wishes{
-    top:86px;left:50%;transform:translateX(-50%);
-    width:calc(100% - 32px);max-width:none;gap:4px;
-  }
-  #seaBoard > .sea-wishes > .ticker-head{font-size:12px}
-  #seaBoard > .sea-wishes > .wish-ticker{
-    font-size:12px;line-height:1.45;padding:8px 12px;
-    max-height:58px;border-radius:12px;
+  #seaBoard .sea-hud .sea-participant-caption{font-size:11px}
+  #seaBoard .sea-hud .sea-participant-count strong{font-size:25px}
+  #seaBoard .sea-hud > .wish-ticker-wrap.sea-wishes{max-width:none;margin:0}
+  #seaBoard .sea-hud .sea-wishes > .wish-ticker{
+    font-size:12px;line-height:1.35;padding:8px 9px;max-height:64px;border-radius:12px;
   }
 }
-@media (max-width:380px){
-  #seaBoard > .wish-ticker-wrap.sea-wishes{top:84px;width:calc(100% - 24px)}
+@media(max-width:370px){
+  #seaBoard .sea-hud > .sea-participant-count{flex-basis:94px;width:94px}
+  #seaBoard .sea-hud .sea-participant-caption{font-size:10px}
+  #seaBoard .sea-hud .sea-wishes > .wish-ticker{font-size:11px;padding:7px}
 }
