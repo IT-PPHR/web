@@ -1095,3 +1095,56 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
  #builderModal .krathong-preview{top:55%}
  .sea-stage>.sea-item .sea-name{bottom:-10px}
 }
+
+
+/* V44 — higher candles/incense per base, flowers seated deeper into the base. */
+.art-base-box{transform:translateY(.14em) scale(1.02)}
+.art-flower-box{z-index:2;transform:translateY(.305em) scale(.88)}
+.art-candle-box{z-index:4;transform:translateY(.1em) scale(1.03)}
+.flower-shape{top:.45em;filter:drop-shadow(0 .016em .017em rgba(0,0,0,.22))}
+.flower-lotus{font-size:.66em}
+.flower-rose,.flower-orchid,.flower-sunflower{font-size:.59em}
+.flower-jasmine,.flower-tulip{font-size:.58em}
+.base-style-lotus .art-flower-box{transform:translateY(.295em) scale(.9)}
+.base-style-orchid .art-flower-box{transform:translateY(.325em) scale(.84)}
+.base-style-jasmine .art-flower-box{transform:translateY(.315em) scale(.88)}
+.base-style-rose .art-flower-box{transform:translateY(.255em) scale(.78)}
+.base-style-leaf .art-flower-box{transform:translateY(.305em) scale(.88)}
+.base-style-gold .art-flower-box{transform:translateY(.275em) scale(.89)}
+.base-style-lotus .art-candle-box{transform:translateY(.09em) scale(1.04)}
+.base-style-orchid .art-candle-box{transform:translateY(.1em) scale(1.02)}
+.base-style-jasmine .art-candle-box{transform:translateY(.09em) scale(1.02)}
+.base-style-rose .art-candle-box{transform:translateY(.12em) scale(.98)}
+.base-style-leaf .art-candle-box{transform:translateY(.11em) scale(1.01)}
+.base-style-gold .art-candle-box{transform:translateY(.09em) scale(1.03)}
+.candle-classic{top:-.13em;width:.4em;height:.94em}
+.candle-classic i{width:.13em;height:.68em;bottom:0;left:.135em}
+.candle-classic::after{top:-.15em;left:.145em;width:.105em;height:.18em}
+.candle-pair{top:-.14em;width:.62em;height:.94em}
+.candle-pair i{width:.12em;height:.66em;bottom:0}
+.candle-pair i:nth-child(1){left:.12em}
+.candle-pair i:nth-child(2){left:.37em}
+.candle-pair::before{top:-.15em;left:.125em;width:.1em;height:.18em}
+.candle-pair::after{top:-.15em;left:.375em;width:.1em;height:.18em}
+.candle-incense{top:-.17em;width:.8em;height:1.08em}
+.candle-incense i{width:.045em;height:.64em;bottom:.12em}
+.candle-incense i:nth-child(1){left:.16em}
+.candle-incense i:nth-child(2){left:.37em}
+.candle-incense i:nth-child(3){left:.58em}
+.candle-incense b{width:.09em;height:.13em;top:.02em}
+.candle-incense b:nth-child(4){left:.138em}
+.candle-incense b:nth-child(5){left:.348em}
+.candle-incense b:nth-child(6){left:.558em}
+.candle-incense::after{left:.05em;right:.04em;top:-.01em;height:.22em}
+.candle-golden,.candle-lantern,.candle-sparkle{top:-.07em}
+@media(max-width:760px){
+  .art-flower-box{transform:translateY(.315em) scale(.87)}
+  .art-candle-box{transform:translateY(.08em) scale(1.05)}
+  .base-style-rose .art-flower-box{transform:translateY(.26em) scale(.77)}
+  .base-style-orchid .art-flower-box{transform:translateY(.33em) scale(.83)}
+  .base-style-gold .art-flower-box{transform:translateY(.28em) scale(.88)}
+  .candle-classic{top:-.16em}
+  .candle-pair{top:-.17em}
+  .candle-incense{top:-.2em}
+  .candle-golden,.candle-lantern,.candle-sparkle{top:-.1em}
+}

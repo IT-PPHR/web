@@ -25,7 +25,7 @@ let pendingSeaEntries=[];
 let nextSeaEntryAt=0;
 const SEA_ENTRY_GAP_MS=800;
 const SEA_SAMPLE_SIZE=10;
-const SEA_REFRESH_MS=10000;
+const SEA_REFRESH_MS=30000;
 const marineLife=[];
 let lastFrame=0;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -418,6 +418,7 @@ function addDrifter(item){
     el:b,item,x:pos.x,y:pos.y,
     vx:speed,vy:0,entrySpeed:42+Math.random()*8,
     entering:true,
+    retiring:false,
     direction,flow:Math.random()*Math.PI*2,turn:0,phase:Math.random()*7
   });
   b.style.left=pos.x+'px';
@@ -432,7 +433,8 @@ function renderSea(){
   }
   const ids=new Set(visible.map(x=>String(x.id)));
   for(const [id,v] of drifters){
-    if(!ids.has(id)){ v.el.remove(); drifters.delete(id); }
+    if(!ids.has(id)) v.retiring=true;
+    else if(v.retiring) v.retiring=false;
   }
   sea.querySelectorAll('.empty').forEach(x=>x.remove());
   if(!visible.length){
@@ -452,6 +454,7 @@ function renderSea(){
     const old=drifters.get(id);
     if(old){
       old.item=item;
+      old.retiring=false;
       if(old.el.dataset.itemKey!==seaItemKey(item)) patchDrifterNode(old.el,item);
     }else if(pendingById.has(id)){
       Object.assign(pendingById.get(id),item); // latest content, same queue position
@@ -500,7 +503,7 @@ function animateSea(ts){
       m.el.style.transform=`translate3d(${m.x}px,${m.y}px,0) scaleX(${m.dir>0?1:-1}) rotate(${tilt}deg)`;
     }
 
-    for(const v of drifters.values()){
+    for(const [id,v] of drifters){
       if(v.sinking || v.respawnPending) continue;
       v.phase+=dt;
       v.flow+=dt;
@@ -512,6 +515,11 @@ function animateSea(ts){
       v.y=Math.max(h*.55,Math.min(h*.88,v.y));
       const margin=110;
       if(v.x>w+margin){
+        if(v.retiring){
+          v.el.remove();
+          drifters.delete(id);
+          continue;
+        }
         v.x=-margin;
         v.y=h*(.58+Math.random()*.27);
       }
@@ -540,7 +548,7 @@ async function loadSea(){
   if(loadSea.busy) return;
   loadSea.busy=true;
   try{
-    // Refresh a lighter random set more frequently: 10 krathongs every 10 seconds.
+    // Refresh a lighter random set every 30 seconds: 10 krathongs per cycle.
     // Newly released personal krathongs are still injected immediately on the client side.
     const out=await request('list',{limit:String(SEA_SAMPLE_SIZE),random:String(SEA_SAMPLE_SIZE)},'GET');
     const nextMinute=out.minute ?? Math.floor(Date.now()/60000);
