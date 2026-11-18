@@ -725,3 +725,30 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
   .sea-stage>.sea-item .side-avatar{width:31px;height:31px;left:4px;top:32px}
   .sea-stage>.sea-item .sea-name{font-size:10px;max-width:106px;bottom:-5px;padding:3px 6px}
 }
+
+
+/* Sea life and shark-bite sinking – latest uploaded base */
+.marine-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3;isolation:isolate}
+.marine-animal{position:absolute;left:0;width:var(--marine-size);opacity:.66;filter:drop-shadow(0 5px 4px #041b2a55);animation:marineMove var(--marine-duration) ease-in-out var(--marine-delay) infinite alternate;will-change:transform}
+.marine-animal svg{display:block;width:100%;height:auto;animation:marineBob 3.5s ease-in-out infinite alternate}
+.marine-animal:nth-child(2n) svg{transform:scaleX(-1);animation:marineBobReverse 4.2s ease-in-out infinite alternate}
+.marine-dolphin{opacity:.48}
+.marine-ray{opacity:.5}
+.marine-turtle{opacity:.55}
+.marine-fish{opacity:.72}
+@keyframes marineMove{from{transform:translate3d(-145px,var(--depth),0)}to{transform:translate3d(var(--travel),calc(var(--depth) + 12px),0)}}
+@keyframes marineBob{from{translate:0 -3px}to{translate:0 4px}}
+@keyframes marineBobReverse{from{translate:0 4px}to{translate:0 -4px}}
+.shark-actor{z-index:9!important;filter:drop-shadow(0 9px 13px #021a2aa6)}
+.shark-foam{opacity:.68}
+.sea-stage>.sea-item.krathong-sinking{z-index:10!important;pointer-events:none}
+.sea-stage>.sea-item.krathong-sinking .sea-bob{animation:krathongSink 1.65s ease-in forwards!important;transform-origin:50% 70%}
+.sea-stage>.sea-item.krathong-respawning{opacity:0!important;transition:none!important}
+@keyframes krathongSink{
+  0%{transform:translateY(0) rotate(0) scale(1);opacity:1;filter:brightness(1)}
+  28%{transform:translateY(9px) rotate(-19deg) scale(1.05);opacity:1;filter:brightness(.9)}
+  55%{transform:translateY(36px) rotate(24deg) scale(.8);opacity:.65;filter:brightness(.6)}
+  100%{transform:translateY(105px) rotate(58deg) scale(.18);opacity:0;filter:brightness(.2)}
+}
+@media(max-width:760px){.marine-animal{opacity:.5}.marine-layer{z-index:3}}
+@media(prefers-reduced-motion:reduce){.marine-animal,.marine-animal svg{animation:none!important;opacity:.15}.sea-stage>.sea-item.krathong-sinking .sea-bob{animation:none!important}}
