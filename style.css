@@ -946,3 +946,27 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
   #seaBoard .sea-hud .sea-participant-caption{font-size:10px}
   #seaBoard .sea-hud .sea-wishes > .wish-ticker{font-size:11px;padding:7px}
 }
+
+
+/* V38 – taller sea on phones/tablets; the release button and footer follow the expanded scene.
+   Use viewport units instead of blank spacer blocks so the additional space belongs to the sea. */
+@media (max-width:760px){
+  .hero-sea{min-height:0;gap:16px;padding-bottom:14px}
+  .hero-sea > .sea-stage{
+    min-height:680px;
+    min-height:max(680px,88svh);
+    height:auto;
+  }
+  .hero-sea .hero-actions{margin-top:2px}
+  main{padding-bottom:0}
+  footer{padding-top:22px;padding-bottom:max(36px,env(safe-area-inset-bottom));}
+}
+@media (min-width:761px) and (max-width:1180px),
+       (min-width:761px) and (max-width:1400px) and (pointer:coarse){
+  .hero-sea > .sea-stage{min-height:max(700px,80svh)}
+  .hero-sea{padding-bottom:18px}
+}
+@media (min-width:761px) and (max-width:1180px) and (orientation:landscape),
+       (min-width:761px) and (max-width:1400px) and (pointer:coarse) and (orientation:landscape){
+  .hero-sea > .sea-stage{min-height:max(560px,82svh)}
+}
