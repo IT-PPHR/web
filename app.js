@@ -78,7 +78,7 @@ function buildCandle(type){
 }
 function artHTML(item){
   const parts=getParts(item);
-  return `<span class="art-stack"><span class="art-base-box">${buildBase(parts.base[0])}</span><span class="art-flower-box">${buildFlower(parts.flower[0])}</span><span class="art-candle-box">${buildCandle(parts.candle[0])}</span></span>`;
+  return `<span class="art-stack base-style-${parts.base[0]}"><span class="art-base-box">${buildBase(parts.base[0])}</span><span class="art-flower-box">${buildFlower(parts.flower[0])}</span><span class="art-candle-box">${buildCandle(parts.candle[0])}</span></span>`;
 }
 
 function updatePreview(){

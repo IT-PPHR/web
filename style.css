@@ -1034,3 +1034,64 @@ body.is-releasing-krathong #builderModal .x, body.is-releasing-krathong #cancelB
  #builderModal .wizard-summary-row{grid-template-columns:84px minmax(0,1fr);font-size:13px}
  #builderModal .sticky-actions{position:sticky;bottom:0;padding-bottom:max(7px,env(safe-area-inset-bottom))}
 }
+
+
+/* V42 — Composition refinement: base, flower, incense/candles read as one object. */
+.krathong-art{isolation:isolate}
+.art-stack{filter:drop-shadow(0 .045em .035em rgba(0,12,20,.24))}
+/* Art layers have a shared centerline and a coherent silhouette. */
+.art-base-box{z-index:1;transform:translateY(.13em) scale(1.02)}
+.art-flower-box{z-index:3;transform:translateY(.235em) scale(.98)}
+.art-candle-box{z-index:2;transform:translateY(.19em) scale(.98)}
+.flower-shape{top:.36em;filter:drop-shadow(0 .016em .017em rgba(0,0,0,.28))}
+.flower-lotus{font-size:.72em}
+.flower-rose,.flower-orchid,.flower-sunflower{font-size:.66em}
+.flower-jasmine,.flower-tulip{font-size:.65em}
+/* Plant stems deeper into the central flower mass; keep flames bright. */
+.candle-classic{top:.105em}
+.candle-pair{top:.095em}
+.candle-incense{top:.09em}
+.candle-golden,.candle-lantern,.candle-sparkle{top:.115em}
+.candle-shape{filter:drop-shadow(0 0 .04em rgba(255,220,140,.26))}
+/* Visually distinct base materials and rim/underside treatment. */
+.base-shape{filter:drop-shadow(0 .035em .028em rgba(1,31,28,.36))}
+.base-lotus{border-radius:50%}
+.base-lotus::before{content:"";position:absolute;left:.11em;right:.11em;bottom:.035em;height:.23em;background:radial-gradient(ellipse at 50% 28%,#b5f2a1,#398954 70%,#215b3d);border-radius:50%;box-shadow:0 .055em .025em #15452d;z-index:-1}
+.base-lotus i{box-shadow:inset 0 .04em .035em rgba(255,255,255,.28),inset 0 -.045em .025em rgba(11,75,31,.35)}
+.base-orchid{transform:translateX(-50%) scaleX(.95)}
+.base-orchid::before{content:"";position:absolute;left:.2em;right:.2em;bottom:.02em;height:.23em;background:linear-gradient(#529545,#1d5030);border-radius:45% 45% 38% 38%;box-shadow:0 .035em .015em rgba(5,30,18,.38);z-index:-1}
+.base-orchid i{background:linear-gradient(110deg,#d0f9b4 0%,#7edb78 33%,#347c3b 100%);filter:drop-shadow(.018em .015em .012em rgba(4,46,20,.2))}
+.base-orchid i::after{content:"";position:absolute;left:50%;top:20%;height:65%;border-left:.015em solid rgba(21,99,42,.4)}
+.base-jasmine::before{content:"";position:absolute;left:.18em;right:.18em;bottom:.06em;height:.33em;border-radius:55%;background:radial-gradient(ellipse at 50% 10%,#a8df78,#397d3f 65%,#204b33);z-index:-1}
+.base-jasmine i{filter:drop-shadow(0 .018em .01em rgba(0,53,25,.3))}
+.base-rose{height:.86em}
+.base-rose em{bottom:.12em;height:.43em;border-radius:.08em .08em .22em .22em;background:repeating-linear-gradient(90deg,#d9ac72 0 .065em,#a66c3b .07em .13em);box-shadow:inset 0 -.09em .03em #704223,0 .035em .025em #50331e}
+.base-rose i{bottom:.19em;background:linear-gradient(90deg,#a36535,#f0c58a,#84502d)}
+.base-rose::before,.base-rose::after{top:.04em;border-color:#be8a54;border-width:.045em}
+.base-leaf{height:.80em}
+.base-leaf::before{content:"";position:absolute;left:.07em;right:.07em;bottom:.04em;height:.17em;background:repeating-linear-gradient(90deg,#c8a16c 0 .08em,#8d6338 .09em .17em);border-radius:.08em;box-shadow:0 .04em .025em rgba(41,28,12,.5);z-index:-1}
+.base-leaf em{bottom:.18em;height:.36em;background:linear-gradient(145deg,#cbf49b,#5dc26c 55%,#347e4d);clip-path:polygon(0 60%,48% 0,100% 60%,75% 100%,25% 100%);border-radius:0;filter:drop-shadow(0 .015em .012em rgba(0,60,23,.2))}
+.base-leaf i{bottom:.04em;background:linear-gradient(90deg,#e0bd82,#9d6936)}
+.base-gold::before{content:"";position:absolute;left:.12em;right:.12em;bottom:.02em;height:.27em;border-radius:50%;background:radial-gradient(ellipse at 50% 5%,#ffeeb0,#d69b36 61%,#a36512);box-shadow:0 .04em .025em rgba(79,43,5,.4);z-index:-1}
+.base-gold i{background:linear-gradient(115deg,#fff0ba 10%,#efbe4d 53%,#bb7412 100%);filter:drop-shadow(0 .012em .015em rgba(83,50,4,.27))}
+.base-gold em{background:linear-gradient(#e9ba60,#a86c1c);box-shadow:0 .025em .025em #75450d}
+/* Each base has its own flower seat; prevents floating layers and visual sameness. */
+.base-style-orchid .art-flower-box{transform:translateY(.26em) scale(.89)}
+.base-style-jasmine .art-flower-box{transform:translateY(.255em) scale(.94)}
+.base-style-rose .art-flower-box{transform:translateY(.205em) scale(.86)}
+.base-style-leaf .art-flower-box{transform:translateY(.245em) scale(.94)}
+.base-style-gold .art-flower-box{transform:translateY(.22em) scale(.94)}
+.base-style-rose .art-candle-box{transform:translateY(.21em) scale(.94)}
+.base-style-orchid .art-candle-box{transform:translateY(.20em) scale(.98)}
+/* Name labels are kept clear of the base's bottom edge in preview and at sea. */
+#builderModal .preview-name{bottom:-.24em;min-width:70px;max-width:min(170px,80%);padding:4px 9px;border:1px solid rgba(240,204,135,.85);box-shadow:0 3px 10px rgba(2,15,28,.45);z-index:9}
+#builderModal .krathong-preview{top:57%}
+#builderModal .preview-sky{overflow:visible}
+#builderModal #krathongPreview{isolation:isolate}
+.sea-stage>.sea-item .sea-name{bottom:-12px;z-index:9;box-shadow:0 .12em .27em rgba(0,9,20,.48)}
+.sea-stage>.sea-item .sea-bob{padding-bottom:8px}
+@media(max-width:760px){
+ #builderModal .preview-name{bottom:-.21em;font-size:12px;max-width:138px}
+ #builderModal .krathong-preview{top:55%}
+ .sea-stage>.sea-item .sea-name{bottom:-10px}
+}
