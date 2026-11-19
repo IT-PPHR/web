@@ -7434,3 +7434,75 @@ body.is-releasing-krathong #cancelBuilder {
     max-width: calc(100% - 24px);
   }
 }
+
+
+/* V64: Thai event title in header + tighter footer bottom on mobile */
+header .brand-event {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  white-space: normal;
+  max-width: 290px;
+}
+header .brand-event-title {
+  display: block;
+  font-weight: 800;
+  font-size: clamp(20px, 2vw, 32px);
+  line-height: 1.05;
+  letter-spacing: .3px;
+  color: #f3cc80;
+}
+header .brand-event-sub {
+  display: block;
+  font-weight: 600;
+  font-size: clamp(9px, .85vw, 12px);
+  line-height: 1.15;
+  letter-spacing: 2px;
+  color: rgba(243,204,128,.88);
+}
+@media (min-width:761px) and (max-width:1180px) {
+  header .brand-event {
+    max-width: 250px;
+  }
+  header .brand-event-title {
+    font-size: clamp(17px, 2vw, 24px);
+  }
+  header .brand-event-sub {
+    font-size: 10px;
+    letter-spacing: 1.6px;
+  }
+}
+@media (max-width:760px) {
+  header .brand-with-logo {
+    align-items: center;
+  }
+  header .brand-event {
+    gap: 1px;
+    max-width: 190px;
+  }
+  header .brand-event-title {
+    font-size: clamp(13px, 4.4vw, 22px);
+    line-height: 1.05;
+  }
+  header .brand-event-sub {
+    font-size: clamp(7px, 2vw, 9px);
+    letter-spacing: 1.5px;
+  }
+  footer {
+    padding: 14px 10px max(6px, env(safe-area-inset-bottom));
+  }
+}
+@media (max-width:390px) {
+  header .brand-event {
+    max-width: 168px;
+  }
+  header .brand-event-title {
+    font-size: clamp(12px, 4.1vw, 18px);
+  }
+  header .brand-event-sub {
+    font-size: 7px;
+    letter-spacing: 1.2px;
+  }
+}
