@@ -1836,6 +1836,56 @@ function animateSea(ts) {
   requestAnimationFrame(animateSea);
 }
 
+// V59 — randomly spotlight a real wish attached to a krathong currently visible on the sea.
+// This is purely visual: no API call, extra network request, or generated/demo wishes.
+const SEA_WISH_SPOTLIGHT_MS = 10500;
+const SEA_WISH_VISIBLE_MS = 6300;
+let seaWishSpotlight = null;
+let seaWishHideTimer = 0;
+let lastSpotlightId = '';
+
+function hideSeaWishSpotlight() {
+  clearTimeout(seaWishHideTimer);
+  seaWishHideTimer = 0;
+  if (seaWishSpotlight && seaWishSpotlight.isConnected) {
+    seaWishSpotlight.remove();
+  }
+  seaWishSpotlight = null;
+  document.querySelectorAll('.sea-item.wish-speaking').forEach(el => el.classList.remove('wish-speaking'));
+}
+
+function showRandomSeaWish() {
+  hideSeaWishSpotlight();
+  if (document.hidden || document.querySelector('.modal:not([hidden])')) return;
+  const sea = $('seaBoard');
+  if (!sea || !sea.clientWidth || !sea.clientHeight) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const sidePadding = Math.min(110, Math.max(65, sea.clientWidth * 0.19));
+  const choices = Array.from(drifters.entries()).filter(([id, d]) => {
+    if (!d.el || !d.el.isConnected || d.el.dataset.chomped === 'true' ||
+        d.el.classList.contains('just-released') || d.sinking || d.respawnPending) return false;
+    if (!String(d.item?.wish || '').trim()) return false;
+    return d.x > sidePadding && d.x < sea.clientWidth - sidePadding &&
+           d.y > sea.clientHeight * .48 && d.y < sea.clientHeight * .88;
+  });
+  if (!choices.length) return;
+  const fresh = choices.filter(([id]) => id !== lastSpotlightId);
+  const pool = fresh.length ? fresh : choices;
+  const [id, target] = pool[Math.floor(Math.random() * pool.length)];
+  const wish = String(target.item.wish).trim();
+  const bubble = document.createElement('span');
+  bubble.className = 'sea-wish-spotlight';
+  // Show a short excerpt, with the entire wish available by tapping the krathong.
+  bubble.textContent = wish.length > 84 ? wish.slice(0, 84).trimEnd() + '…' : wish;
+  bubble.setAttribute('aria-hidden', 'true');
+  target.el.appendChild(bubble);
+  target.el.classList.add('wish-speaking');
+  seaWishSpotlight = bubble;
+  lastSpotlightId = id;
+  seaWishHideTimer = setTimeout(hideSeaWishSpotlight, SEA_WISH_VISIBLE_MS);
+}
+
 function renderWishTicker() {
   const node = $('wishTicker');
   if (!node) return;
@@ -2430,6 +2480,8 @@ initSeaDecor();
 loadSea();
 initMusicPlayer();
 requestAnimationFrame(animateSea);
+setTimeout(showRandomSeaWish, 4800);
+setInterval(showRandomSeaWish, SEA_WISH_SPOTLIGHT_MS);
 setInterval(() => { state.tickerIndex++; renderWishTicker(); }, 8000);
 function scheduleSeaPolling() {
   const nextInterval = SEA_REFRESH_MS + (Math.random() - 0.5) * 6000;
@@ -2439,5 +2491,5 @@ function scheduleSeaPolling() {
   }, nextInterval);
 }
 scheduleSeaPolling();
-document.addEventListener('visibilitychange', () => { lastFrame = 0; lastPaintFrame = 0; if (!document.hidden) loadSea(); });
+document.addEventListener('visibilitychange', () => { lastFrame = 0; lastPaintFrame = 0; if (document.hidden) hideSeaWishSpotlight(); else loadSea(); });
 

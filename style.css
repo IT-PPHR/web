@@ -7293,3 +7293,59 @@ body.is-releasing-krathong #cancelBuilder {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+
+/* V59 — one rotating wish attached to a currently visible, real krathong. */
+.sea-stage > .sea-item.wish-speaking:not(.shark-bite-active) {
+  z-index: 26;
+}
+.sea-item .sea-wish-spotlight {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  transform: translate3d(-50%, 7px, 0) scale(.96);
+  width: max-content;
+  max-width: min(230px, 63vw);
+  min-width: 95px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 219, 148, .84);
+  border-radius: 14px;
+  background: rgba(12, 35, 55, .96);
+  color: #fff5db;
+  box-shadow: 0 5px 13px rgba(0, 12, 27, .32);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 600;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 32;
+  animation: seaWishSpotlightShow 6.3s ease-in-out both;
+}
+@keyframes seaWishSpotlightShow {
+  0% { opacity: 0; transform: translate3d(-50%, 7px, 0) scale(.96); }
+  12%, 78% { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); }
+  100% { opacity: 0; transform: translate3d(-50%, -3px, 0) scale(.99); }
+}
+/* Hide instantly during shark bite: no text floating over the animal. */
+.sea-item.shark-bite-active .sea-wish-spotlight { display: none !important; }
+@media (max-width: 760px) {
+  .sea-item .sea-wish-spotlight {
+    max-width: min(175px, 51vw);
+    padding: 6px 9px;
+    font-size: 10.5px;
+    line-height: 1.45;
+    box-shadow: 0 3px 9px rgba(0, 12, 27, .27);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sea-item .sea-wish-spotlight { animation: none; opacity: 1; }
+}
