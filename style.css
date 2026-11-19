@@ -7230,3 +7230,24 @@ body.is-releasing-krathong #cancelBuilder {
   }
   .sea-stage .sea-bob {animation:none !important;}
 }
+
+
+/* V53: compositor-only sea-item motion. app.js positions using translate3d. */
+.sea-stage > .sea-item {
+  left: 0;
+  top: 0;
+  will-change: transform;
+  contain: layout style;
+}
+.sea-stage > .sea-item:hover { filter: none; }
+@media (max-width: 760px) {
+  .sea-stage > .sea-item { filter: none !important; }
+  .sea-stage > .sea-item:hover { transition: none !important; }
+  .sea-low-power .marine-animal:nth-child(n+4),
+  .sea-low-power .v7-lantern:nth-child(n+5) { display: none !important; }
+  .sea-low-power .sea-item .krathong-ripple,
+  .sea-low-power .sea-item .krathong-candle-glow { animation: none !important; }
+  .sea-low-power .sea-item .sea-bob { animation-duration: 4.5s; }
+  .sea-low-power .sea-stage .sea-surface::before,
+  .sea-low-power .sea-stage .sea-surface::after { filter: none !important; }
+}

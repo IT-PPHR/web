@@ -76,13 +76,13 @@
 }
 
 @keyframes creatureSlowAttack {
-  0%, 18% { transform: translate(-50%, 86px) scale(0.28) rotate(4deg); opacity: 0; }
-  30%     { transform: translate(-50%, 10px) scale(0.88) rotate(-6deg); opacity: 0.95; }
-  42%     { transform: translate(-50%, -14px) scale(1.12) rotate(-3deg); opacity: 1; }
-  56%     { transform: translate(-50%, -18px) scale(1.15) rotate(2deg); opacity: 1; }
-  70%     { transform: translate(-50%, -4px) scale(1.03) rotate(0deg); opacity: 0.98; }
-  84%     { transform: translate(-50%, 18px) scale(0.78) rotate(3deg); opacity: 0.78; }
-  100%    { transform: translate(-50%, 96px) scale(0.3) rotate(7deg); opacity: 0; }
+  0%, 16% { transform: translate3d(-50%, 100px, 0) scale(.36) rotate(3deg); opacity: 0; }
+  30% { transform: translate3d(-50%, 26px, 0) scale(.83) rotate(-4deg); opacity: .87; }
+  43% { transform: translate3d(-50%, -8px, 0) scale(1.06) rotate(-2deg); opacity: 1; }
+  54% { transform: translate3d(-50%, -16px, 0) scale(1.1) rotate(0deg); opacity: 1; }
+  65% { transform: translate3d(-50%, -12px, 0) scale(1.06) rotate(1deg); opacity: 1; }
+  83% { transform: translate3d(-50%, 20px, 0) scale(.8) rotate(2deg); opacity: .8; }
+  100% { transform: translate3d(-50%, 100px, 0) scale(.34) rotate(3deg); opacity: 0; }
 }
 
 @keyframes splashRingExpandSlow {
@@ -129,7 +129,7 @@
   z-index: 44;
   pointer-events: none;
   transform-origin: center bottom;
-  animation: creatureSlowAttack 4.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: creatureSlowAttack 4.2s ease-in-out forwards;
 }
 
 .krathong-sinking {
@@ -203,4 +203,19 @@
   .sea-impact-shake {
     animation: none !important;
   }
+}
+
+/* V53: make attack and bitten krathong share a compositor layer without heavy shadows. */
+.sea-stage > .sea-item { will-change: transform; }
+.shark-bite-active .sea-bob { backface-visibility: hidden; }
+.creature-chomp-anim { backface-visibility: hidden; filter: none; }
+.creature-chomp-anim svg { filter: none !important; }
+@media (max-width: 760px) {
+  .creature-chomp-anim { width: 121px; height: 115px; left: calc(50% + 28px); }
+  .sea-impact-shake { animation: none !important; }
+  .water-burst-drop { box-shadow: none; }
+  .splash-ring-2 { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .krathong-sinking, .krathong-nibble-release { animation-duration: .8s !important; }
 }

@@ -88,6 +88,7 @@ const recycledFromShark = [];
 let pendingSeaEntries = [];
 let nextSeaEntryAt = 0;
 const SEA_ENTRY_GAP_MS = 1600;
+// Mobile optimization: one compositor transform per krathong rather than layout-changing left/top.
 const SEA_SAMPLE_SIZE = 8;
 const getSeaSampleSize = () => (typeof window !== 'undefined' && window.innerWidth <= 768 ? 6 : 8);
 const SEA_REFRESH_MS = 45000;
@@ -1604,8 +1605,11 @@ function addDrifter(item, startX = null, startY = null) {
     retiring: false,
     direction, flow: Math.random() * Math.PI * 2, turn: 0, phase: Math.random() * 7
   });
-  b.style.left = pos.x + 'px';
-  b.style.top = pos.y + 'px';
+  b.style.left = '0px';
+  b.style.top = '0px';
+  b.dataset.seaX = String(pos.x);
+  b.dataset.seaY = String(pos.y);
+  b.style.transform = `translate3d(${pos.x}px,${pos.y}px,0) translate(-50%,-50%)`;
   return b;
 }
 
@@ -1697,21 +1701,48 @@ function releaseNextSeaEntry(now) {
 }
 
 const MOBILE_LOW_POWER = window.matchMedia('(max-width:760px)').matches;
+const REDUCE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DEVICE_MEMORY = Number(navigator.deviceMemory || 0);
+const LOW_END_MOBILE = MOBILE_LOW_POWER && (DEVICE_MEMORY > 0 && DEVICE_MEMORY <= 3 || (navigator.hardwareConcurrency || 8) <= 4);
+const MOTION_FPS = REDUCE_MOTION ? 20 : (LOW_END_MOBILE ? 24 : (MOBILE_LOW_POWER ? 30 : 60));
 let lastPaintFrame = 0;
+let smoothedFrameMs = 1000 / MOTION_FPS;
+let performanceDegrade = 0;
+let frameSamples = 0;
+function setSceneQuality(low) {
+  document.documentElement.classList.toggle('sea-low-power', low);
+  const marine = $('seaBoard')?.querySelectorAll('.marine-animal') || [];
+  marine.forEach((el, i) => { el.style.display = low && i > 2 ? 'none' : ''; });
+}
+setSceneQuality(LOW_END_MOBILE || REDUCE_MOTION);
+
 function animateSea(ts) {
-  const fpsInterval = MOBILE_LOW_POWER ? 1000 / 30 : 1000 / 60;
+  const fpsInterval = 1000 / MOTION_FPS;
   if (!document.hidden && lastPaintFrame && ts - lastPaintFrame < fpsInterval) {
     requestAnimationFrame(animateSea);
     return;
   }
+  const deltaMs = lastFrame ? Math.max(0, ts - lastFrame) : fpsInterval;
   lastPaintFrame = ts;
-  const dt = Math.min(.05, Math.max(0, (ts - lastFrame) / 1000 || 0)); lastFrame = ts;
+  const dt = Math.min(.06, deltaMs / 1000);
+  lastFrame = ts;
+  // Only change detail level after sustained slow frames; never oscillate on transient GC pauses.
+  if (MOBILE_LOW_POWER && !REDUCE_MOTION && !document.hidden) {
+    smoothedFrameMs += (Math.min(deltaMs, 160) - smoothedFrameMs) * .025;
+    if (++frameSamples >= 150) {
+      frameSamples = 0;
+      if (smoothedFrameMs > 48) performanceDegrade = Math.min(2, performanceDegrade + 1);
+      else if (smoothedFrameMs < 37) performanceDegrade = Math.max(0, performanceDegrade - 1);
+      setSceneQuality(LOW_END_MOBILE || performanceDegrade > 0);
+    }
+  }
   const sea = $('seaBoard');
   if (!document.hidden && sea.clientWidth) {
     const w = sea.clientWidth, h = sea.clientHeight;
     releaseNextSeaEntry(ts);
 
     for (const m of marineLife) {
+      if (m.el.style.display === 'none') continue;
       m.phase += dt * m.sway;
       m.lanePhase += dt * (m.sway * .55);
       m.x += m.speed * m.dir * dt;
@@ -1731,56 +1762,29 @@ function animateSea(ts) {
       m.el.style.transform = `translate3d(${m.x}px,${m.y}px,0) scaleX(${m.dir > 0 ? 1 : -1}) rotate(${tilt}deg)`;
     }
 
-    // Anti-bunching + Adaptive Cruise Control (ACC รักษาระยะห่างอัจฉริยะ ป้องกันซ้อน 100%)
-    const activeDrifters = [];
-    for (const d of drifters.values()) {
-      if (!d.sinking && !d.respawnPending && d.el.isConnected) {
-        activeDrifters.push(d);
-      }
-    }
+    // Soft separation with frame-rate independent damping. No abrupt vertical jumps.
+    const activeDrifters = Array.from(drifters.values()).filter(d =>
+      !d.sinking && !d.respawnPending && d.el.isConnected && d.el.dataset.chomped !== 'true');
     for (let i = 0; i < activeDrifters.length; i++) {
       for (let j = i + 1; j < activeDrifters.length; j++) {
-        const d1 = activeDrifters[i];
-        const d2 = activeDrifters[j];
-        const dx = d2.x - d1.x; // > 0 if d2 is ahead of d1
-        const dy = d2.y - d1.y;
-        const absDx = Math.abs(dx);
-        const absDy = Math.abs(dy);
-        const minX = 168; // Safe horizontal distance (กว้างขึ้น ป้องกันซ้อน 100%)
-        const minY = 52;  // Safe vertical distance
-
-        // 1. Adaptive Cruise Control: ถ้าคันหลังวิ่งมาจี้คันหน้าในเลนเดียวกัน ให้ชะลอความเร็ว
-        if (absDy < minY * 0.85) {
-          if (dx > 0 && absDx < 220) {
-            d1.vx = Math.max(12, Math.min(d1.vx, d2.vx * 0.85));
-          } else if (dx < 0 && absDx < 220) {
-            d2.vx = Math.max(12, Math.min(d2.vx, d1.vx * 0.85));
-          }
-        }
-
-        // 2. Soft Repel: ถ้าเข้าใกล้กันในระยะปลอดภัย ให้ผลักแยกออกจากกันอย่างนุ่มนวล
-        if (absDx < minX && absDy < minY) {
-          const repelX = (1 - absDx / minX) * 20 * dt;
-          if (dx > 0) {
-            d1.x -= repelX;
-            d2.x += repelX * 0.65;
-          } else if (dx < 0) {
-            d2.x -= repelX;
-            d1.x += repelX * 0.65;
-          }
-          const pushY = (minY - absDy) * 0.5 * dt * 20;
-          if (dy >= 0) {
-            d1.y = Math.max(h * 0.55, d1.y - pushY);
-            d2.y = Math.min(h * 0.86, d2.y + pushY);
-          } else {
-            d1.y = Math.min(h * 0.86, d1.y + pushY);
-            d2.y = Math.max(h * 0.55, d2.y - pushY);
-          }
+        const a = activeDrifters[i], b = activeDrifters[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const distX = Math.abs(dx), distY = Math.abs(dy);
+        if (distX > 188 || distY > 66) continue;
+        const proximity = Math.max(0, 1 - distX / 188) * Math.max(0, 1 - distY / 66);
+        const pushX = Math.min(9 * dt, 11 * proximity * dt);
+        const signX = dx >= 0 ? 1 : -1;
+        a.x -= signX * pushX;
+        b.x += signX * pushX;
+        // Smoothly drift apart in Y only when genuinely overlapping.
+        if (distX < 130 && distY < 45) {
+          const signY = dy >= 0 ? 1 : -1;
+          const pushY = Math.min(8 * dt, (45 - distY) * .18 * dt);
+          a.y -= signY * pushY;
+          b.y += signY * pushY;
         }
       }
     }
-
-
 
     for (const [id, v] of drifters) {
       if (v.el && v.el.dataset.chomped === 'true') {
@@ -1810,9 +1814,9 @@ function animateSea(ts) {
         continue;
       }
 
-      v.el.style.left = v.x + 'px';
-      v.el.style.top = v.y + 'px';
-      v.el.style.transform = 'translate(-50%, -50%)';
+      v.el.dataset.seaX = String(v.x);
+      v.el.dataset.seaY = String(v.y);
+      v.el.style.transform = `translate3d(${v.x.toFixed(2)}px,${v.y.toFixed(2)}px,0) translate(-50%,-50%)`;
     }
   }
   requestAnimationFrame(animateSea);
@@ -2421,5 +2425,5 @@ function scheduleSeaPolling() {
   }, nextInterval);
 }
 scheduleSeaPolling();
-document.addEventListener('visibilitychange', () => { lastFrame = 0; if (!document.hidden) loadSea(); });
+document.addEventListener('visibilitychange', () => { lastFrame = 0; lastPaintFrame = 0; if (!document.hidden) loadSea(); });
 

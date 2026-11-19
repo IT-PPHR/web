@@ -33,7 +33,7 @@
   // เรียกใช้ฟังก์ชันนี้โดยส่ง Element ของกระทง (krathongEl) และ Element พื้นที่ทะเล (seaContainerEl) เข้าไป
     // isDragDown: true = งับลากลงน้ำ, false = งับแล้วปล่อย (หากไม่ระบุจะสุ่ม 50/50)
     function triggerSharkChomp(krathongEl, seaContainerEl, isDragDown) {
-      if (!krathongEl || !krathongEl.parentNode || krathongEl.dataset.chomped === 'true') return;
+      if (isChomping || !krathongEl || !krathongEl.parentNode || krathongEl.dataset.chomped === 'true') return;
       krathongEl.dataset.chomped = 'true';
       isChomping = true;
 
@@ -41,7 +41,7 @@
       const willDragDown = (typeof isDragDown === 'boolean') ? isDragDown : (Math.random() < 0.5);
 
       // หยุดการเคลื่อนที่ไปด้านข้างชั่วคราวเพื่อให้เห็นจังหวะงับชัดเจน
-      krathongEl.style.animationPlayState = 'paused';
+      // Movement is paused by animateSea while dataset.chomped=true.
       krathongEl.style.zIndex = '49';
 
       // จัดคลาสสถานะงับ เพื่อให้ CSS จัดตำแหน่งกระทงไปที่ปากฉลามระหว่างอนิเมชัน
@@ -68,14 +68,15 @@
       splash2.className = 'splash-ring-2';
       krathongEl.appendChild(splash2);
 
-      // หยดน้ำกระจาย 8 ทิศทาง
+      // ลดจำนวนหยดน้ำบนมือถือ เพื่อหลีกเลี่ยงการ animate หลาย element พร้อมกัน
+      const lowPower = document.documentElement.classList.contains('sea-low-power') || window.matchMedia('(max-width:760px)').matches;
       const burstCoords = [
         { dx: '-48px', dy: '-38px' }, { dx: '-28px', dy: '-52px' },
         { dx: '0px', dy: '-58px' }, { dx: '28px', dy: '-52px' },
         { dx: '48px', dy: '-38px' }, { dx: '-38px', dy: '-22px' },
         { dx: '38px', dy: '-22px' }, { dx: '14px', dy: '-44px' }
       ];
-      burstCoords.forEach(pt => {
+      (lowPower ? burstCoords.filter((_, i) => i % 2 === 0) : burstCoords).forEach(pt => {
         const drop = document.createElement('div');
         drop.className = 'water-burst-drop';
         drop.style.setProperty('--dx', pt.dx);
@@ -91,7 +92,7 @@
 
       // สั่นหน้าจอทะเลจังหวะพุ่งงับ (วินาทีที่ 0.9)
       setTimeout(() => {
-        if (seaContainerEl) {
+        if (seaContainerEl && !lowPower) {
           seaContainerEl.classList.remove('sea-impact-shake');
           void seaContainerEl.offsetWidth;
           seaContainerEl.classList.add('sea-impact-shake');
@@ -116,7 +117,7 @@
               if (innerBody) innerBody.classList.remove('krathong-sinking');
             krathongEl.classList.remove('shark-bite-active', 'shark-bite-drag', 'shark-bite-release');
               krathongEl.dataset.chomped = 'false';
-              krathongEl.style.animationPlayState = 'running';
+              krathongEl.style.animationPlayState = '';
               safeRemove(krathongEl);
             }
           } else {
@@ -124,7 +125,7 @@
             if (innerBody) innerBody.classList.remove('krathong-nibble-release');
             krathongEl.classList.remove('shark-bite-active', 'shark-bite-drag', 'shark-bite-release');
             krathongEl.dataset.chomped = 'false';
-            krathongEl.style.animationPlayState = 'running';
+            krathongEl.style.animationPlayState = '';
             krathongEl.style.zIndex = '';
           }
 
@@ -136,8 +137,8 @@
     function getEligibleTarget(sea) {
       if (!sea) return null;
       const items = Array.from(sea.querySelectorAll('.sea-item')).filter(el => {
-        const left = parseFloat(el.style.left) || 0;
-        const top = parseFloat(el.style.top) || 0;
+        const left = Number(el.dataset.seaX ?? parseFloat(el.style.left)) || 0;
+        const top = Number(el.dataset.seaY ?? parseFloat(el.style.top)) || 0;
         const isInBounds = left > 100 && left < (sea.clientWidth - 120) && top > (sea.clientHeight * 0.46) && top < (sea.clientHeight * 0.88);
         return isInBounds &&
           el.dataset.chomped !== 'true' &&
