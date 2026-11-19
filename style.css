@@ -7274,3 +7274,22 @@ body.is-releasing-krathong #cancelBuilder {
     white-space: nowrap;
   }
 }
+
+
+/* V58 — Builder preview label follows the actual rendered SVG artwork.
+   The SVG is 2.1em wide / 1.63em tall, while its containing preview box is
+   only 1.42em / 1.16em. The previous 50%-of-container positioning placed
+   the badge over the left side of the krathong instead of below its hull. */
+#builderModal #krathongPreview > #previewName {
+  position: absolute;
+  left: 1.05em !important;   /* middle of the 2.1em SVG, not the narrow preview box */
+  bottom: -0.50em !important; /* below the actual SVG hull/waterline */
+  transform: translateX(-50%) !important;
+  margin: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: min(180px, 85vw);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
