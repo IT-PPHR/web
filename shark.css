@@ -1,22 +1,185 @@
-/* กำหนดขนาดฉลาม 800px */
-.friendly-shark {
+/* ==========================================================================
+   Phi Phi Blacktip Reef Shark Styles (ฉลามหูดำเกาะพีพี)
+   1. ครีบฉลามหูดำว่ายตัดผิวน้ำ (พร้อมฟองคลื่นและละอองน้ำกระเซ็น)
+   2. โมเดลฉลามหูดำพุ่งพ้นน้ำมางับกระทง (Chomp Attack + น้ำกระจาย + จอสั่น)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. โมเดลครีบฉลามหูดำว่ายตัดผิวน้ำ (Swimming Surface Fin)
+   -------------------------------------------------------------------------- */
+@keyframes sharkSurfaceSwim {
+  0%   { transform: translateX(108vw) translateY(0px); }
+  25%  { transform: translateX(76vw) translateY(-2px); }
+  50%  { transform: translateX(44vw) translateY(2px); }
+  75%  { transform: translateX(12vw) translateY(-2px); }
+  100% { transform: translateX(-18vw) translateY(0px); }
+}
+
+@keyframes sharkSplash1 {
+  0%   { transform: translate(0, 0) scale(0.5); opacity: 0.95; }
+  50%  { transform: translate(8px, -12px) scale(1.1); opacity: 0.9; }
+  100% { transform: translate(16px, 2px) scale(0.3); opacity: 0; }
+}
+
+@keyframes sharkSplash2 {
+  0%   { transform: translate(0, 0) scale(0.5); opacity: 0.95; }
+  50%  { transform: translate(-10px, -10px) scale(1.1); opacity: 0.85; }
+  100% { transform: translate(-18px, 2px) scale(0.3); opacity: 0; }
+}
+
+@keyframes finWakeFoam {
+  0%, 100% { transform: scaleX(0.92) scaleY(0.95); opacity: 0.85; }
+  50%      { transform: scaleX(1.12) scaleY(1.08); opacity: 1; }
+}
+
+.shark-surface-rtl {
   position: absolute;
-  width: 800px;
-  max-width: none;
-  height: auto;
-  transform: translate(-50%, -50%);
+  left: 0;
   pointer-events: none;
-  z-index: 999;
+  animation: sharkSurfaceSwim 24s linear infinite;
+  z-index: 18;
+}
+
+.fin-droplet-1 { animation: sharkSplash1 0.65s ease-out infinite; }
+.fin-droplet-2 { animation: sharkSplash2 0.75s ease-out infinite 0.25s; }
+.fin-droplet-3 { animation: sharkSplash1 0.55s ease-out infinite 0.4s; }
+.fin-foam-pulse { animation: finWakeFoam 0.5s ease-in-out infinite; transform-origin: center; }
+
+/* --------------------------------------------------------------------------
+   2. โมเดลฉลามหูดำพุ่งพ้นน้ำมางับกระทง (Chomp Attack + น้ำกระจาย + จอสั่น)
+   -------------------------------------------------------------------------- */
+@keyframes seaScreenShake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-6px, 4px); }
+  30% { transform: translate(6px, -4px); }
+  45% { transform: translate(-5px, -3px); }
+  60% { transform: translate(5px, 4px); }
+  75% { transform: translate(-4px, 2px); }
+  90% { transform: translate(3px, -2px); }
+}
+
+.sea-impact-shake {
+  animation: seaScreenShake 0.65s ease-in-out 2;
+}
+
+@keyframes krathongBittenSequence {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  6%   { transform: translate(-4px, 1px) rotate(-4deg) scale(1); }
+  12%  { transform: translate(4px, -1px) rotate(4deg) scale(1); }
+  18%  { transform: translate(-5px, 2px) rotate(-6deg) scale(1); }
+  24%  { transform: translate(5px, -2px) rotate(6deg) scale(1); }
+  32%  { transform: translate(-12px, -8px) rotate(-18deg) scale(1.04); opacity: 1; }
+  42%  { transform: translate(12px, -4px) rotate(18deg) scale(1.02); opacity: 1; }
+  52%  { transform: translate(-10px, 2px) rotate(-16deg) scale(0.96); opacity: 1; }
+  62%  { transform: translate(10px, 6px) rotate(15deg) scale(0.92); opacity: 0.95; }
+  72%  { transform: translate(-6px, 14px) rotate(-12deg) scale(0.82); opacity: 0.9; }
+  100% { transform: translate(0px, 85px) rotate(-28deg) scale(0.15); opacity: 0; }
+}
+
+@keyframes creatureSlowAttack {
+  0%, 20% { transform: translate(-50%, 80px) scale(0.3); opacity: 0; }
+  32%     { transform: translate(-50%, -14px) scale(1.25) rotate(-8deg); opacity: 1; }
+  44%     { transform: translate(-44%, -8px) scale(1.22) rotate(10deg); opacity: 1; }
+  56%     { transform: translate(-56%, -6px) scale(1.2) rotate(-10deg); opacity: 1; }
+  68%     { transform: translate(-48%, 0px) scale(1.15) rotate(8deg); opacity: 1; }
+  78%     { transform: translate(-50%, 12px) scale(1.0) rotate(-5deg); opacity: 0.95; }
+  100%    { transform: translate(-50%, 90px) scale(0.35) rotate(0deg); opacity: 0; }
+}
+
+@keyframes splashRingExpandSlow {
+  0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 0.95; }
+  70%  { opacity: 0.7; }
+  100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
+}
+
+@keyframes burstWaterDrop {
+  0%   { transform: translate(0, 0) scale(0.4); opacity: 1; }
+  50%  { transform: translate(var(--dx), var(--dy)) scale(1.2); opacity: 1; }
+  100% { transform: translate(calc(var(--dx) * 1.4), 25px) scale(0.2); opacity: 0; }
+}
+
+.creature-chomp-anim {
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  width: 135px;
+  height: 125px;
+  z-index: 45;
+  pointer-events: none;
+  animation: creatureSlowAttack 4.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.krathong-sinking {
+  animation: krathongBittenSequence 4.2s ease-in-out forwards !important;
+}
+
+@keyframes krathongNibbledRelease {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  6%   { transform: translate(-4px, 1px) rotate(-4deg) scale(1); }
+  12%  { transform: translate(4px, -1px) rotate(4deg) scale(1); }
+  18%  { transform: translate(-6px, 2px) rotate(-8deg) scale(1.02); }
+  26%  { transform: translate(6px, -2px) rotate(8deg) scale(1.02); }
+  36%  { transform: translate(-9px, -5px) rotate(-14deg) scale(1.04); opacity: 1; }
+  46%  { transform: translate(9px, -3px) rotate(14deg) scale(1.03); opacity: 1; }
+  56%  { transform: translate(-6px, 2px) rotate(-10deg) scale(1.01); opacity: 1; }
+  68%  { transform: translate(5px, 2px) rotate(8deg) scale(1.0); opacity: 1; }
+  80%  { transform: translate(-3px, 1px) rotate(-4deg) scale(1.0); opacity: 1; }
+  92%  { transform: translate(1px, 0px) rotate(2deg) scale(1.0); opacity: 1; }
+  100% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+}
+
+.krathong-nibble-release {
+  animation: krathongNibbledRelease 4.2s ease-in-out forwards !important;
+}
+
+.splash-ring-1 {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 95px;
+  height: 28px;
+  border: 3.5px solid #ffffff;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 46;
+  animation: splashRingExpandSlow 2.2s ease-out 0.8s forwards;
   opacity: 0;
-  transition: opacity 0.5s ease;
 }
 
-.friendly-shark.is-swimming {
-  opacity: 1;
+.splash-ring-2 {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 95px;
+  height: 28px;
+  border: 2.5px solid #e0f2fe;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 46;
+  animation: splashRingExpandSlow 2.4s ease-out 1.4s forwards;
+  opacity: 0;
 }
 
-/* เอฟเฟกต์ตอนฉลามงับกระทง */
-.shark-held {
-  transform: scale(1.1) rotate(5deg);
-  transition: transform 0.2s ease;
+.water-burst-drop {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: #ffffff;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 47;
+  box-shadow: 0 0 6px #ffffff;
+  opacity: 0;
+  animation: burstWaterDrop 1.4s ease-out 0.9s forwards;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .shark-surface-rtl,
+  .creature-chomp-anim,
+  .sea-impact-shake {
+    animation: none !important;
+  }
 }

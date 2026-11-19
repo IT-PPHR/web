@@ -82,332 +82,18 @@ const API = (window.APP_CONFIG || {}).API_URL || '';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const safePhoto = s => /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(String(s || '')) ? s : '';
 const drifters = new Map();
+const completedKrathongs = new Set();
+const recycledFromShark = [];
 
 let pendingSeaEntries = [];
 let nextSeaEntryAt = 0;
 const SEA_ENTRY_GAP_MS = 1600;
-const SEA_SAMPLE_SIZE = 10;
-const SEA_REFRESH_MS = 30000;
+const SEA_SAMPLE_SIZE = 8;
+const getSeaSampleSize = () => (typeof window !== 'undefined' && window.innerWidth <= 768 ? 6 : 8);
+const SEA_REFRESH_MS = 45000;
 const marineLife = [];
 let lastFrame = 0;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-const bigWave = {
-  active: false,
-  x: -300,
-  speed: 185,
-  width: 195,
-  nextAt: performance.now() + 10000 + Math.random() * 15000 // สุ่ม 10 - 25 วิ
-};
-
-const seaCanvasState = {
-  canvas: null,
-  ctx: null,
-  w: 0,
-  h: 0,
-  foamParticles: [],
-  waterRipples: []
-};
-
-function initSeaFoam(w, h) {
-  seaCanvasState.foamParticles = [];
-  for (let i = 0; i < 28; i++) {
-    seaCanvasState.foamParticles.push({
-      x: Math.random() * w,
-      y: (0.16 + Math.random() * 0.78) * h,
-      size: 1.0 + Math.random() * 2.2,
-      alpha: 0.18 + Math.random() * 0.42,
-      speed: 12 + Math.random() * 18,
-      phase: Math.random() * Math.PI * 2
-    });
-  }
-}
-
-function initWaterRipples(w, h) {
-  seaCanvasState.waterRipples = [];
-  // จัดระยะห่างระหว่างริ้วคลื่นให้กระจายตัวอย่างเป็นธรรมชาติ ไม่ถี่หรือซ้อนทับกัน
-  const rows = 4;
-  for (let r = 0; r < rows; r++) {
-    const rowY = (0.18 + (r / (rows - 0.5)) * 0.7) * h;
-    const count = 4 + (r % 2); // 4-5 ริ้วต่อแนวความลึก รวม ~18 ริ้วกำลังพอดี ไม่รก
-    for (let c = 0; c < count; c++) {
-      seaCanvasState.waterRipples.push({
-        x: (c / count) * w + (Math.random() - 0.5) * (w / count * 0.55),
-        baseY: rowY + (Math.random() - 0.5) * 16,
-        length: 50 + Math.random() * 65,
-        amp: 1.6 + Math.random() * 2.0,
-        speed: 14 + Math.random() * 16,
-        alpha: 0.22 + Math.random() * 0.26,
-        phase: Math.random() * Math.PI * 2
-      });
-    }
-  }
-}
-
-function initSeaWavesCanvas() {
-  const canvas = $('seaWavesCanvas');
-  if (!canvas) return;
-  const sea = $('seaBoard');
-  if (!sea) return;
-  const surface = sea.querySelector('.sea-surface');
-  if (!surface) return;
-  const w = surface.clientWidth || sea.clientWidth;
-  const h = surface.clientHeight || Math.floor(sea.clientHeight * 0.58);
-  if (!w || !h) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = Math.floor(w * dpr);
-  canvas.height = Math.floor(h * dpr);
-  const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  seaCanvasState.canvas = canvas;
-  seaCanvasState.ctx = ctx;
-  seaCanvasState.w = w;
-  seaCanvasState.h = h;
-  if (!seaCanvasState.foamParticles.length) initSeaFoam(w, h);
-  if (!seaCanvasState.waterRipples.length) initWaterRipples(w, h);
-}
-
-function drawRealisticWaves(ctx, w, h, time, dt) {
-  ctx.clearRect(0, 0, w, h);
-
-  // 1. Deep Ocean Background Gradient (เฉดสีน้ำทะเลลึกอันดามันยามราตรี ละมุน ไม่แข็ง)
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-  bgGrad.addColorStop(0, '#0a2947');    // Deep navy at horizon
-  bgGrad.addColorStop(0.35, '#071f37'); // Mid depth
-  bgGrad.addColorStop(0.7, '#05182b');  // Deep sea
-  bgGrad.addColorStop(1, '#030f1c');    // Bottom abyss
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, w, h);
-
-  // 2. Moonlight Reflection Path (แสงสะท้อนดวงจันทร์สีทองนวลสาดลงบนผิวน้ำ)
-  const moonX = w * 0.82;
-  const moonW = Math.max(140, w * 0.28);
-  const moonGlow = ctx.createRadialGradient(moonX, 0, 10, moonX, h * 0.75, moonW);
-  moonGlow.addColorStop(0, 'rgba(255, 235, 175, 0.16)');
-  moonGlow.addColorStop(0.45, 'rgba(100, 210, 255, 0.06)');
-  moonGlow.addColorStop(1, 'transparent');
-  ctx.fillStyle = moonGlow;
-  ctx.fillRect(0, 0, w, h);
-
-  // 3. Gentle Ambient Depth Swells (มวลน้ำกระเพื่อมพลิ้วไหวอย่างกลมกลืน ไม่มีเส้นขอบแข็ง)
-  const swellTiers = [
-    { baseY: h * 0.28, amp: 3.5, freq: 0.005, speed: 1.1, color: 'rgba(14, 62, 102, 0.28)' },
-    { baseY: h * 0.58, amp: 5.5, freq: 0.004, speed: 1.5, color: 'rgba(11, 52, 88, 0.22)' },
-    { baseY: h * 0.82, amp: 7.5, freq: 0.0035, speed: 1.8, color: 'rgba(8, 40, 72, 0.18)' }
-  ];
-  for (const s of swellTiers) {
-    ctx.beginPath();
-    ctx.moveTo(0, h);
-    for (let x = 0; x <= w + 20; x += 20) {
-      const y = s.baseY +
-        Math.sin(x * s.freq + time * s.speed) * s.amp +
-        Math.cos(x * (s.freq * 2) - time * 0.8) * (s.amp * 0.35);
-      ctx.lineTo(x, y);
-    }
-    ctx.lineTo(w, h);
-    ctx.closePath();
-    ctx.fillStyle = s.color;
-    ctx.fill();
-  }
-
-  // 4. Organic Shimmering Water Ripples (ริ้วระลอกคลื่นน้ำธรรมชาติ กระจายกำลังดี ไม่ถี่หรือลากเส้นตรงยาว)
-  for (const rip of seaCanvasState.waterRipples) {
-    rip.x += rip.speed * dt;
-    if (rip.x > w + 60) rip.x = -rip.length - 20; 
-    rip.phase += dt * 2.2;
-    const curY = rip.baseY + Math.sin(rip.phase) * 2.4;
-
-    const distFromMoon = Math.abs((rip.x + rip.length * 0.5) - moonX);
-    const inMoon = distFromMoon < moonW * 0.65;
-    const moonBoost = inMoon ? (1 - distFromMoon / (moonW * 0.65)) : 0;
-    const alpha = Math.min(0.65, rip.alpha + moonBoost * 0.25);
-    const col = inMoon ? '255, 238, 185' : '90, 210, 255';
-
-    const ripGrad = ctx.createLinearGradient(rip.x, curY, rip.x + rip.length, curY);
-    ripGrad.addColorStop(0, 'transparent');
-    ripGrad.addColorStop(0.25, 'rgba(' + col + ', ' + (alpha * 0.6).toFixed(2) + ')');
-    ripGrad.addColorStop(0.5, 'rgba(' + col + ', ' + alpha.toFixed(2) + ')');
-    ripGrad.addColorStop(0.75, 'rgba(' + col + ', ' + (alpha * 0.6).toFixed(2) + ')');
-    ripGrad.addColorStop(1, 'transparent');
-
-    ctx.beginPath();
-    ctx.moveTo(rip.x, curY);
-    ctx.quadraticCurveTo(rip.x + rip.length * 0.5, curY - rip.amp, rip.x + rip.length, curY);
-    ctx.strokeStyle = ripGrad;
-    ctx.lineWidth = 1.8;
-    ctx.stroke();
-
-    // ประกายแสงสะท้อนจันทร์บนยอดริ้วคลื่น
-    if (inMoon && Math.sin(rip.phase * 2) > 0.4) {
-      ctx.fillStyle = 'rgba(255, 248, 220, ' + (moonBoost * 0.55).toFixed(2) + ')';
-      ctx.beginPath();
-      ctx.arc(rip.x + rip.length * 0.5, curY - rip.amp * 0.8, 1.2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  // 5. Drifting Seafoam Particles (ละอองฟองคลื่นลอยอย่างนุ่มนวล)
-  for (const f of seaCanvasState.foamParticles) {
-    f.x += f.speed * dt;
-    if (f.x > w + 20) f.x = -20;
-    f.phase += dt * 2.2;
-    const wobble = Math.sin(f.phase) * 2.5;
-    ctx.fillStyle = 'rgba(200, 240, 255, ' + f.alpha + ')';
-    ctx.beginPath();
-    ctx.arc(f.x, f.y + wobble, f.size, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // 6. The Big Wave Roller (คลื่นลูกใหญ่ซัดสาด - สุ่มมาทุก 10-25 วินาที พัดกระทง)
-  if (bigWave.active) {
-    drawBigOceanRoller(ctx, w, h, bigWave, time);
-  }
-
-  // 7. Water Ripple Rings around Krathongs (ระลอกน้ำรอบกระทง)
-  const seaTop = h * 0.42;
-  for (const d of drifters.values()) {
-    if (!d.sinking && !d.respawnPending && d.el.isConnected) {
-      const relY = d.y - seaTop;
-      if (relY >= 0 && relY <= h) {
-        drawKrathongWaterWake(ctx, d.x, relY, d.phase, d.wasSurging);
-      }
-    }
-  }
-}
-
-function drawBigOceanRoller(ctx, w, h, wave, time) {
-  const waveX = wave.x;
-  const slant = 140;
-
-  ctx.save();
-
-  // A. Deep water suction trough ahead of wave (ร่องน้ำลึกสีน้ำเงินเข้ม)
-  const troughGrad = ctx.createLinearGradient(waveX - 90, 0, waveX, 0);
-  troughGrad.addColorStop(0, 'transparent');
-  troughGrad.addColorStop(1, 'rgba(2, 16, 30, 0.75)');
-  ctx.fillStyle = troughGrad;
-  ctx.beginPath();
-  ctx.moveTo(waveX - 90, 0);
-  ctx.lineTo(waveX, 0);
-  ctx.lineTo(waveX + slant, h);
-  ctx.lineTo(waveX + slant - 90, h);
-  ctx.closePath();
-  ctx.fill();
-
-  // B. Elevated Translucent Cyan Wave Body (มวลน้ำยกตัวสูงสีฟ้าครามใส)
-  const bodyGrad = ctx.createLinearGradient(waveX - 35, 0, waveX + 85, 0);
-  bodyGrad.addColorStop(0, 'rgba(2, 119, 189, 0.25)');
-  bodyGrad.addColorStop(0.5, 'rgba(14, 165, 233, 0.6)');
-  bodyGrad.addColorStop(0.85, 'rgba(56, 189, 248, 0.88)');
-  bodyGrad.addColorStop(1, 'rgba(224, 247, 250, 0.96)');
-
-  ctx.beginPath();
-  ctx.moveTo(waveX - 45, 0);
-  for (let y = 0; y <= h; y += 10) {
-    const prog = y / h;
-    const curveOffset = Math.sin(prog * Math.PI) * 36;
-    const wx = waveX + prog * slant + curveOffset;
-    ctx.lineTo(wx, y);
-  }
-  ctx.lineTo(waveX + slant - 55, h);
-  ctx.lineTo(waveX - 55, 0);
-  ctx.closePath();
-  ctx.fillStyle = bodyGrad;
-  ctx.fill();
-
-  // C. Giant Foaming Breaker Crest (สันคลื่นสีขาวหนานุ่มแตกฟองชัดเจนมาก!)
-  ctx.beginPath();
-  const crestPoints = [];
-  for (let y = 0; y <= h; y += 8) {
-    const prog = y / h;
-    const curveOffset = Math.sin(prog * Math.PI) * 36;
-    const foamJitter = Math.sin(y * 0.16 + time * 14) * 4.5;
-    const cx = waveX + prog * slant + curveOffset + foamJitter;
-    crestPoints.push({ x: cx, y });
-    if (y === 0) ctx.moveTo(cx, y);
-    else ctx.lineTo(cx, y);
-  }
-
-  // Cyan glowing halo
-  ctx.strokeStyle = 'rgba(56, 189, 248, 0.9)';
-  ctx.lineWidth = 16;
-  ctx.lineCap = 'round';
-  ctx.stroke();
-
-  // Bold white breaker crest line
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 7.5;
-  ctx.stroke();
-
-  // D. Exploding Sea Spray Particles along the crest
-  for (let i = 0; i < crestPoints.length; i += 2) {
-    const p = crestPoints[i];
-    for (let s = 0; s < 2; s++) {
-      const spX = p.x + (s * 8) + Math.sin(time * 8 + i + s) * 12;
-      const spY = p.y + Math.cos(time * 10 + i + s) * 7;
-      const r = 1.5 + Math.random() * 2.5;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-      ctx.beginPath();
-      ctx.arc(spX, spY, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  // E. Trailing Lacy White Seafoam
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-  ctx.lineWidth = 2.2;
-  for (let k = 0; k < 6; k++) {
-    const trailOffset = -25 - k * 18;
-    ctx.beginPath();
-    for (let y = (k % 3) * 30; y < h; y += 45) {
-      const prog = y / h;
-      const tx = waveX + prog * slant + trailOffset + Math.sin(y * 0.08 + time * 4) * 8;
-      ctx.moveTo(tx, y);
-      ctx.arc(tx, y, 6 + (k % 3) * 3, 0, Math.PI * 2);
-    }
-    ctx.stroke();
-  }
-
-  ctx.restore();
-}
-
-function drawKrathongWaterWake(ctx, x, y, phase, isSurging) {
-  const rippleR = isSurging ? 28 : 16;
-  const alpha = isSurging ? 0.8 : 0.45;
-  ctx.save();
-  ctx.beginPath();
-  ctx.ellipse(x, y + 18, rippleR, rippleR * 0.32, 0, 0, Math.PI * 2);
-  ctx.strokeStyle = `rgba(180, 240, 255, ${alpha})`;
-  ctx.lineWidth = isSurging ? 3 : 1.5;
-  ctx.stroke();
-
-  if (isSurging) {
-    ctx.beginPath();
-    ctx.ellipse(x, y + 20, rippleR * 1.5, rippleR * 0.45, 0, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-function getSavedDesign(id) {
-  if (!id) return null;
-  try {
-    const map = JSON.parse(localStorage.getItem('phiPhiSavedDesigns_v1') || '{}');
-    return map[String(id)] || null;
-  } catch (e) {
-    return null;
-  }
-}
-
-function saveDesign(id, base, candle) {
-  if (!id) return;
-  try {
-    const map = JSON.parse(localStorage.getItem('phiPhiSavedDesigns_v1') || '{}');
-    map[String(id)] = { base, candle };
-    localStorage.setItem('phiPhiSavedDesigns_v1', JSON.stringify(map));
-  } catch (e) {}
-}
 
 function getLocalKrathongs() {
   try {
@@ -428,102 +114,454 @@ function saveLocalKrathong(item) {
 
 const SEED_KRATHONGS = [
   {
-    id: 'seed_1',
-    name: 'พี่เอก วิศวกรรม',
-    employeeId: 'ENG-014',
-    department: 'Engineering',
-    wish: 'ขอให้ระบบไฟฟ้ารีสอร์ตทำงานราบรื่น แขกประทับใจ สุขภาพแข็งแรงตลอดปี',
-    type: 'banana_leaf',
-    flower: 'lotus',
-    candle: 'incense',
-    baseDesign: 'banana_leaf',
-    candleDesign: 'incense',
-    color: '#ffc977',
-    photo: '',
-    photoPublic: false,
-    createdAt: new Date(Date.now() - 3600000).toISOString()
+    "id": "seed_1",
+    "name": "พี่เอก วิศวกรรม",
+    "employeeId": "ENG-014",
+    "department": "Engineering",
+    "wish": "ขอให้ระบบไฟฟ้ารีสอร์ตทำงานราบรื่น แขกประทับใจ สุขภาพแข็งแรงตลอดปี",
+    "type": "banana_leaf",
+    "flower": "lotus",
+    "candle": "incense",
+    "baseDesign": "banana_leaf",
+    "candleDesign": "incense",
+    "color": "#ffc977",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-19T03:15:06.391Z"
   },
   {
-    id: 'seed_2',
-    name: 'น้องฝน ต้อนรับ',
-    employeeId: 'FO-088',
-    department: 'Front Office',
-    wish: 'ขอให้เกาะพีพีสวยงาม นักท่องเที่ยวมีความสุข ยอดจองห้องพักเต็มทั้งปี',
-    type: 'lotus',
-    flower: 'rose',
-    candle: 'lotus_candle',
-    baseDesign: 'lotus',
-    candleDesign: 'lotus_candle',
-    color: '#ffb3ba',
-    photo: '',
-    photoPublic: false,
-    createdAt: new Date(Date.now() - 7200000).toISOString()
+    "id": "seed_2",
+    "name": "น้องฝน ต้อนรับ",
+    "employeeId": "FO-088",
+    "department": "Front Office",
+    "wish": "ขอให้เกาะพีพีสวยงาม นักท่องเที่ยวมีความสุข ยอดจองห้องพักเต็มทั้งปี",
+    "type": "lotus",
+    "flower": "rose",
+    "candle": "lotus_candle",
+    "baseDesign": "lotus",
+    "candleDesign": "lotus_candle",
+    "color": "#ffb3ba",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-19T02:15:06.392Z"
   },
   {
-    id: 'seed_3',
-    name: 'เชฟกร ครัวไทย',
-    employeeId: 'FK-021',
-    department: 'Food Kitchen',
-    wish: 'ขอให้อาหารทุกจานที่เสิร์ฟสร้างรอยยิ้ม ขอให้ทีมงานทุกคนมีความสุข',
-    type: 'turtle_bread',
-    flower: 'orchid',
-    candle: 'tnt',
-    baseDesign: 'turtle_bread',
-    candleDesign: 'tnt',
-    color: '#ffdfba',
-    photo: '',
-    photoPublic: false,
-    createdAt: new Date(Date.now() - 10800000).toISOString()
+    "id": "seed_3",
+    "name": "เชฟกร ครัวไทย",
+    "employeeId": "FK-021",
+    "department": "Food Kitchen",
+    "wish": "ขอให้อาหารทุกจานที่เสิร์ฟสร้างรอยยิ้ม ขอให้ทีมงานทุกคนมีความสุข",
+    "type": "turtle_bread",
+    "flower": "orchid",
+    "candle": "tnt",
+    "baseDesign": "turtle_bread",
+    "candleDesign": "tnt",
+    "color": "#ffdfba",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-19T01:15:06.392Z"
   },
   {
-    id: 'seed_4',
-    name: 'คุณแอน การเงิน',
-    employeeId: 'FA-005',
-    department: 'Finance & Acct.',
-    wish: 'ขอให้งบดุลลงตัวทุกสิ้นเดือน ขอให้ทุกคนในครอบครัวมีสุขภาพแข็งแรง ร่ำรวยโชคดี',
-    type: 'ice',
-    flower: 'jasmine',
-    candle: 'lottery99',
-    baseDesign: 'ice',
-    candleDesign: 'lottery99',
-    color: '#bae1ff',
-    photo: '',
-    photoPublic: false,
-    createdAt: new Date(Date.now() - 14400000).toISOString()
+    "id": "seed_4",
+    "name": "คุณแอน การเงิน",
+    "employeeId": "FA-005",
+    "department": "Finance & Acct.",
+    "wish": "ขอให้งบดุลลงตัวทุกสิ้นเดือน ขอให้ทุกคนในครอบครัวมีสุขภาพแข็งแรง ร่ำรวยโชคดี",
+    "type": "ice",
+    "flower": "jasmine",
+    "candle": "lottery99",
+    "baseDesign": "ice",
+    "candleDesign": "lottery99",
+    "color": "#bae1ff",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-19T00:15:06.392Z"
   },
   {
-    id: 'seed_5',
-    name: 'พี่นพ แม่บ้าน',
-    employeeId: 'HK-032',
-    department: 'Housekeeping',
-    wish: 'ขอให้ห้องพักสะอาดสดชื่นทุกวัน พี่น้องทุกคนในรีสอร์ตมีความสุขร่วมกัน',
-    type: 'coconut',
-    flower: 'sunflower',
-    candle: 'lightstick',
-    baseDesign: 'coconut',
-    candleDesign: 'lightstick',
-    color: '#ffffba',
-    photo: '',
-    photoPublic: false,
-    createdAt: new Date(Date.now() - 18000000).toISOString()
+    "id": "seed_5",
+    "name": "พี่นพ แม่บ้าน",
+    "employeeId": "HK-032",
+    "department": "Housekeeping",
+    "wish": "ขอให้ห้องพักสะอาดสดชื่นทุกวัน พี่น้องทุกคนในรีสอร์ตมีความสุขร่วมกัน",
+    "type": "coconut",
+    "flower": "sunflower",
+    "candle": "lightstick",
+    "baseDesign": "coconut",
+    "candleDesign": "lightstick",
+    "color": "#ffffba",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T23:15:06.392Z"
   },
   {
-    id: 'seed_6',
-    name: 'ผู้จัดการบาร์',
-    employeeId: 'FB-019',
-    department: 'Food & Beverage',
-    wish: 'ขอให้ค่ำคืนนี้มีแต่เสียงหัวเราะ เครื่องดื่มอร่อย บรรยากาศริมหาดอบอุ่น',
-    type: 'banana_trunk',
-    flower: 'tulip',
-    candle: 'chili',
-    baseDesign: 'banana_trunk',
-    candleDesign: 'chili',
-    color: '#baffc9',
-    photo: '',
-    photoPublic: false,
-    createdAt: new Date(Date.now() - 21600000).toISOString()
+    "id": "seed_6",
+    "name": "ผู้จัดการบาร์",
+    "employeeId": "FB-019",
+    "department": "Food & Beverage",
+    "wish": "ขอให้ค่ำคืนนี้มีแต่เสียงหัวเราะ เครื่องดื่มอร่อย บรรยากาศริมหาดอบอุ่น",
+    "type": "banana_trunk",
+    "flower": "tulip",
+    "candle": "chili",
+    "baseDesign": "banana_trunk",
+    "candleDesign": "chili",
+    "color": "#baffc9",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T22:15:06.392Z"
+  },
+  {
+    "id": "seed_7",
+    "name": "กัปตันสมชาย",
+    "employeeId": "MAR-003",
+    "department": "Marine & Boat",
+    "wish": "ขอให้คลื่นลมสงบ ท้องทะเลอันดามันปลอดภัยทุกเที่ยวเรือ นักท่องเที่ยวประทับใจ",
+    "type": "banana_leaf",
+    "flower": "orchid",
+    "candle": "incense",
+    "baseDesign": "banana_leaf",
+    "candleDesign": "incense",
+    "color": "#7dd3fc",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T21:15:06.392Z"
+  },
+  {
+    "id": "seed_8",
+    "name": "ครูตั้ม ดำน้ำลึก",
+    "employeeId": "DIVE-012",
+    "department": "Diving Center",
+    "wish": "ขอให้ปะการังเกาะพีพีฟื้นตัวสมบูรณ์ ฉลามครีบดำและเต่าทะเลอยู่คู่ทะเลตลอดไป",
+    "type": "ice",
+    "flower": "lotus",
+    "candle": "lotus_candle",
+    "baseDesign": "ice",
+    "candleDesign": "lotus_candle",
+    "color": "#a7f3d0",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T20:15:06.392Z"
+  },
+  {
+    "id": "seed_9",
+    "name": "น้องมิ้นต์ สปา",
+    "employeeId": "SPA-007",
+    "department": "Spa & Wellness",
+    "wish": "ขอให้แขกทุกคนผ่อนคลาย สุขภาพกายใจเบาสบาย สดชื่นตลอดทริป",
+    "type": "lotus",
+    "flower": "jasmine",
+    "candle": "incense",
+    "baseDesign": "lotus",
+    "candleDesign": "incense",
+    "color": "#fbcfe8",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T19:15:06.392Z"
+  },
+  {
+    "id": "seed_10",
+    "name": "ลุงหมาย สวนริมหาด",
+    "employeeId": "GRD-015",
+    "department": "Gardening",
+    "wish": "ขอให้ต้นมะพร้าวและไม้ดอกริมหาดเขียวชอุ่ม ให้ร่มเงาแก่นักเดินทางทุกคน",
+    "type": "coconut",
+    "flower": "sunflower",
+    "candle": "lightstick",
+    "baseDesign": "coconut",
+    "candleDesign": "lightstick",
+    "color": "#fed7aa",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T18:15:06.392Z"
+  },
+  {
+    "id": "seed_11",
+    "name": "น้องพลอย HR",
+    "employeeId": "HR-004",
+    "department": "Human Resources",
+    "wish": "ขอให้ทีมงานทุกคนทำงานอย่างมีความสุข สุขภาพแข็งแรง โบนัสปังๆ",
+    "type": "turtle_bread",
+    "flower": "rose",
+    "candle": "lightstick",
+    "baseDesign": "turtle_bread",
+    "candleDesign": "lightstick",
+    "color": "#fef08a",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T17:15:06.392Z"
+  },
+  {
+    "id": "seed_12",
+    "name": "คุณเจมส์ GM",
+    "employeeId": "GM-001",
+    "department": "Management",
+    "wish": "ขอให้เกาะพีพี ฮอลิเดย์ รีสอร์ต มอบความทรงจำที่ดีที่สุดแก่ผู้มาเยือนทุกคน",
+    "type": "banana_leaf",
+    "flower": "orchid",
+    "candle": "lotus_candle",
+    "baseDesign": "banana_leaf",
+    "candleDesign": "lotus_candle",
+    "color": "#fde047",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T16:15:06.392Z"
+  },
+  {
+    "id": "seed_13",
+    "name": "บาริสต้าตูน คาเฟ่",
+    "employeeId": "FB-042",
+    "department": "Beachside Cafe",
+    "wish": "ขอให้กลิ่นกาแฟหอมละมุน มอบพลังและรอยยิ้มในทุกๆ เช้า",
+    "type": "banana_trunk",
+    "flower": "tulip",
+    "candle": "chili",
+    "baseDesign": "banana_trunk",
+    "candleDesign": "chili",
+    "color": "#e9d5ff",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T15:15:06.392Z"
+  },
+  {
+    "id": "seed_14",
+    "name": "ช่างเบิร์ด ซ่อมบำรุง",
+    "employeeId": "ENG-027",
+    "department": "Engineering",
+    "wish": "ขอให้งานซ่อมเสร็จไว ปลอดภัย ไร้อุบัติเหตุ รอยยิ้มเต็มรีสอร์ต",
+    "type": "banana_leaf",
+    "flower": "lotus",
+    "candle": "tnt",
+    "baseDesign": "banana_leaf",
+    "candleDesign": "tnt",
+    "color": "#fecdd3",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T14:15:06.392Z"
+  },
+  {
+    "id": "seed_15",
+    "name": "น้องบิว ประชาสัมพันธ์",
+    "employeeId": "PR-009",
+    "department": "Public Relations",
+    "wish": "ขอให้ภาพความประทับใจของเกาะพีพีส่งต่อถึงคนทั่วโลก",
+    "type": "ice",
+    "flower": "rose",
+    "candle": "lotus_candle",
+    "baseDesign": "ice",
+    "candleDesign": "lotus_candle",
+    "color": "#bfdbfe",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T13:15:06.392Z"
+  },
+  {
+    "id": "seed_16",
+    "name": "พี่เดชา รปภ.หาด",
+    "employeeId": "SEC-008",
+    "department": "Security",
+    "wish": "ขอให้ทุกค่ำคืนเงียบสงบ นักท่องเที่ยวปลอดภัยและอุ่นใจเสมอ",
+    "type": "coconut",
+    "flower": "jasmine",
+    "candle": "incense",
+    "baseDesign": "coconut",
+    "candleDesign": "incense",
+    "color": "#c7d2fe",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T12:15:06.392Z"
+  },
+  {
+    "id": "seed_17",
+    "name": "Elena & Lucas",
+    "employeeId": "GUEST-702",
+    "department": "Pool Villa Guest",
+    "wish": "May this sea bring peace, joy, and wonderful memories to all travelers",
+    "type": "lotus",
+    "flower": "orchid",
+    "candle": "lotus_candle",
+    "baseDesign": "lotus",
+    "candleDesign": "lotus_candle",
+    "color": "#ddd6fe",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T11:15:06.392Z"
+  },
+  {
+    "id": "seed_18",
+    "name": "Hiroshi Tokyo",
+    "employeeId": "GUEST-415",
+    "department": "Deluxe Guest",
+    "wish": "Wishing happiness and clean oceans for generations to come",
+    "type": "turtle_bread",
+    "flower": "lotus",
+    "candle": "lightstick",
+    "baseDesign": "turtle_bread",
+    "candleDesign": "lightstick",
+    "color": "#bbf7d0",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T10:15:06.392Z"
+  },
+  {
+    "id": "seed_19",
+    "name": "ครอบครัวสุขสันต์ เชียงใหม่",
+    "employeeId": "GUEST-308",
+    "department": "Family Villa",
+    "wish": "ขอให้ครอบครัวมีความสุข ปราศจากโรคภัย การงานรุ่งเรือง มีเงินใช้ไม่ขาดมือ",
+    "type": "banana_leaf",
+    "flower": "jasmine",
+    "candle": "incense",
+    "baseDesign": "banana_leaf",
+    "candleDesign": "incense",
+    "color": "#fef9c3",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T09:15:06.392Z"
+  },
+  {
+    "id": "seed_20",
+    "name": "น้องไอซ์ ไอที",
+    "employeeId": "IT-002",
+    "department": "IT Support",
+    "wish": "ขอให้เซิร์ฟเวอร์เสถียร 99.99% บั๊กหายหมด เน็ตแรงทั่วเกาะพีพี",
+    "type": "ice",
+    "flower": "sunflower",
+    "candle": "lottery99",
+    "baseDesign": "ice",
+    "candleDesign": "lottery99",
+    "color": "#e0e7ff",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T08:15:06.392Z"
+  },
+  {
+    "id": "seed_21",
+    "name": "พี่วุฒิ ไกด์คายัค",
+    "employeeId": "ACT-011",
+    "department": "Recreation",
+    "wish": "ขอให้ท้องทะเลสวยใส ฟ้าเปิด ไร้ลมพายุ พานักท่องเที่ยวชมอ่าวมาหยาอย่างปลอดภัย",
+    "type": "coconut",
+    "flower": "orchid",
+    "candle": "incense",
+    "baseDesign": "coconut",
+    "candleDesign": "incense",
+    "color": "#ccfbf1",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T07:15:06.392Z"
+  },
+  {
+    "id": "seed_22",
+    "name": "น้องกานต์ ต้อนรับกะดึก",
+    "employeeId": "FO-092",
+    "department": "Front Office",
+    "wish": "ขอให้แสงจันทร์คุ้มครองทุกคนในคืนเพ็ญ มีแต่สิ่งดีๆ เข้ามาในชีวิต",
+    "type": "lotus",
+    "flower": "rose",
+    "candle": "lightstick",
+    "baseDesign": "lotus",
+    "candleDesign": "lightstick",
+    "color": "#fed7aa",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T06:15:06.392Z"
+  },
+  {
+    "id": "seed_23",
+    "name": "ป้ามาลี ซักรีด",
+    "employeeId": "HK-045",
+    "department": "Housekeeping",
+    "wish": "ขอให้ครอบครัวอบอุ่น ลูกหลานเจริญก้าวหน้า มีโชคลาภ สุขภาพแข็งแรง",
+    "type": "banana_trunk",
+    "flower": "lotus",
+    "candle": "incense",
+    "baseDesign": "banana_trunk",
+    "candleDesign": "incense",
+    "color": "#fef08a",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T05:15:06.392Z"
+  },
+  {
+    "id": "seed_24",
+    "name": "เชฟแพรว เบเกอรี่",
+    "employeeId": "FK-033",
+    "department": "Pastry Kitchen",
+    "wish": "ขอให้ขนมอบหอมกรุ่นทุกเช้า มอบความสุขแสนหวานแก่ทุกคนที่ได้ชิม",
+    "type": "turtle_bread",
+    "flower": "tulip",
+    "candle": "chili",
+    "baseDesign": "turtle_bread",
+    "candleDesign": "chili",
+    "color": "#fce7f3",
+    "photo": "",
+    "photoPublic": false,
+    "createdAt": "2026-11-18T04:15:06.392Z"
   }
 ];
+
+function getAllAvailableKrathongs() {
+  const local = typeof getLocalKrathongs === 'function' ? getLocalKrathongs() : [];
+  const apiItems = Array.isArray(state.apiItems) ? state.apiItems : (Array.isArray(state.items) ? state.items : []);
+  const combined = [...local, ...apiItems, ...SEED_KRATHONGS];
+  const uniqueMap = new Map();
+  for (const item of combined) {
+    if (item && item.id && !uniqueMap.has(String(item.id))) {
+      uniqueMap.set(String(item.id), item);
+    }
+  }
+  return Array.from(uniqueMap.values());
+}
+
+function getNextStreamKrathong() {
+  // 1. Shark recycle queue: only krathongs dragged underwater by the shark re-enter the sea
+  if (recycledFromShark.length > 0) {
+    return recycledFromShark.shift();
+  }
+
+  // 2. Fresh unshown krathongs from pool that haven't finished their voyage
+  const all = getAllAvailableKrathongs();
+  const unshown = all.filter(item => {
+    const id = String(item.id);
+    return !completedKrathongs.has(id) &&
+           !drifters.has(id) &&
+           !pendingSeaEntries.some(p => String(p.id) === id);
+  });
+
+  if (unshown.length > 0) {
+    return unshown[Math.floor(Math.random() * unshown.length)];
+  }
+
+  // 3. Grand cycle fallback: only if every single krathong has drifted to the horizon
+  if (completedKrathongs.size > 0 && drifters.size < getSeaSampleSize()) {
+    completedKrathongs.clear();
+    const fallback = all.filter(item => !drifters.has(String(item.id)) && !pendingSeaEntries.some(p => String(p.id) === String(item.id)));
+    if (fallback.length > 0) {
+      return fallback[Math.floor(Math.random() * fallback.length)];
+    }
+  }
+
+  return null;
+}
+
+
+function getSavedDesign(id) {
+  if (!id) return null;
+  try {
+    const map = JSON.parse(localStorage.getItem('phiPhiSavedDesigns_v1') || '{}');
+    return map[String(id)] || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveDesign(id, base, candle) {
+  if (!id) return;
+  try {
+    const map = JSON.parse(localStorage.getItem('phiPhiSavedDesigns_v1') || '{}');
+    map[String(id)] = { base, candle };
+    localStorage.setItem('phiPhiSavedDesigns_v1', JSON.stringify(map));
+  } catch (e) {}
+}
 
 function resolveBaseKey(key) {
   if (!key) return 'lotus';
@@ -1662,17 +1700,29 @@ function setReleaseLoading(isLoading) {
   }
 }
 
-async function request(action, data = {}, method = 'POST') {
+async function request(action, data = {}, method = 'POST', retries = 1) {
   if (!API || API.includes('REPLACE-WITH')) throw Error('ยังไม่ได้ตั้งค่า API_URL ใน config.js');
   const url = API.replace(/\/$/, '');
-  const resp = await fetch(method === 'GET' ? url + '?' + new URLSearchParams({ action, ...data }) : url, {
-    method,
-    headers: method === 'POST' ? { 'Content-Type': 'application/json' } : {},
-    body: method === 'POST' ? JSON.stringify({ action, ...data }) : undefined
-  });
-  const out = await resp.json();
-  if (!resp.ok || !out.ok) throw Error(out.error || 'API Error');
-  return out;
+  try {
+    const resp = await fetch(method === 'GET' ? url + '?' + new URLSearchParams({ action, ...data }) : url, {
+      method,
+      headers: method === 'POST' ? { 'Content-Type': 'application/json' } : {},
+      body: method === 'POST' ? JSON.stringify({ action, ...data }) : undefined
+    });
+    if ((resp.status === 429 || resp.status >= 500) && retries > 0) {
+      await new Promise(r => setTimeout(r, 500 + Math.random() * 400));
+      return request(action, data, method, retries - 1);
+    }
+    const out = await resp.json();
+    if (!resp.ok || !out.ok) throw Error(out.error || 'API Error');
+    return out;
+  } catch (err) {
+    if (retries > 0) {
+      await new Promise(r => setTimeout(r, 500 + Math.random() * 400));
+      return request(action, data, method, retries - 1);
+    }
+    throw err;
+  }
 }
 
 function displayWish(item) {
@@ -1705,15 +1755,38 @@ function initSeaDecor() {
     sky.appendChild(pyro);
   }
 
-  for (let i = 0; i < 5; i++) {
+  const waterCloudsLayer = $('waterCloudsLayer');
+  if (waterCloudsLayer) waterCloudsLayer.innerHTML = '';
+
+  const cloudConfigs = [
+    { top: 27, scale: 1.05, duration: 38, delay: -8, dir: 'right' },
+    { top: 9,  scale: 0.82, duration: 52, delay: -24, dir: 'left' },
+    { top: 33, scale: 0.96, duration: 44, delay: -29, dir: 'left' },
+    { top: 48, scale: 0.74, duration: 55, delay: -14, dir: 'right' },
+    { top: 62, scale: 0.65, duration: 62, delay: -36, dir: 'right' }
+  ];
+
+  cloudConfigs.forEach((cfg) => {
+    const isRight = cfg.dir === 'right';
+
     const cloud = document.createElement('div');
-    cloud.className = 'v7-cloud ' + (i % 2 === 0 ? 'v7-cloud-right' : 'v7-cloud-left');
-    cloud.style.top = (8 + Math.random() * 55).toFixed(1) + '%';
-    cloud.style.setProperty('--cloud-scale', (0.65 + Math.random() * 0.9).toFixed(2));
-    cloud.style.setProperty('--cloud-duration', (34 + Math.random() * 35).toFixed(1) + 's');
-    cloud.style.setProperty('--cloud-delay', (-Math.random() * 60).toFixed(1) + 's');
+    cloud.className = 'v7-cloud ' + (isRight ? 'v7-cloud-right' : 'v7-cloud-left');
+    cloud.style.top = cfg.top + '%';
+    cloud.style.setProperty('--cloud-scale', cfg.scale);
+    cloud.style.setProperty('--cloud-duration', cfg.duration + 's');
+    cloud.style.setProperty('--cloud-delay', cfg.delay + 's');
     sky.appendChild(cloud);
-  }
+
+    if (waterCloudsLayer) {
+      const waterCloud = document.createElement('div');
+      waterCloud.className = 'water-cloud-mirror ' + (isRight ? 'water-cloud-right' : 'water-cloud-left');
+      waterCloud.style.top = (5 + (cfg.top * 0.72)).toFixed(1) + '%';
+      waterCloud.style.setProperty('--cloud-scale', (cfg.scale * 0.95).toFixed(2));
+      waterCloud.style.setProperty('--cloud-duration', cfg.duration + 's');
+      waterCloud.style.setProperty('--cloud-delay', cfg.delay + 's');
+      waterCloudsLayer.appendChild(waterCloud);
+    }
+  });
 
   for (let i = 0; i < 9; i++) {
     const lantern = document.createElement('div');
@@ -1732,13 +1805,44 @@ function initSeaDecor() {
   }
   sea.appendChild(sky);
   sky.style.zIndex = '4';
+
+  // Dynamic Moon Occlusion: เมื่อเมฆเคลื่อนผ่านบดบังดวงจันทร์ ลำแสงสะท้อนบนน้ำจะหรี่แสงลงอย่างนุ่มนวล
+  const moon = $('seaMoon') || sea.querySelector('.moon');
+  const beam = $('moonlightWaterBeam');
+  if (moon && beam) {
+    const clouds = sky.querySelectorAll('.v7-cloud');
+    const checkMoonOcclusion = () => {
+      if (!moon.isConnected || !beam.isConnected) return;
+      const mRect = moon.getBoundingClientRect();
+      if (!mRect || mRect.width === 0) return;
+
+      let isCovered = false;
+      for (let i = 0; i < clouds.length; i++) {
+        const cRect = clouds[i].getBoundingClientRect();
+        const xOverlap = Math.max(0, Math.min(cRect.right, mRect.right) - Math.max(cRect.left, mRect.left));
+        const yOverlap = Math.max(0, Math.min(cRect.bottom, mRect.bottom) - Math.max(cRect.top, mRect.top));
+        if (xOverlap > mRect.width * 0.22 && yOverlap > mRect.height * 0.22) {
+          isCovered = true;
+          break;
+        }
+      }
+
+      if (isCovered) {
+        beam.classList.add('cloud-occluded');
+        moon.classList.add('cloud-dimmed');
+      } else {
+        beam.classList.remove('cloud-occluded');
+        moon.classList.remove('cloud-dimmed');
+      }
+    };
+
+    setInterval(checkMoonOcclusion, 250);
+  }
   window.addEventListener('resize', () => {
-    initSeaWavesCanvas();
     for (const lantern of sky.querySelectorAll('.v7-lantern'))
       lantern.style.setProperty('--lantern-travel', (sky.clientHeight + 75) + 'px');
   }, { passive: true });
   initSeaLife();
-  initSeaWavesCanvas();
 }
 
 const SEA_LIFE_ART = {
@@ -1796,15 +1900,34 @@ function initSeaLife() {
 }
 
 const SEA_LANES = [0.58, 0.66, 0.74, 0.82];
-let nextLaneIndex = 0;
+
+// Level 2: Smart Dynamic Lane Allocation (กระจายลงเลนที่โล่งที่สุดเสมอ)
+function allocateBestLane(sea) {
+  const H = sea.clientHeight;
+  const laneScores = SEA_LANES.map(fraction => {
+    const laneY = H * fraction;
+    let count = 0;
+    let entryCrowding = 0;
+    for (const d of drifters.values()) {
+      if (d.sinking || d.respawnPending || !d.el.isConnected) continue;
+      if (Math.abs(d.y - laneY) < H * 0.055) {
+        count++;
+        if (d.x < 280) entryCrowding += (280 - d.x) / 280;
+      }
+    }
+    return { fraction, score: count * 1.5 + entryCrowding * 2.5 + Math.random() * 0.35 };
+  });
+
+  laneScores.sort((a, b) => a.score - b.score);
+  const bestFraction = laneScores[0].fraction;
+  const jitter = (Math.random() - 0.5) * (H * 0.022);
+  return Math.max(H * 0.55, Math.min(H * 0.86, H * bestFraction + jitter));
+}
 
 function randomPosition(sea) {
-  const laneFraction = SEA_LANES[nextLaneIndex % SEA_LANES.length];
-  nextLaneIndex++;
-  const jitter = (Math.random() - 0.5) * (sea.clientHeight * 0.03);
   return {
     x: -130,
-    y: Math.max(sea.clientHeight * 0.55, Math.min(sea.clientHeight * 0.86, sea.clientHeight * laneFraction + jitter))
+    y: allocateBestLane(sea)
   };
 }
 
@@ -1817,72 +1940,108 @@ function patchDrifterNode(node, item) {
   node.innerHTML = seaItemHTML(item);
   node.onclick = () => displayWish(item);
   node.dataset.itemKey = seaItemKey(item);
+  node.dataset.itemId = String(item.id || '');
 }
 
 function seaItemHTML(item) {
-  return `<span class="sea-bob"><span class="krathong-art">${artHTML(item, 'sea_' + (item.id || '0'))}</span><span class="sea-name">${esc(item.name || 'ไม่ระบุชื่อ')}</span></span>`;
+  return `<span class="sea-bob"><span class="krathong-candle-glow" aria-hidden="true"></span><span class="krathong-ripple" aria-hidden="true"></span><span class="krathong-art">${artHTML(item, 'sea_' + (item.id || '0'))}</span><span class="sea-name">${esc(item.name || 'ไม่ระบุชื่อ')}</span></span>`;
 }
 
-function addDrifter(item) {
+function addDrifter(item, startX = null, startY = null) {
   const sea = $('seaBoard');
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'sea-item';
   b.setAttribute('aria-label', 'กระทงของ ' + (item.name || ''));
   patchDrifterNode(b, item);
   sea.appendChild(b);
-  const pos = randomPosition(sea);
+  const pos = (startX !== null && startY !== null) ? { x: startX, y: startY } : randomPosition(sea);
   const direction = 1;
   const speed = 16 + Math.random() * 9;
   drifters.set(String(item.id), {
     el: b, item, x: pos.x, y: pos.y,
-    vx: speed, vy: 0, entrySpeed: 42 + Math.random() * 8,
-    entering: true,
+    vx: speed, vy: 0, entrySpeed: startX !== null ? speed : (42 + Math.random() * 8),
+    entering: startX === null,
     retiring: false,
     direction, flow: Math.random() * Math.PI * 2, turn: 0, phase: Math.random() * 7
   });
   b.style.left = pos.x + 'px';
   b.style.top = pos.y + 'px';
+  return b;
+}
+
+function launchKrathongToSea(item) {
+  const sea = $('seaBoard');
+  if (!sea) return;
+
+  completedKrathongs.delete(String(item.id));
+  const existing = drifters.get(String(item.id));
+  if (existing) {
+    if (existing.el && existing.el.isConnected) existing.el.remove();
+    drifters.delete(String(item.id));
+  }
+
+  pendingSeaEntries = pendingSeaEntries.filter(x => String(x.id) !== String(item.id));
+
+  const spawnX = Math.min(180, Math.floor(sea.clientWidth * 0.16));
+  const spawnY = Math.floor(sea.clientHeight * 0.74);
+  const el = addDrifter(item, spawnX, spawnY);
+  if (el) {
+    el.classList.add('just-released');
+    setTimeout(() => { if (el.isConnected) el.classList.remove('just-released'); }, 2000);
+  }
 }
 
 function renderSea() {
-  $('total').textContent = Number(state.total || state.items.length).toLocaleString('th-TH');
+  const totalCount = Number(state.total || getAllAvailableKrathongs().length);
+  $('total').textContent = totalCount.toLocaleString('th-TH');
   const sea = $('seaBoard');
-  let visible = state.items.slice(0, SEA_SAMPLE_SIZE);
-  if (state.ownItem && Date.now() < state.ownUntil && !visible.some(i => String(i.id) === String(state.ownItem.id))) {
-    visible = [state.ownItem, ...visible.slice(0, SEA_SAMPLE_SIZE - 1)];
-  }
-  const ids = new Set(visible.map(x => String(x.id)));
-  for (const [id, v] of drifters) {
-    if (!ids.has(id)) v.retiring = true;
-    else if (v.retiring) v.retiring = false;
-  }
   sea.querySelectorAll('.empty').forEach(x => x.remove());
-  if (!visible.length) {
-    pendingSeaEntries = [];
-    nextSeaEntryAt = 0;
-    sea.insertAdjacentHTML('beforeend', '<div class="empty">ยังไม่มีกระทง มาเป็นคนแรกกันเถอะ 🪷</div>');
-    renderWishTicker();
-    return;
-  }
 
-  pendingSeaEntries = pendingSeaEntries.filter(x => ids.has(String(x.id)) && !drifters.has(String(x.id)));
-  const pendingById = new Map(pendingSeaEntries.map(x => [String(x.id), x]));
-  for (const item of visible) {
-    const id = String(item.id);
-    const old = drifters.get(id);
-    if (old) {
-      old.item = item;
-      old.retiring = false;
-      if (old.el.dataset.itemKey !== seaItemKey(item)) patchDrifterNode(old.el, item);
-    } else if (pendingById.has(id)) {
-      Object.assign(pendingById.get(id), item);
-    } else {
-      pendingSeaEntries.push(item);
+  const targetCount = getSeaSampleSize();
+  const currentCount = drifters.size + pendingSeaEntries.length;
+  const needed = Math.max(0, targetCount - currentCount);
+
+  for (let i = 0; i < needed; i++) {
+    const nextItem = getNextStreamKrathong();
+    if (nextItem && !drifters.has(String(nextItem.id)) && !pendingSeaEntries.some(p => String(p.id) === String(nextItem.id))) {
+      pendingSeaEntries.push(nextItem);
     }
   }
+
   if (!nextSeaEntryAt && pendingSeaEntries.length) nextSeaEntryAt = performance.now();
   renderWishTicker();
 }
+
+window.renderSea = renderSea;
+
+window.sinkDrifterItem = function(itemId) {
+  const idStr = String(itemId);
+  const d = drifters.get(idStr);
+  let sunkItem = null;
+  if (d) {
+    d.sinking = true;
+    sunkItem = d.item;
+    if (d.el && d.el.isConnected) d.el.remove();
+    drifters.delete(idStr);
+  }
+  if (!sunkItem) {
+    const all = getAllAvailableKrathongs();
+    sunkItem = all.find(x => String(x.id) === idStr);
+  }
+  if (sunkItem) {
+    // Sunk by shark: this is the ONLY condition where a krathong loops/re-enters the sea!
+    completedKrathongs.delete(idStr);
+    recycledFromShark.push(sunkItem);
+  }
+
+  // Queue next krathong to replace sunken one
+  const nextItem = getNextStreamKrathong();
+  if (nextItem && !pendingSeaEntries.some(p => String(p.id) === String(nextItem.id))) {
+    pendingSeaEntries.push(nextItem);
+    if (!nextSeaEntryAt) nextSeaEntryAt = performance.now();
+  }
+  renderWishTicker();
+};
 
 function releaseNextSeaEntry(now) {
   if (!pendingSeaEntries.length) { nextSeaEntryAt = 0; return; }
@@ -1924,7 +2083,7 @@ function animateSea(ts) {
       m.el.style.transform = `translate3d(${m.x}px,${m.y}px,0) scaleX(${m.dir > 0 ? 1 : -1}) rotate(${tilt}deg)`;
     }
 
-    // Anti-bunching (กระทงไม่กอง) - Soft separation & collision avoidance
+    // Anti-bunching + Adaptive Cruise Control (ACC รักษาระยะห่างอัจฉริยะ ป้องกันซ้อน 100%)
     const activeDrifters = [];
     for (const d of drifters.values()) {
       if (!d.sinking && !d.respawnPending && d.el.isConnected) {
@@ -1939,23 +2098,29 @@ function animateSea(ts) {
         const dy = d2.y - d1.y;
         const absDx = Math.abs(dx);
         const absDy = Math.abs(dy);
-        const minX = 142; // safe horizontal distance
-        const minY = 46;  // safe vertical distance
+        const minX = 168; // Safe horizontal distance (กว้างขึ้น ป้องกันซ้อน 100%)
+        const minY = 52;  // Safe vertical distance
 
-        if (absDx < minX && absDy < minY) {
-          // Repel apart smoothly
-          if (dx > 0) {
-            d1.vx = Math.max(12, d1.vx - 8 * dt);
-            d2.vx = Math.min(26, d2.vx + 8 * dt);
-            d1.x -= 14 * dt;
-            d2.x += 14 * dt;
-          } else if (dx < 0) {
-            d2.vx = Math.max(12, d2.vx - 8 * dt);
-            d1.vx = Math.min(26, d1.vx + 8 * dt);
-            d2.x -= 14 * dt;
-            d1.x += 14 * dt;
+        // 1. Adaptive Cruise Control: ถ้าคันหลังวิ่งมาจี้คันหน้าในเลนเดียวกัน ให้ชะลอความเร็ว
+        if (absDy < minY * 0.85) {
+          if (dx > 0 && absDx < 220) {
+            d1.vx = Math.max(12, Math.min(d1.vx, d2.vx * 0.85));
+          } else if (dx < 0 && absDx < 220) {
+            d2.vx = Math.max(12, Math.min(d2.vx, d1.vx * 0.85));
           }
-          const pushY = (minY - absDy) * 0.45 * dt * 20;
+        }
+
+        // 2. Soft Repel: ถ้าเข้าใกล้กันในระยะปลอดภัย ให้ผลักแยกออกจากกันอย่างนุ่มนวล
+        if (absDx < minX && absDy < minY) {
+          const repelX = (1 - absDx / minX) * 20 * dt;
+          if (dx > 0) {
+            d1.x -= repelX;
+            d2.x += repelX * 0.65;
+          } else if (dx < 0) {
+            d2.x -= repelX;
+            d1.x += repelX * 0.65;
+          }
+          const pushY = (minY - absDy) * 0.5 * dt * 20;
           if (dy >= 0) {
             d1.y = Math.max(h * 0.55, d1.y - pushY);
             d2.y = Math.min(h * 0.86, d2.y + pushY);
@@ -1967,72 +2132,16 @@ function animateSea(ts) {
       }
     }
 
-    // Render realistic ocean waves onto canvas
-    if (!seaCanvasState.canvas || seaCanvasState.w !== (sea.querySelector('.sea-surface')?.clientWidth || w)) {
-      initSeaWavesCanvas();
-    }
-    if (seaCanvasState.ctx && seaCanvasState.w && seaCanvasState.h) {
-      drawRealisticWaves(seaCanvasState.ctx, seaCanvasState.w, seaCanvasState.h, ts * 0.001, dt);
-    }
 
-    // Big Wave update (คลื่นใหญ่ลูกพัดกระทง)
-    if (!bigWave.active) {
-      if (ts >= bigWave.nextAt && w > 0) {
-        bigWave.active = true;
-        bigWave.x = -260;
-        bigWave.speed = Math.max(160, (w + 520) / 4.4);
-      }
-    } else {
-      bigWave.x += bigWave.speed * dt;
-      if (bigWave.x > w + 260) {
-        bigWave.active = false;
-        bigWave.nextAt = ts + 10000 + Math.random() * 15000; // สุ่มคลื่นใหญ่ทุก 10-25 วิ
-      }
-    }
 
     for (const [id, v] of drifters) {
-      if (v.sinking || v.respawnPending) continue;
+      if (v.el && v.el.dataset.chomped === 'true') {
+        // Paused during shark bite attack so the chomp animation plays cleanly in place
+        continue;
+      }
       v.phase += dt;
       v.flow += dt;
       v.vx = Math.abs(v.vx) || 18;
-
-      // Small ambient wave motion (คลื่นเล็กระยิบระยับผิวน้ำ)
-      const smallWaveHeave = Math.sin(v.phase * 2.2 + v.x * 0.015) * 4.2;
-      const smallWaveTilt = Math.cos(v.phase * 1.8 + v.x * 0.012) * 3.2;
-
-      let waveHeave = 0;
-      let waveTilt = 0;
-      let waveSurge = 0;
-      let isSurging = false;
-
-      // Big wave swell & surge interaction (คลื่นใหญ่พัดกระทง)
-      if (bigWave.active) {
-        const seaYNorm = Math.max(0, Math.min(1, (v.y - h * 0.42) / (h * 0.58)));
-        const slant = 140;
-        const curveOffset = Math.sin(seaYNorm * Math.PI) * 36;
-        const crestX = bigWave.x + seaYNorm * slant + curveOffset;
-        const relX = v.x - crestX; // > 0 if ahead of crest, < 0 if behind
-        const waveInfluence = bigWave.width;
-
-        if (Math.abs(relX) < waveInfluence) {
-          const norm = relX / waveInfluence; // -1 to 1
-          // Lift up on the crest (Heave) - UP TO 24px! (เห็นชัดเจน)
-          waveHeave = Math.max(0, Math.cos(norm * (Math.PI / 2))) * 24;
-          // Pitch / Tilt along the wave slope - UP TO 13.5deg!
-          waveTilt = -Math.sin(norm * Math.PI) * 13.5;
-          // Push forward on the wave's forward slope (พัดกระทง)
-          if (norm < 0.7) {
-            waveSurge = (0.7 - norm) * 115 * dt;
-            v.x += waveSurge;
-            isSurging = true;
-          }
-        }
-      }
-
-      if (isSurging !== v.wasSurging) {
-        v.wasSurging = isSurging;
-        v.el.classList.toggle('wave-surging', isSurging);
-      }
 
       v.x += (v.entering ? v.entrySpeed : v.vx) * dt;
       if (v.x >= 120) v.entering = false;
@@ -2040,24 +2149,22 @@ function animateSea(ts) {
       v.y = Math.max(h * .55, Math.min(h * .88, v.y));
       const margin = 140;
       if (v.x > w + margin) {
-        if (v.retiring) {
-          v.el.remove();
-          drifters.delete(id);
-          continue;
-        }
-        v.x = -margin;
-        const laneFraction = SEA_LANES[Math.floor(Math.random() * SEA_LANES.length)];
-        v.y = Math.max(h * 0.55, Math.min(h * 0.86, h * laneFraction + (Math.random() - 0.5) * (h * 0.03)));
-      }
+        // Finished voyage to horizon: mark as completed and do NOT loop back
+        completedKrathongs.add(String(id));
+        if (v.el && v.el.isConnected) v.el.remove();
+        drifters.delete(id);
 
-      const totalY = v.y - waveHeave + smallWaveHeave;
-      const totalTilt = waveTilt + smallWaveTilt;
+        const nextItem = getNextStreamKrathong();
+        if (nextItem && !pendingSeaEntries.some(p => String(p.id) === String(nextItem.id))) {
+          pendingSeaEntries.push(nextItem);
+          if (!nextSeaEntryAt) nextSeaEntryAt = performance.now();
+        }
+        continue;
+      }
 
       v.el.style.left = v.x + 'px';
-      v.el.style.top = totalY + 'px';
-      if (!v.el.classList.contains('krathong-bitten') && !v.el.classList.contains('krathong-shaken') && !v.el.classList.contains('krathong-survived')) {
-        v.el.style.transform = `translate(-50%, -50%) rotate(${totalTilt.toFixed(2)}deg)`;
-      }
+      v.el.style.top = v.y + 'px';
+      v.el.style.transform = 'translate(-50%, -50%)';
     }
   }
   requestAnimationFrame(animateSea);
@@ -2086,8 +2193,9 @@ async function loadSea() {
   let nextTotal = 0;
   let nextMinute = Math.floor(Date.now() / 60000);
 
+  const sampleSize = getSeaSampleSize();
   try {
-    const out = await request('list', { limit: String(SEA_SAMPLE_SIZE), random: String(SEA_SAMPLE_SIZE) }, 'GET');
+    const out = await request('list', { limit: String(sampleSize), random: String(sampleSize) }, 'GET');
     if (out && out.ok) {
       nextItems = out.items || [];
       nextRecent = out.recent || nextItems;
@@ -2102,7 +2210,7 @@ async function loadSea() {
   const localKrathongs = getLocalKrathongs();
   if (!nextItems.length) {
     const combined = [...localKrathongs, ...SEED_KRATHONGS];
-    nextItems = combined.slice(0, SEA_SAMPLE_SIZE);
+    nextItems = combined.slice(0, sampleSize);
     nextRecent = combined.slice(0, 15);
     nextTotal = combined.length;
   } else if (localKrathongs.length) {
@@ -2111,16 +2219,11 @@ async function loadSea() {
     for (const item of merged) {
       if (!uniqueMap.has(String(item.id))) uniqueMap.set(String(item.id), item);
     }
-    nextItems = Array.from(uniqueMap.values()).slice(0, SEA_SAMPLE_SIZE);
+    nextItems = Array.from(uniqueMap.values()).slice(0, sampleSize);
     nextTotal += localKrathongs.length;
   }
 
-  // If user owns a recently floated krathong, keep it in view
-  if (state.ownItem && Date.now() < state.ownUntil) {
-    if (!nextItems.some(x => String(x.id) === String(state.ownItem.id))) {
-      nextItems = [state.ownItem, ...nextItems].slice(0, SEA_SAMPLE_SIZE);
-    }
-  }
+
 
   const nextKey = nextItems.map(x => String(x.id)).join('|');
   const prevKey = state.items.map(x => String(x.id)).join('|');
@@ -2178,6 +2281,10 @@ $('release').onclick = async () => {
 
   setReleaseLoading(true);
   $('status').textContent = 'กำลังปล่อยกระทง...';
+
+  // Level 3: Concurrency Jitter (กระจายโหลด 300 คำขอไม่ให้พุ่งชนเซิร์ฟเวอร์พร้อมกันในมิลลิวินาทีเดียวกัน)
+  const jitterMs = Math.floor(Math.random() * 450);
+  if (jitterMs > 0) await new Promise(r => setTimeout(r, jitterMs));
 
   const chosenBase = state.type;
   const chosenCandle = state.candle;
@@ -2241,20 +2348,21 @@ $('release').onclick = async () => {
         baseDesign: chosenBase,
         candleDesign: chosenCandle
       };
-      state.ownItem = enhancedItem;
-      state.ownUntil = Date.now() + 65000;
       state.total += 1;
       state.recentItems = [enhancedItem, ...state.recentItems.filter(x => String(x.id) !== String(out.item.id))].slice(0, 15);
-      state.items = [enhancedItem, ...state.items.filter(x => String(x.id) !== String(out.item.id))].slice(0, SEA_SAMPLE_SIZE);
+      state.items = [enhancedItem, ...state.items.filter(x => String(x.id) !== String(out.item.id))].slice(0, getSeaSampleSize());
       state.hrPool = [enhancedItem, ...state.hrPool.filter(x => String(x.id) !== String(out.item.id))];
 
       $('total').textContent = state.total.toLocaleString('th-TH');
       renderSea();
+      launchKrathongToSea(enhancedItem);
+      state.tickerIndex = 0;
+      renderWishTicker();
     }
 
     $('launch').hidden = false;
     setTimeout(() => { $('launch').hidden = true; }, 2300);
-    $('status').textContent = 'กระทงของคุณลอยอยู่ในทะเลแล้ว!';
+    $('status').textContent = 'กระทงลอยอยู่ในทะเลแล้ว!';
     setTimeout(() => { resetBuilder(); closeModal('builderModal'); }, 1000);
     localStorage.setItem('phiPhiLastWish', new Date().toISOString());
   } catch (renderErr) {
@@ -2698,6 +2806,7 @@ function initMusicPlayer() {
 }
 
 if ($('photoPublic')) $('photoPublic').onchange = () => { $('photoPublic').dataset.touched = '1'; };
+try { localStorage.removeItem('phiPhiMyKrathong_v1'); localStorage.removeItem('phiPhiMyKrathong'); } catch (e) {}
 initChoices();
 updatePreview();
 syncHrUi();
@@ -2706,422 +2815,13 @@ loadSea();
 initMusicPlayer();
 requestAnimationFrame(animateSea);
 setInterval(() => { state.tickerIndex++; renderWishTicker(); }, 8000);
-setInterval(() => { if (!document.hidden) loadSea(); }, SEA_REFRESH_MS);
+function scheduleSeaPolling() {
+  const nextInterval = SEA_REFRESH_MS + (Math.random() - 0.5) * 6000;
+  setTimeout(() => {
+    if (!document.hidden) loadSea();
+    scheduleSeaPolling();
+  }, nextInterval);
+}
+scheduleSeaPolling();
 document.addEventListener('visibilitychange', () => { lastFrame = 0; if (!document.hidden) loadSea(); });
 
-/* ===== 4. Marine Predators Actor (ฉลามครีบดำ, ปลากระเบนราหู, ปลานกแก้ว เกาะพีพี) ===== */
-(function(){
-  const actor = $('sharkActor');
-  if(!actor || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const sea = $('seaBoard');
-  const rig = actor.querySelector('.shark-rig');
-  const ring = actor.querySelector('.shark-ring'), drops = actor.querySelector('.shark-drops');
-  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
-  const smooth = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
-
-  const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-  marker.setAttribute('cx', '61');
-  marker.setAttribute('cy', '124');
-  marker.setAttribute('r', '1');
-  marker.setAttribute('opacity', '0');
-  marker.setAttribute('pointer-events', 'none');
-
-  let jaw = actor.querySelector('.shark-jaw');
-
-  // 3 Iconic Marine Species of Koh Phi Phi:
-  // 1. ฉลามครีบดำ (Blacktip Reef Shark)
-  // 2. ปลากระเบนราหู (Manta Ray / Giant Stingray)
-  // 3. ปลานกแก้ว (Phi Phi Parrotfish)
-  const PREDATOR_SPECIES = {
-    shark: {
-      name: 'ฉลามครีบดำ',
-      svg: `<svg class="shark-svg" viewBox="0 0 420 230" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <linearGradient id="sharkSkin" x1="0" y1="45" x2="0" y2="160" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#212f3d" />
-            <stop offset=".45" stop-color="#34495e" />
-            <stop offset=".66" stop-color="#5d6d7e" />
-            <stop offset=".72" stop-color="#eaeded" />
-            <stop offset="1" stop-color="#d5dbdb" />
-          </linearGradient>
-          <linearGradient id="sharkFin" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#2c3e50" />
-            <stop offset="1" stop-color="#4a6572" />
-          </linearGradient>
-          <linearGradient id="sharkJaw" x1="0" y1="105" x2="0" y2="155" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#dfe8ee" />
-            <stop offset="1" stop-color="#b9c8d2" />
-          </linearGradient>
-          <radialGradient id="sharkMouth" cx=".4" cy=".4" r=".8">
-            <stop offset="0" stop-color="#b3394a" />
-            <stop offset="1" stop-color="#3d0c16" />
-          </radialGradient>
-        </defs>
-        <g class="shark-tail-fin">
-          <path d="M365 90 C378 70 392 40 408 18 C402 52 400 78 396 100 C402 128 408 150 416 188 C392 168 376 146 360 118 Z" fill="url(#sharkFin)" />
-          <path d="M400 36 C403 26 406 20 408 18 C402 38 400 50 398 62 Z" fill="#111111" />
-        </g>
-        <path d="M95 135 C70 126 40 116 12 105 L36 150 L112 152 Z" fill="url(#sharkMouth)" />
-        <g class="shark-jaw">
-          <path d="M95 134 L16 108 C26 132 58 152 112 152 L116 134 Z" fill="url(#sharkJaw)" />
-          <path d="M16.0 108.0L20.0 99.3L23.4 110.6ZM24.2 110.9L28.2 102.2L31.6 113.5ZM32.4 113.8L36.4 105.1L39.8 116.4ZM40.7 116.7L44.7 108.0L48.1 119.3ZM48.9 119.6L52.9 110.9L56.3 122.2ZM57.1 122.4L61.1 113.7L64.5 125.0ZM65.3 125.3L69.3 116.6L72.7 127.9ZM73.6 128.2L77.6 119.5L81.0 130.8ZM81.8 131.1L85.8 122.4L89.2 133.7Z" fill="#fffdf4" />
-          <path d="M34 124 C52 136 76 144 100 146" stroke="#9fb1be" stroke-width="1.5" fill="none" opacity=".7" />
-        </g>
-        <path d="M12 105 C50 70 120 48 196 50 L222 6 C230 30 240 46 258 56 C306 60 346 76 372 92 L368 120 C330 132 280 142 232 150 C186 160 150 156 112 152 L95 135 C70 126 40 116 12 105 Z" fill="url(#sharkSkin)" />
-        <g class="shark-dorsal-fin">
-          <path d="M190 52 C204 34 214 18 224 2 C228 26 238 44 258 58 Z" fill="url(#sharkFin)" />
-          <path d="M214 18 C218 10 221 4 224 2 C226 12 230 22 234 28 Z" fill="#111111" />
-        </g>
-        <g class="shark-pectoral-fin">
-          <path d="M150 136 C168 156 184 182 190 208 C168 194 142 176 120 150 Z" fill="url(#sharkFin)" />
-          <path d="M178 194 C184 200 188 205 190 208 C182 202 174 196 168 190 Z" fill="#111111" />
-        </g>
-        <path d="M16.0 107.0L19.4 118.3L23.4 109.7ZM24.2 110.0L27.6 121.3L31.6 112.7ZM32.4 113.0L35.8 124.3L39.8 115.7ZM40.7 116.0L44.1 127.3L48.1 118.7ZM48.9 119.0L52.3 130.3L56.3 121.7ZM57.1 122.0L60.5 133.3L64.5 124.7ZM65.3 125.0L68.7 136.3L72.7 127.7ZM73.6 128.0L77.0 139.3L81.0 130.7ZM81.8 131.0L85.2 142.3L89.2 133.7Z" fill="#fffdf4" />
-        <g stroke="#2a3c4b" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".75">
-          <path d="M118 84 C122 98 122 112 118 126" />
-          <path d="M128 82 C132 97 132 112 128 128" />
-          <path d="M138 81 C142 97 142 112 138 129" />
-          <path d="M148 80 C152 96 152 112 148 130" />
-          <path d="M158 80 C161 96 161 111 158 130" />
-        </g>
-        <circle cx="66" cy="94" r="7" fill="#ffca28" />
-        <circle cx="66" cy="94" r="4.5" fill="#0d1b2a" />
-        <circle cx="64" cy="92" r="1.8" fill="#ffffff" opacity=".95" />
-      </svg>`
-    },
-    ray: {
-      name: 'ปลากระเบนราหู',
-      svg: `<svg class="shark-svg" viewBox="0 0 420 230" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <linearGradient id="raySkin" x1="0" y1="40" x2="0" y2="160" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#0d233a" />
-            <stop offset=".45" stop-color="#1a3d5e" />
-            <stop offset=".7" stop-color="#2a5c86" />
-            <stop offset=".85" stop-color="#e0f2f1" />
-            <stop offset="1" stop-color="#b2dfdb" />
-          </linearGradient>
-          <linearGradient id="rayWing" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#102e48" />
-            <stop offset="1" stop-color="#27577a" />
-          </linearGradient>
-          <radialGradient id="rayMouth" cx=".4" cy=".4" r=".8">
-            <stop offset="0" stop-color="#880e4f" />
-            <stop offset="1" stop-color="#210515" />
-          </radialGradient>
-        </defs>
-        <g class="shark-tail-fin">
-          <path d="M340 108 C370 100 395 106 418 118" stroke="#0d233a" stroke-width="4.5" fill="none" stroke-linecap="round" />
-          <path d="M340 108 C370 100 395 106 418 118" stroke="#4dd0e1" stroke-width="1.8" fill="none" opacity=".8" />
-        </g>
-        <path d="M92 134 C72 125 44 116 16 106 L38 148 L108 150 Z" fill="url(#rayMouth)" />
-        <g class="shark-jaw">
-          <path d="M92 134 L18 108 C26 130 56 150 108 150 L112 134 Z" fill="#b2dfdb" />
-          <path d="M22 110 L30 144 M38 114 L46 146 M54 118 L62 148 M70 122 L78 149 M86 126 L94 149" stroke="#004d40" stroke-width="2" opacity=".6" />
-        </g>
-        <path d="M14 106 C20 72 65 52 140 44 C190 6 240 2 280 20 C230 46 220 62 250 78 C310 82 342 96 360 110 C330 126 270 138 210 146 C160 154 130 154 104 150 L92 134 C68 126 40 116 14 106 Z" fill="url(#raySkin)" />
-        <path d="M140 44 C190 6 240 2 280 20 C240 50 200 60 170 64 Z" fill="url(#rayWing)" stroke="#80deea" stroke-width="1.5" opacity=".95" />
-        <path d="M130 152 C170 186 210 208 240 216 C205 186 180 166 160 152 Z" fill="url(#rayWing)" stroke="#80deea" stroke-width="1.5" opacity=".95" />
-        <g fill="#80deea" opacity=".85">
-          <circle cx="160" cy="74" r="3.5" /><circle cx="180" cy="82" r="4" /><circle cx="205" cy="78" r="3" />
-          <circle cx="170" cy="98" r="4.5" /><circle cx="195" cy="104" r="5" /><circle cx="220" cy="96" r="3.5" />
-          <circle cx="240" cy="106" r="4" /><circle cx="265" cy="102" r="3" /><circle cx="285" cy="108" r="2.8" />
-          <circle cx="140" cy="90" r="3" /><circle cx="150" cy="112" r="3.5" />
-        </g>
-        <path d="M14 106 C8 92 18 84 32 94 C24 100 18 104 14 106 Z" fill="#00b4d8" />
-        <circle cx="58" cy="80" r="6" fill="#00e5ff" />
-        <circle cx="58" cy="80" r="3.8" fill="#051923" />
-        <circle cx="56.5" cy="78.5" r="1.5" fill="#fff" />
-      </svg>`
-    },
-    parrotfish: {
-      name: 'ปลานกแก้ว',
-      svg: `<svg class="shark-svg" viewBox="0 0 420 230" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <linearGradient id="parrotSkin" x1="0" y1="40" x2="0" y2="160" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#00838f" />
-            <stop offset=".35" stop-color="#00b4d8" />
-            <stop offset=".65" stop-color="#00e5ff" />
-            <stop offset=".82" stop-color="#ff4081" />
-            <stop offset="1" stop-color="#ffd54f" />
-          </linearGradient>
-          <linearGradient id="parrotFin" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#ff4081" />
-            <stop offset=".6" stop-color="#00e5ff" />
-            <stop offset="1" stop-color="#ffd54f" />
-          </linearGradient>
-          <radialGradient id="parrotMouth" cx=".4" cy=".4" r=".8">
-            <stop offset="0" stop-color="#e91e63" />
-            <stop offset="1" stop-color="#4a148c" />
-          </radialGradient>
-          <linearGradient id="beakIvory" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#ffffff" />
-            <stop offset=".6" stop-color="#e0f7fa" />
-            <stop offset="1" stop-color="#80deea" />
-          </linearGradient>
-        </defs>
-        <g class="shark-tail-fin">
-          <path d="M350 96 C375 60 405 38 418 36 C412 80 408 112 404 126 C410 152 414 186 418 202 C395 190 370 162 346 132 Z" fill="url(#parrotFin)" stroke="#00e5ff" stroke-width="1.8" />
-        </g>
-        <path d="M90 134 C68 126 42 116 16 106 L36 148 L108 150 Z" fill="url(#parrotMouth)" />
-        <g class="shark-jaw">
-          <path d="M90 134 L16 108 C26 130 56 150 108 150 L112 134 Z" fill="url(#parrotSkin)" />
-          <path d="M16 108 Q 32 112 42 126 Q 30 136 24 130 Z" fill="url(#beakIvory)" stroke="#00acc1" stroke-width="1.5" />
-          <path d="M22 110 L28 122 M28 112 L34 124 M34 114 L40 126" stroke="#00838f" stroke-width="1.5" opacity=".7" />
-        </g>
-        <path d="M16 106 C30 68 85 42 165 44 C210 18 245 16 270 34 C295 44 330 68 356 94 L350 128 C320 142 275 152 225 158 C175 164 140 160 108 150 L90 134 C68 126 42 116 16 106 Z" fill="url(#parrotSkin)" stroke="#80deea" stroke-width="1.5" />
-        <path d="M16 106 Q 32 94 48 98 Q 44 114 26 112 Z" fill="url(#beakIvory)" stroke="#00acc1" stroke-width="1.8" />
-        <g class="shark-dorsal-fin">
-          <path d="M160 44 C190 22 240 16 276 34 C255 42 220 46 185 46 Z" fill="url(#parrotFin)" stroke="#ff4081" stroke-width="1.5" />
-        </g>
-        <g class="shark-pectoral-fin">
-          <path d="M142 134 C162 152 178 178 184 204 C162 190 136 172 115 146 Z" fill="url(#parrotFin)" stroke="#ffd54f" stroke-width="1.5" />
-        </g>
-        <g stroke="#00e5ff" stroke-width="1.8" fill="none" opacity=".5" stroke-linecap="round">
-          <path d="M110 82 Q120 72 130 82 Q140 72 150 82 Q160 72 170 82 Q180 72 190 82" />
-          <path d="M100 98 Q110 88 120 98 Q130 88 140 98 Q150 88 160 98 Q170 88 180 98" />
-          <path d="M115 114 Q125 104 135 114 Q145 104 155 114 Q165 104 175 114" />
-          <path d="M130 130 Q140 120 150 130 Q160 120 170 130" />
-        </g>
-        <circle cx="68" cy="88" r="9" fill="#ffd600" />
-        <circle cx="68" cy="88" r="7" fill="#00e5ff" />
-        <circle cx="68" cy="88" r="5" fill="#0d1b2a" />
-        <circle cx="66" cy="86" r="2" fill="#ffffff" opacity=".95" />
-      </svg>`
-    }
-  };
-
-  function setupPredator(kind) {
-    const spec = PREDATOR_SPECIES[kind] || PREDATOR_SPECIES.shark;
-    rig.innerHTML = spec.svg;
-    const s = rig.querySelector('.shark-svg');
-    if (s) s.appendChild(marker);
-    jaw = actor.querySelector('.shark-jaw');
-    actor.dataset.creature = kind;
-  }
-
-  // Initialize with shark
-  setupPredator('shark');
-
-  function alignMouth(mouthX, mouthY){
-    const stage = sea.getBoundingClientRect();
-    const actual = marker.getBoundingClientRect();
-    if(!actual.width && !actual.height) return;
-    const dx = stage.left + mouthX - (actual.left + actual.width / 2);
-    const dy = stage.top + mouthY - (actual.top + actual.height / 2);
-    actor.style.left = (parseFloat(actor.style.left) + dx) + 'px';
-    actor.style.top = (parseFloat(actor.style.top) + dy) + 'px';
-  }
-
-  const APPROACH = 2100, BREACH = 500, CHOMP = 720, DRAG = 980, FADE = 420, TOTAL = APPROACH + BREACH + CHOMP + DRAG + FADE;
-  let busy = false;
-
-  function getTargetPoint(v){
-    const seaRect = sea.getBoundingClientRect();
-    const art = v.el.querySelector('.krathong-art') || v.el;
-    const r = art.getBoundingClientRect();
-    return {
-      x: r.left - seaRect.left + r.width * .53,
-      y: r.top - seaRect.top + r.height * .54
-    };
-  }
-
-  function splash(count){
-    ring.classList.remove('go'); void ring.offsetWidth; ring.classList.add('go');
-    const sw = parseFloat(actor.style.getPropertyValue('--sw')) || 220;
-    for(let i = 0; i < count; i++){
-      const d = document.createElement('i');
-      const x = (Math.random() - .55) * sw * .85, up = 28 + Math.random() * sw * .22;
-      d.style.left = (sw * .50) + 'px'; d.style.width = d.style.height = (3 + Math.random() * 6) + 'px';
-      drops.appendChild(d);
-      d.animate([
-        {transform: 'translate(0,0) scale(1)', opacity: 1},
-        {transform: `translate(${x * .7}px,${-up * .72}px) scale(1.05)`, opacity: .95, offset: .42},
-        {transform: `translate(${x}px,${12 + Math.random() * 10}px) scale(.7)`, opacity: 0}
-      ], {duration: 700 + Math.random() * 250, easing: 'ease-out'}).onfinish = () => d.remove();
-    }
-  }
-
-  // Outcome 1: งับแล้วจมน้ำ (Bite and drag under)
-  function sinkKrathong(v){
-    if(v.sinking || !v.el.isConnected) return;
-    v.sinking = true;
-    v.el.classList.add('krathong-bitten');
-    setTimeout(() => { if(v.el.isConnected) v.el.classList.add('krathong-sinking'); }, 160);
-    setTimeout(() => {
-      if(!v.el.isConnected) return;
-      v.el.classList.remove('krathong-bitten', 'krathong-sinking');
-      v.el.classList.add('krathong-respawning');
-      v.sinking = false;
-      v.respawnPending = true;
-      const margin = 140;
-      v.x = -margin - (Math.random() * 90);
-      const laneFraction = SEA_LANES[Math.floor(Math.random() * SEA_LANES.length)];
-      v.y = Math.max(sea.clientHeight * 0.55, Math.min(sea.clientHeight * 0.86, sea.clientHeight * laneFraction + (Math.random() - 0.5) * 10));
-      v.vx = 14 + Math.random() * 11;
-      v.el.style.left = v.x + 'px';
-      v.el.style.top = v.y + 'px';
-      setTimeout(() => {
-        if(!v.el.isConnected) return;
-        v.respawnPending = false;
-        v.el.classList.remove('krathong-respawning');
-      }, 280);
-    }, 1680);
-  }
-
-  // Outcome 2: งับสะบัดปล่อย (Bite, shake violently and release)
-  function shakeAndReleaseKrathong(v){
-    if(v.sinking || v.respawnPending || !v.el.isConnected) return;
-    v.shaken = true;
-    v.el.classList.add('krathong-bitten', 'krathong-shaken');
-    setTimeout(() => {
-      if(!v.el.isConnected) return;
-      v.shaken = false;
-      v.el.classList.remove('krathong-bitten', 'krathong-shaken');
-      v.el.classList.add('krathong-survived');
-      splash(18);
-      // Give gentle forward impulse to resume drifting
-      v.vx = 20 + Math.random() * 8;
-      setTimeout(() => {
-        if(!v.el.isConnected) return;
-        v.el.classList.remove('krathong-survived');
-      }, 2000);
-    }, 1450);
-  }
-
-  async function attack(){
-    if(busy || document.hidden) return false;
-    const W = sea.clientWidth, H = sea.clientHeight;
-    const targets = [...drifters.values()].filter(v => v.el.isConnected && !v.sinking && !v.respawnPending && !v.shaken && v.x > W * .20 && v.x < W * .82 && v.y > H * .53 && v.y < H * .88);
-    if(!targets.length) return false;
-    busy = true;
-
-    // 1. สุ่มปลา 3 ตัว: ฉลามครีบดำ, ปลากระเบนราหู, ปลานกแก้ว
-    const speciesList = ['shark', 'ray', 'parrotfish'];
-    const chosenKind = speciesList[Math.floor(Math.random() * speciesList.length)];
-    setupPredator(chosenKind);
-
-    // 2. สุ่มผลลัพธ์: งับแล้วจมน้ำ (sink) VS งับสะบัดปล่อย (release)
-    const outcome = Math.random() < 0.5 ? 'sink' : 'release';
-
-    const target = targets[Math.floor(Math.random() * targets.length)];
-    const base = target.el.querySelector('.krathong-art');
-    const size = base?.getBoundingClientRect().width || 80;
-    const sw = clamp(size * 3.05, 205, 360);
-    actor.style.setProperty('--sw', sw + 'px');
-    actor.style.setProperty('--flip', '1');
-    const waterline = H * .545;
-    const initial = getTargetPoint(target);
-    const mouthStartX = Math.max(W + sw * .62, initial.x + sw * 1.38);
-    const mouthStartY = clamp(initial.y + sw * .64, waterline + sw * .48, H * .95);
-    let start = null, biteDone = false, burst = false;
-
-    return await new Promise(resolve => {
-      function frame(now){
-        if(start === null) start = now;
-        const t = now - start;
-        if(t >= TOTAL || !target.el.isConnected){
-          actor.classList.remove('on', 'is-biting', 'is-diving');
-          actor.style.opacity = '0';
-          if(jaw) jaw.style.transform = '';
-          rig.style.transform = '';
-          busy = false;
-          resolve(true);
-          return;
-        }
-        const point = getTargetPoint(target);
-        const biteX = point.x + 2;
-        const biteY = point.y + 1;
-        const dragX = biteX - sw * .34;
-        const dragY = outcome === 'sink'
-          ? clamp(point.y + sw * .78, waterline + sw * .30, H * .98)
-          : clamp(point.y + sw * .18, waterline, H * .92);
-
-        let mouthX = biteX, mouthY = biteY, bodyDip = .22, rot = 0, jawDeg = 0, opacity = 1;
-        const swim = Math.sin(t / 235), kick = Math.sin(t / 160);
-
-        if(t < APPROACH){
-          const z = smooth(t / APPROACH);
-          mouthX = mouthStartX + (biteX - mouthStartX) * z;
-          mouthY = mouthStartY + (biteY + 12 - mouthStartY) * z;
-          bodyDip = .34 + swim * .065;
-          rot = -10 + z * 18 + swim * 2.2;
-          opacity = clamp(t / 320, 0, 1);
-        } else if(t < APPROACH + BREACH){
-          const z = smooth((t - APPROACH) / BREACH);
-          mouthX = biteX + Math.sin(z * Math.PI) * 4;
-          mouthY = (biteY + 8) + (biteY - (biteY + 8)) * z;
-          bodyDip = .28 - z * .55 + swim * .028;
-          rot = 10 + z * 18 + swim * 1.8;
-          jawDeg = -12 - z * 30;
-          if(!burst){ burst = true; splash(18); }
-        } else if(t < APPROACH + BREACH + CHOMP){
-          const z = (t - APPROACH - BREACH) / CHOMP;
-          mouthX = biteX - z * 4;
-          mouthY = biteY + Math.sin(z * Math.PI) * 2;
-          bodyDip = -.26 + Math.sin(z * Math.PI * 2.8) * .045;
-          rot = 28 + Math.sin(z * Math.PI * 3.1) * 3.6 + swim * .7;
-          jawDeg = -40 + Math.sin(z * Math.PI * 4.2) * 15;
-          if(z > .18 && !biteDone){
-            biteDone = true;
-            if(outcome === 'sink'){
-              splash(24);
-              sinkKrathong(target);
-            } else {
-              splash(20);
-              shakeAndReleaseKrathong(target);
-            }
-          }
-        } else if(t < APPROACH + BREACH + CHOMP + DRAG){
-          const z = smooth((t - APPROACH - BREACH - CHOMP) / DRAG);
-          if(outcome === 'sink'){
-            mouthX = biteX + (dragX - biteX) * z;
-            mouthY = biteY + (dragY - biteY) * z;
-            bodyDip = -.2 + z * .72 + swim * .02;
-            rot = 24 - z * 24;
-            jawDeg = -7 + z * 7;
-          } else {
-            // Outcome 'release': violent surface thrashing & shaking!
-            mouthX = biteX + Math.sin(z * Math.PI * 4) * (sw * .12);
-            mouthY = biteY + Math.sin(z * Math.PI * 3) * 6;
-            bodyDip = -.15 + Math.sin(z * Math.PI * 4) * .12;
-            rot = 20 + Math.sin(z * Math.PI * 5) * 14;
-            jawDeg = -15 + Math.sin(z * Math.PI * 6) * 12;
-          }
-        } else {
-          // FADE phase: creature dives away
-          const z = smooth((t - APPROACH - BREACH - CHOMP - DRAG) / FADE);
-          mouthX = dragX - sw * .1 * z;
-          mouthY = dragY + sw * .14 * z;
-          bodyDip = .5 + z * .25;
-          rot = -3 - z * 10;
-          opacity = 1 - z;
-        }
-
-        actor.style.left = (mouthX - sw * .60) + 'px';
-        actor.style.top = (mouthY - sw * 1.22) + 'px';
-        actor.style.opacity = opacity;
-        actor.classList.add('on');
-        actor.classList.toggle('is-biting', t >= APPROACH && t < APPROACH + BREACH + CHOMP);
-        actor.classList.toggle('is-diving', t >= APPROACH + BREACH + CHOMP);
-        actor.style.setProperty('--swim-kick', kick.toFixed(3));
-        rig.style.transform = `translateY(${bodyDip * sw * .55}px) rotate(${rot}deg)`;
-        if(jaw) jaw.style.transform = `rotate(${jawDeg}deg)`;
-        alignMouth(mouthX, mouthY);
-        requestAnimationFrame(frame);
-      }
-      requestAnimationFrame(frame);
-    });
-  }
-
-  async function loop(){
-    // Initial wait on page load: 16-24 seconds
-    await sleep(16000 + Math.random() * 8000);
-    while(true){
-      const ok = await attack();
-      // Requirement 3: สุ่มปลามากัดกระทงทุก 30-45 วิ
-      const waitTime = ok ? (30000 + Math.random() * 15000) : 4000;
-      await sleep(waitTime);
-    }
-  }
-  loop();
-})();

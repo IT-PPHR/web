@@ -6,7 +6,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#081b36">
   <title>Phi Phi • Loy Krathong 2026</title>
-  <link rel="stylesheet" href="style.css?v=44">
+  <link rel="stylesheet" href="style.css?v=50">
+  <link rel="stylesheet" href="shark.css?v=50">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 </head>
 
@@ -21,7 +22,7 @@
     </nav>
   </header>
 
-  <audio id="bgmAudio" loop preload="auto">
+  <audio id="bgmAudio" loop preload="none">
     <source src="s4umusic--424040.mp3" type="audio/mpeg">
     <source src="bgm.mp3" type="audio/mpeg">
   </audio>
@@ -37,11 +38,60 @@
         </div>
       </div>
       <div class="sea-stage" id="seaBoard">
-        <div class="moon"></div>
+        <div class="moon" id="seaMoon"></div>
         <div class="island left"></div>
         <div class="island right"></div>
         <div class="sea-surface">
-          <canvas id="seaWavesCanvas" class="sea-waves-canvas"></canvas>
+
+          <!-- Realistic Andaman Night Sea Caustics & Shimmer (ผิวน้ำทะเลระยิบระยับสมจริง) -->
+          <div class="water-caustics-layer layer-deep"></div>
+          <div class="water-caustics-layer layer-mid"></div>
+          <div class="water-caustics-layer layer-surface"></div>
+
+          <!-- Realistic Moonlight Shimmer Path & Cloud Occlusion (ทางเดินแสงจันทร์และเงาสะท้อนยามเมฆบดบัง) -->
+          <div class="moonlight-water-beam" id="moonlightWaterBeam">
+            <div class="beam-cloud-occlusion" id="beamCloudOcclusion"></div>
+          </div>
+
+          <!-- Cloud Reflections on Water (เงาสะท้อนของก้อนเมฆบนผิวน้ำทะเล) -->
+          <div class="water-clouds-layer" id="waterCloudsLayer"></div>
+
+          <!-- Soft Horizon Tide Lap (แนวคลื่นกระทบขอบฟ้าเรืองแสงนวลตา) -->
+          <div class="horizon-tide-line"></div>
+
+          <!-- Night Water Sparkles (ประกายแสงระยิบระยับของผิวน้ำ) -->
+          <div class="water-glints"></div>
+
+          <!-- ครีบฉลามหูดำว่ายตัดเหนือผิวน้ำ (พร้อมฟองคลื่นและละอองน้ำกระเซ็น) -->
+          <div class="shark-surface-rtl"
+            style="top: 16%; width: 112px; height: 80px; animation-duration: 24s; animation-delay: -3s;">
+            <svg viewBox="0 0 110 70"
+              style="width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));">
+              <!-- เงาตัวฉลามใต้น้ำ -->
+              <ellipse cx="52" cy="52" rx="28" ry="5" fill="#03445c" opacity="0.45" />
+              <!-- ครีบหลังฉลามหูดำโผล่พ้นผิวน้ำ -->
+              <path d="M36,50 Q42,12 66,4 Q58,28 68,50 Z" fill="#475569" stroke="#1e293b" stroke-width="1.2" />
+              <!-- แต้มสีดำปลายครีบ (Blacktip Shark) -->
+              <path d="M55,15 Q61,6 66,4 Q62,15 61,20 Z" fill="#090d16" />
+              <!-- ฟองคลื่นสีขาวตีขนาบฐานครีบบนผิวน้ำ -->
+              <g class="fin-foam-pulse">
+                <path d="M18,51 Q34,42 52,50 Q70,54 92,49" fill="none" stroke="#ffffff" stroke-width="4"
+                  stroke-linecap="round" />
+                <path d="M24,55 Q54,49 96,53" fill="none" stroke="#e0f2fe" stroke-width="2.5" stroke-linecap="round" />
+                <circle cx="28" cy="48" r="3.5" fill="#ffffff" />
+                <circle cx="38" cy="50" r="2.8" fill="#e0f2fe" />
+                <circle cx="70" cy="50" r="2.5" fill="#ffffff" />
+              </g>
+              <!-- เม็ดละอองน้ำกระเซ็นรอบครีบ -->
+              <circle class="fin-droplet-1" cx="30" cy="42" r="2.4" fill="#ffffff" />
+              <circle class="fin-droplet-2" cx="64" cy="40" r="2.2" fill="#e0f2fe" />
+              <circle class="fin-droplet-3" cx="46" cy="38" r="2" fill="#ffffff" />
+              <path class="fin-droplet-1" d="M26,45 Q18,33 12,39" fill="none" stroke="#ffffff" stroke-width="2"
+                stroke-linecap="round" />
+              <path class="fin-droplet-2" d="M70,45 Q78,34 84,40" fill="none" stroke="#e0f2fe" stroke-width="1.8"
+                stroke-linecap="round" />
+            </svg>
+          </div>
         </div>
         <!-- Participant count and rotating wishes live inside the sea scene. -->
         <div class="sea-hud">
@@ -53,84 +103,6 @@
             <button id="wishTicker" class="wish-ticker" type="button"
               aria-label="แตะเพื่ออ่านคำอธิษฐานฉบับเต็ม">กำลังโหลดคำอธิษฐาน...</button>
           </div>
-        </div>
-        <div id="sharkActor" class="shark-actor" aria-hidden="true">
-          <div class="shark-clip">
-            <div class="shark-flip">
-              <div class="shark-rig"><svg class="shark-svg" viewBox="0 0 420 230" xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true">
-                  <defs>
-                    <linearGradient id="sharkSkin" x1="0" y1="45" x2="0" y2="160" gradientUnits="userSpaceOnUse">
-                      <stop offset="0" stop-color="#34495c" />
-                      <stop offset=".45" stop-color="#53697c" />
-                      <stop offset=".66" stop-color="#7d93a4" />
-                      <stop offset=".72" stop-color="#e9f0f4" />
-                      <stop offset="1" stop-color="#cfdbe3" />
-                    </linearGradient>
-                    <linearGradient id="sharkFin" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stop-color="#3b5063" />
-                      <stop offset="1" stop-color="#5f7587" />
-                    </linearGradient>
-                    <linearGradient id="sharkJaw" x1="0" y1="105" x2="0" y2="155" gradientUnits="userSpaceOnUse">
-                      <stop offset="0" stop-color="#dfe8ee" />
-                      <stop offset="1" stop-color="#b9c8d2" />
-                    </linearGradient>
-                    <radialGradient id="sharkMouth" cx=".4" cy=".4" r=".8">
-                      <stop offset="0" stop-color="#b3394a" />
-                      <stop offset="1" stop-color="#3d0c16" />
-                    </radialGradient>
-                  </defs>
-                  <!-- Tail and fins move independently of the body while swimming. -->
-                  <g class="shark-tail-fin">
-                    <path
-                      d="M365 90 C378 70 392 40 408 18 C402 52 400 78 396 100 C402 128 408 150 416 188 C392 168 376 146 360 118 Z"
-                      fill="url(#sharkFin)" />
-                  </g>
-                  <!-- mouth cavity -->
-                  <path d="M95 135 C70 126 40 116 12 105 L36 150 L112 152 Z" fill="url(#sharkMouth)" />
-                  <!-- lower jaw (animated) -->
-                  <g class="shark-jaw">
-                    <path d="M95 134 L16 108 C26 132 58 152 112 152 L116 134 Z" fill="url(#sharkJaw)" />
-                    <path
-                      d="M16.0 108.0L20.0 99.3L23.4 110.6ZM24.2 110.9L28.2 102.2L31.6 113.5ZM32.4 113.8L36.4 105.1L39.8 116.4ZM40.7 116.7L44.7 108.0L48.1 119.3ZM48.9 119.6L52.9 110.9L56.3 122.2ZM57.1 122.4L61.1 113.7L64.5 125.0ZM65.3 125.3L69.3 116.6L72.7 127.9ZM73.6 128.2L77.6 119.5L81.0 130.8ZM81.8 131.1L85.8 122.4L89.2 133.7Z"
-                      fill="#fffdf4" />
-                    <path d="M34 124 C52 136 76 144 100 146" stroke="#9fb1be" stroke-width="1.5" fill="none"
-                      opacity=".7" />
-                  </g>
-                  <!-- body + head -->
-                  <path
-                    d="M12 105 C50 70 120 48 196 50 L222 6 C230 30 240 46 258 56 C306 60 346 76 372 92 L368 120 C330 132 280 142 232 150 C186 160 150 156 112 152 L95 135 C70 126 40 116 12 105 Z"
-                    fill="url(#sharkSkin)" />
-                  <!-- dorsal fin -->
-                  <g class="shark-dorsal-fin">
-                    <path d="M190 52 C204 34 214 18 224 2 C228 26 238 44 258 58 Z" fill="url(#sharkFin)" />
-                  </g>
-                  <!-- pectoral fin -->
-                  <g class="shark-pectoral-fin">
-                    <path d="M150 136 C168 156 184 182 190 208 C168 194 142 176 120 150 Z" fill="url(#sharkFin)" />
-                  </g>
-                  <!-- upper teeth -->
-                  <path
-                    d="M16.0 107.0L19.4 118.3L23.4 109.7ZM24.2 110.0L27.6 121.3L31.6 112.7ZM32.4 113.0L35.8 124.3L39.8 115.7ZM40.7 116.0L44.1 127.3L48.1 118.7ZM48.9 119.0L52.3 130.3L56.3 121.7ZM57.1 122.0L60.5 133.3L64.5 124.7ZM65.3 125.0L68.7 136.3L72.7 127.7ZM73.6 128.0L77.0 139.3L81.0 130.7ZM81.8 131.0L85.2 142.3L89.2 133.7Z"
-                    fill="#fffdf4" />
-                  <!-- gills -->
-                  <g stroke="#2a3c4b" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".75">
-                    <path d="M118 84 C122 98 122 112 118 126" />
-                    <path d="M128 82 C132 97 132 112 128 128" />
-                    <path d="M138 81 C142 97 142 112 138 129" />
-                    <path d="M148 80 C152 96 152 112 148 130" />
-                    <path d="M158 80 C161 96 161 111 158 130" />
-                  </g>
-                  <!-- nostril / snout highlight -->
-                  <path d="M26 100 C50 82 90 66 140 58" stroke="#8aa0b2" stroke-width="2" fill="none" opacity=".45" />
-                  <!-- eye -->
-                  <circle cx="66" cy="94" r="7" fill="#05080c" />
-                  <circle cx="64" cy="92" r="2" fill="#fff" opacity=".85" />
-                </svg></div>
-            </div>
-          </div>
-          <span class="shark-foam"></span><span class="shark-ring"></span>
-          <div class="shark-drops"></div>
         </div>
 
         <div class="empty">กำลังโหลดกระทง...</div>
@@ -266,7 +238,8 @@
             <h4>ขั้นตอนที่ 4 · ตรวจสอบและปล่อยกระทง</h4>
             <div class="wizard-summary" id="wizardSummary" aria-live="polite"></div>
             <div class="wizard-consents">
-              <label class="switchline"><input id="photoPublic" type="checkbox" checked><span>ยินยอมให้แสดงรูปบนกระทงต่อผู้เข้าชมทุกคน (เมื่อแนบรูป)</span></label>
+              <label class="switchline"><input id="photoPublic" type="checkbox"
+                  checked><span>ยินยอมให้แสดงรูปบนกระทงต่อผู้เข้าชมทุกคน (เมื่อแนบรูป)</span></label>
             </div>
           </section>
           <div class="actions sticky-actions">
@@ -296,7 +269,14 @@
 
       <div id="hrLoginBox">
         <div class="hr-login-symbol" aria-hidden="true">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#f6ce7c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#f6ce7c" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 12v10H4V12" />
+            <path d="M2 7h20v5H2z" />
+            <path d="M12 22V7" />
+            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+          </svg>
         </div>
         <div class="hr-login-eyebrow">PHI PHI HOLIDAY RESORT</div>
         <h3 class="hr-login-title">HR Lucky Draw</h3>
@@ -344,7 +324,8 @@
             </select>
           </div>
           <div class="hr-actions">
-            <button type="button" class="btn ghost music-toggle-btn" id="musicToggleBtn" aria-label="เปิดหรือปิดเสียงเพลง" aria-pressed="false" title="เปิด/ปิดเสียงเพลง">
+            <button type="button" class="btn ghost music-toggle-btn" id="musicToggleBtn"
+              aria-label="เปิดหรือปิดเสียงเพลง" aria-pressed="false" title="เปิด/ปิดเสียงเพลง">
               <span class="music-icon" id="musicIcon" aria-hidden="true">🎵</span>
               <span class="music-label" id="musicLabel">เปิดเสียงเพลง</span>
             </button>
@@ -418,11 +399,12 @@
 
   <div id="launch" class="launch" hidden>
     <div class="launch-k">🪷</div>
-    <div>กระทงของคุณลอยสู่ทะเลแล้ว...</div>
+    <div>กระทงลอยสู่ทะเลแล้ว...</div>
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=44"></script>
+  <script src="app.js?v=49"></script>
+  <script src="shark.js?v=49"></script>
 </body>
 
 </html>
