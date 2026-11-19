@@ -219,3 +219,36 @@
 @media (prefers-reduced-motion: reduce) {
   .krathong-sinking, .krathong-nibble-release { animation-duration: .8s !important; }
 }
+
+/* V54: keep the name tag visually attached to the krathong while the shark bites. */
+.shark-bite-active .sea-bob {
+  isolation: isolate;
+  padding-bottom: 0 !important;
+}
+
+.shark-bite-active .krathong-art {
+  position: relative;
+  z-index: 60;
+}
+
+.shark-bite-active .sea-name {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 10px !important;
+  transform: translateX(-50%) !important;
+  margin-top: 0 !important;
+  z-index: 61 !important;
+  white-space: nowrap;
+}
+
+.shark-bite-active .side-avatar,
+.shark-bite-active .tiny-avatar {
+  z-index: 62 !important;
+}
+
+@media (max-width: 760px) {
+  .shark-bite-active .sea-name {
+    bottom: 12px !important;
+    max-width: 100px;
+  }
+}
