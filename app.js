@@ -1985,6 +1985,10 @@ async function loadSea() {
 }
 
 $('release').onclick = async () => {
+  if (window.EVENT_GATE && !window.EVENT_GATE.isLive()) {
+    $('status').textContent = 'ยังไม่อยู่ในช่วงเวลาที่เปิดให้ลอยกระทง';
+    return;
+  }
   if (wizardStep !== 4 || releaseInProgress) return;
   const name = $('name').value.trim();
   const employeeId = $('employeeId').value.trim();
@@ -2046,6 +2050,7 @@ $('release').onclick = async () => {
     };
     const fingerprint = await fingerprintSubmission(payload);
     const requestId = stableSubmissionId(fingerprint);
+    if (window.EVENT_GATE && !window.EVENT_GATE.isLive()) throw Error('หมดเวลาร่วมกิจกรรมแล้ว');
     const out = await request('create', { ...payload, requestId }, 'POST', IDEMPOTENCY_READY ? 2 : 0);
     if (!out || !out.item || !out.item.id) {
       throw Error('API ไม่ได้ยืนยันการบันทึกกระทง กรุณาตรวจสอบก่อนลองอีกครั้ง');
@@ -2520,20 +2525,29 @@ try { localStorage.removeItem('phiPhiMyKrathong_v1'); localStorage.removeItem('p
 initChoices();
 updatePreview();
 syncHrUi();
-initSeaDecor();
-loadSea();
 initMusicPlayer();
-requestAnimationFrame(animateSea);
-setTimeout(showRandomSeaWish, 4800);
-setInterval(showRandomSeaWish, SEA_WISH_SPOTLIGHT_MS);
-setInterval(() => { state.tickerIndex++; renderWishTicker(); }, 8000);
-function scheduleSeaPolling() {
-  const nextInterval = SEA_REFRESH_MS + (Math.random() - 0.5) * 6000;
-  setTimeout(() => {
-    if (!document.hidden) loadSea();
-    scheduleSeaPolling();
-  }, nextInterval);
+// Countdown/finished pages do not start the sea renderer or poll participant data.
+// HR login remains available from the existing top navigation.
+if (!window.EVENT_GATE || window.EVENT_GATE.isLive()) {
+  initSeaDecor();
+  loadSea();
+  requestAnimationFrame(animateSea);
+  setTimeout(showRandomSeaWish, 4800);
+  setInterval(showRandomSeaWish, SEA_WISH_SPOTLIGHT_MS);
+  setInterval(() => { state.tickerIndex++; renderWishTicker(); }, 8000);
+  function scheduleSeaPolling() {
+    const nextInterval = SEA_REFRESH_MS + (Math.random() - 0.5) * 6000;
+    setTimeout(() => {
+      if (!document.hidden && (!window.EVENT_GATE || window.EVENT_GATE.isLive())) loadSea();
+      scheduleSeaPolling();
+    }, nextInterval);
+  }
+  scheduleSeaPolling();
+  document.addEventListener('visibilitychange', () => {
+    lastFrame = 0;
+    lastPaintFrame = 0;
+    if (document.hidden) hideSeaWishSpotlight();
+    else if (!window.EVENT_GATE || window.EVENT_GATE.isLive()) loadSea();
+  });
 }
-scheduleSeaPolling();
-document.addEventListener('visibilitychange', () => { lastFrame = 0; lastPaintFrame = 0; if (document.hidden) hideSeaWishSpotlight(); else loadSea(); });
 

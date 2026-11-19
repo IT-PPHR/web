@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#081b36">
   <title>Phi Phi • Loy Krathong 2026</title>
-  <link rel="stylesheet" href="style.css?v=70">
+  <link rel="stylesheet" href="style.css?v=71">
   <link rel="stylesheet" href="shark.css?v=57">
+  <script src="event-gate.js?v=71"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 </head>
 
@@ -27,6 +28,38 @@
     <source src="s4umusic--424040.mp3" type="audio/mpeg">
     <source src="bgm.mp3" type="audio/mpeg">
   </audio>
+
+  <!-- Automatic event gate. Normal sea app shows only during the published event window. -->
+  <main id="eventGate" class="event-gate" hidden>
+    <section class="event-gate-card" aria-label="สถานะกิจกรรมลอยกระทงออนไลน์">
+      <div class="event-gate-sky" aria-hidden="true">
+        <span class="event-gate-moon"></span>
+        <span class="event-gate-horizon"></span>
+        <span class="event-gate-krathong">🪷</span>
+      </div>
+      <div class="event-gate-content">
+        <div class="event-gate-kicker">PHI PHI HOLIDAY RESORT · A NIGHT OF WISHES</div>
+        <div id="eventBefore" hidden>
+          <h1 id="eventGateHeading">อีกไม่นาน...<br><em>เราจะลอยกระทงด้วยกัน</em></h1>
+          <p class="event-gate-lead">นับถอยหลังสู่ค่ำคืนแห่งคำอธิษฐานและความทรงจำดี ๆ</p>
+          <div class="event-clock" role="timer" aria-label="เวลาคงเหลือก่อนเปิดกิจกรรม">
+            <div><strong id="event-days">00</strong><span>วัน</span></div>
+            <div><strong id="event-hours">00</strong><span>ชั่วโมง</span></div>
+            <div><strong id="event-minutes">00</strong><span>นาที</span></div>
+            <div><strong id="event-seconds">00</strong><span>วินาที</span></div>
+          </div>
+          <p class="event-gate-note">เปิดให้ร่วมลอยกระทง 24 พฤศจิกายน 2569 เวลา 08:00 น.<br>ตามเวลาประเทศไทย</p>
+        </div>
+        <div id="eventEnded" hidden>
+          <h1 id="eventGateHeadingEnded">กิจกรรมลอยกระทง<br><em>เสร็จสิ้นแล้ว</em></h1>
+          <p class="event-gate-lead">ขอบคุณทุกคำอธิษฐานและทุกความทรงจำที่ได้แบ่งปันร่วมกัน 💛</p>
+          <div class="event-gate-thanks">ขอบคุณที่ร่วมกิจกรรมกับ<br><strong>Phi Phi Holiday Resort</strong></div>
+          <p class="event-gate-note">กิจกรรมปิดรับกระทงวันที่ 24 พฤศจิกายน 2569 เวลา 23:59 น.<br>ตามเวลาประเทศไทย</p>
+        </div>
+      </div>
+    </section>
+    <div class="event-gate-footer">PHI PHI HOLIDAY RESORT · LOY KRATHONG ONLINE 2026</div>
+  </main>
 
   <main id="top">
     <section class="hero-sea">
