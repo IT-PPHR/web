@@ -7506,3 +7506,50 @@ header .brand-event-sub {
     letter-spacing: 1.2px;
   }
 }
+
+
+/* V65 – first-pass mobile GPU/CPU reduction.
+   Keep animated krathongs and shark; remove expensive ambient compositing. */
+@media (max-width: 760px) {
+  /* Retain the sea gradient and surface shimmer; stop the large overlapping layers. */
+  .sea-stage .water-caustics-layer.layer-deep,
+  .sea-stage .water-caustics-layer.layer-mid,
+  .sea-stage .water-clouds-layer,
+  .sea-stage .beam-cloud-occlusion,
+  .sea-stage .pyro {
+    display: none !important;
+  }
+  .sea-stage .water-caustics-layer.layer-surface,
+  .sea-stage .water-glints,
+  .sea-stage .moonlight-water-beam {
+    animation: none !important;
+  }
+  .sea-stage .moonlight-water-beam {
+    filter: none !important;
+    mix-blend-mode: normal;
+    opacity: .28;
+  }
+  /* Avoid animating SVG filters every frame on older mobile GPUs. */
+  .sea-stage > .sea-item .krathong-art,
+  .sea-stage > .sea-item .krathong-svg,
+  .sea-stage > .sea-item .krathong-svg *,
+  .sea-stage .marine-animal,
+  .sea-stage .marine-animal svg {
+    filter: none !important;
+  }
+  .sea-stage .flame-flicker,
+  .sea-stage .candle-flame,
+  .sea-stage .candle-sparkle {
+    filter: none !important;
+  }
+  .sea-stage > .sea-item .krathong-candle-glow,
+  .sea-stage > .sea-item .krathong-ripple {
+    animation: none !important;
+  }
+  .sea-stage .v7-cloud,
+  .sea-stage .sky-lantern {
+    filter: none !important;
+  }
+  /* No offscreen full-scene impact shake on phones. */
+  .sea-stage.sea-impact-shake { animation: none !important; }
+}

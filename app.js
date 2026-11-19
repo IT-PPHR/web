@@ -1424,7 +1424,7 @@ function initSeaDecor() {
   sky.setAttribute('aria-hidden', 'true');
 
   const lowPowerScene = window.matchMedia('(max-width:760px), (prefers-reduced-motion: reduce)').matches;
-  for (let i = 0; i < (lowPowerScene ? 1 : 3); i++) {
+  for (let i = 0; i < (lowPowerScene ? 0 : 3); i++) {
     const pyro = document.createElement('div');
     pyro.className = 'pyro v7-pyro';
     pyro.innerHTML = '<div class="before"></div><div class="after"></div>';
@@ -1451,7 +1451,7 @@ function initSeaDecor() {
     { top: 62, scale: 0.65, duration: 62, delay: -36, dir: 'right' }
   ];
 
-  (lowPowerScene ? cloudConfigs.slice(0, 3) : cloudConfigs).forEach((cfg) => {
+  (lowPowerScene ? cloudConfigs.slice(0, 1) : cloudConfigs).forEach((cfg) => {
     const isRight = cfg.dir === 'right';
 
     const cloud = document.createElement('div');
@@ -1473,7 +1473,7 @@ function initSeaDecor() {
     }
   });
 
-  for (let i = 0; i < (lowPowerScene ? 4 : 9); i++) {
+  for (let i = 0; i < (lowPowerScene ? 1 : 9); i++) {
     const lantern = document.createElement('div');
     lantern.className = 'sky-lantern v7-lantern';
     const reset = () => {
@@ -1548,7 +1548,7 @@ function initSeaLife() {
   marineLife.length = 0;
   const mobile = window.matchMedia('(max-width:760px)').matches;
   const plan = mobile
-    ? ['fish', 'turtle', 'ray']
+    ? ['fish', 'turtle']
     : ['fish', 'turtle', 'dolphin', 'ray', 'fish', 'turtle', 'fish'];
   const specs = {
     fish: { size: [40, 58], speed: [14, 22], amp: [5, 10], depth: [.69, .89], tilt: 8 },
