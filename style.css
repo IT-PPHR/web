@@ -7349,3 +7349,27 @@ body.is-releasing-krathong #cancelBuilder {
 @media (prefers-reduced-motion: reduce) {
   .sea-item .sea-wish-spotlight { animation: none; opacity: 1; }
 }
+
+
+/* V60: Builder's preview name sits in .preview-sky (outside the small SVG holder).
+   Its x/y are calculated against the visible SVG hull in app.js. */
+#builderModal .preview-sky {
+  position: relative;
+}
+#builderModal .preview-sky > #previewName {
+  position: absolute !important;
+  display: inline-block;
+  left: 50%;
+  top: auto;
+  bottom: auto !important;
+  transform: translateX(-50%) !important;
+  width: max-content;
+  max-width: calc(100% - 12px);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 30;
+  margin: 0;
+  pointer-events: none;
+}

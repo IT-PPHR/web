@@ -1087,6 +1087,34 @@ function getCandlePreviewSVG(key) {
   }
 }
 
+// V60: anchor the builder's name tag to the actual SVG hull, not the smaller
+// #krathongPreview container. This also works when the responsive size changes.
+let previewNamePositionQueued = false;
+function positionPreviewName() {
+  if (previewNamePositionQueued) return;
+  previewNamePositionQueued = true;
+  requestAnimationFrame(() => {
+    previewNamePositionQueued = false;
+    const sky = document.querySelector('#builderModal .preview-sky');
+    const svg = document.querySelector('#builderModal #previewArt svg.krathong-svg');
+    const label = $('previewName');
+    if (!sky || !svg || !label || !sky.clientWidth) return;
+    const skyRect = sky.getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+    if (!svgRect.width || !svgRect.height) return;
+
+    // SVG viewBox: 200 x 165; waterline/hull near y=140-150.
+    // Position directly beneath that hull and center on SVG x=100.
+    const centerX = svgRect.left - skyRect.left + svgRect.width * 0.5;
+    const belowHull = svgRect.top - skyRect.top + svgRect.height * (149 / 165) + 5;
+    const halfWidth = Math.min(label.offsetWidth, sky.clientWidth - 12) / 2;
+    const safeX = Math.max(halfWidth + 6, Math.min(sky.clientWidth - halfWidth - 6, centerX));
+    label.style.left = safeX + 'px';
+    label.style.top = belowHull + 'px';
+  });
+}
+window.addEventListener('resize', positionPreviewName, { passive: true });
+
 function updatePreview() {
   const previewArt = $('previewArt');
   if (previewArt) {
@@ -1105,6 +1133,7 @@ function updatePreview() {
     const nameInput = $('name');
     previewName.textContent = (nameInput && nameInput.value ? nameInput.value.trim() : '') || 'ชื่อผู้ลอย';
   }
+  positionPreviewName();
 }
 
 function renderChoices(id, values, key) {
