@@ -7251,3 +7251,26 @@ body.is-releasing-krathong #cancelBuilder {
   .sea-low-power .sea-stage .sea-surface::before,
   .sea-low-power .sea-stage .sea-surface::after { filter: none !important; }
 }
+
+/* V56 — Floating krathong nameplates stay on one line, regardless of name length.
+   Keep the badge centered below its krathong without changing its motion. */
+.sea-stage > .sea-item .sea-name {
+  display: block;
+  width: max-content;
+  min-width: 0;
+  max-width: none;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 760px) {
+  .sea-stage > .sea-item .sea-name {
+    width: max-content;
+    max-width: none;
+    white-space: nowrap;
+  }
+}
