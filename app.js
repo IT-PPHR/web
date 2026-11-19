@@ -74,7 +74,7 @@ const LEGACY_CANDLE_MAP = {
 
 const state = {
   type: 'lotus', flower: 'lotus', candle: 'classic', color: '#ffc977', photo: '', photoProcessing: false,
-  items: [], recentItems: [], total: 0, minute: null, ownItem: null, ownUntil: 0, tickerIndex: 0, adminToken: localStorage.getItem('phiPhiHrToken') || '', hrPool: [], renderToken: 0
+  items: [], recentItems: [], total: 0, minute: null, ownItem: null, ownUntil: 0, tickerIndex: 0, adminToken: ((token) => token && !token.startsWith('local_admin_') ? token : '')(localStorage.getItem('phiPhiHrToken') || ''), hrPool: [], renderToken: 0
 };
 
 const $ = id => document.getElementById(id);
@@ -95,416 +95,11 @@ const marineLife = [];
 let lastFrame = 0;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-function getLocalKrathongs() {
-  try {
-    const raw = localStorage.getItem('phiPhiLocalKrathongs_v1');
-    if (raw) return JSON.parse(raw);
-  } catch (e) {}
-  return [];
-}
-
-function saveLocalKrathong(item) {
-  if (!item || !item.id) return;
-  try {
-    const list = getLocalKrathongs();
-    const updated = [item, ...list.filter(x => String(x.id) !== String(item.id))].slice(0, 40);
-    localStorage.setItem('phiPhiLocalKrathongs_v1', JSON.stringify(updated));
-  } catch (e) {}
-}
-
-const SEED_KRATHONGS = [
-  {
-    "id": "seed_1",
-    "name": "พี่เอก วิศวกรรม",
-    "employeeId": "ENG-014",
-    "department": "Engineering",
-    "wish": "ขอให้ระบบไฟฟ้ารีสอร์ตทำงานราบรื่น แขกประทับใจ สุขภาพแข็งแรงตลอดปี",
-    "type": "banana_leaf",
-    "flower": "lotus",
-    "candle": "incense",
-    "baseDesign": "banana_leaf",
-    "candleDesign": "incense",
-    "color": "#ffc977",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-19T03:15:06.391Z"
-  },
-  {
-    "id": "seed_2",
-    "name": "น้องฝน ต้อนรับ",
-    "employeeId": "FO-088",
-    "department": "Front Office",
-    "wish": "ขอให้เกาะพีพีสวยงาม นักท่องเที่ยวมีความสุข ยอดจองห้องพักเต็มทั้งปี",
-    "type": "lotus",
-    "flower": "rose",
-    "candle": "lotus_candle",
-    "baseDesign": "lotus",
-    "candleDesign": "lotus_candle",
-    "color": "#ffb3ba",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-19T02:15:06.392Z"
-  },
-  {
-    "id": "seed_3",
-    "name": "เชฟกร ครัวไทย",
-    "employeeId": "FK-021",
-    "department": "Food Kitchen",
-    "wish": "ขอให้อาหารทุกจานที่เสิร์ฟสร้างรอยยิ้ม ขอให้ทีมงานทุกคนมีความสุข",
-    "type": "turtle_bread",
-    "flower": "orchid",
-    "candle": "tnt",
-    "baseDesign": "turtle_bread",
-    "candleDesign": "tnt",
-    "color": "#ffdfba",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-19T01:15:06.392Z"
-  },
-  {
-    "id": "seed_4",
-    "name": "คุณแอน การเงิน",
-    "employeeId": "FA-005",
-    "department": "Finance & Acct.",
-    "wish": "ขอให้งบดุลลงตัวทุกสิ้นเดือน ขอให้ทุกคนในครอบครัวมีสุขภาพแข็งแรง ร่ำรวยโชคดี",
-    "type": "ice",
-    "flower": "jasmine",
-    "candle": "lottery99",
-    "baseDesign": "ice",
-    "candleDesign": "lottery99",
-    "color": "#bae1ff",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-19T00:15:06.392Z"
-  },
-  {
-    "id": "seed_5",
-    "name": "พี่นพ แม่บ้าน",
-    "employeeId": "HK-032",
-    "department": "Housekeeping",
-    "wish": "ขอให้ห้องพักสะอาดสดชื่นทุกวัน พี่น้องทุกคนในรีสอร์ตมีความสุขร่วมกัน",
-    "type": "coconut",
-    "flower": "sunflower",
-    "candle": "lightstick",
-    "baseDesign": "coconut",
-    "candleDesign": "lightstick",
-    "color": "#ffffba",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T23:15:06.392Z"
-  },
-  {
-    "id": "seed_6",
-    "name": "ผู้จัดการบาร์",
-    "employeeId": "FB-019",
-    "department": "Food & Beverage",
-    "wish": "ขอให้ค่ำคืนนี้มีแต่เสียงหัวเราะ เครื่องดื่มอร่อย บรรยากาศริมหาดอบอุ่น",
-    "type": "banana_trunk",
-    "flower": "tulip",
-    "candle": "chili",
-    "baseDesign": "banana_trunk",
-    "candleDesign": "chili",
-    "color": "#baffc9",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T22:15:06.392Z"
-  },
-  {
-    "id": "seed_7",
-    "name": "กัปตันสมชาย",
-    "employeeId": "MAR-003",
-    "department": "Marine & Boat",
-    "wish": "ขอให้คลื่นลมสงบ ท้องทะเลอันดามันปลอดภัยทุกเที่ยวเรือ นักท่องเที่ยวประทับใจ",
-    "type": "banana_leaf",
-    "flower": "orchid",
-    "candle": "incense",
-    "baseDesign": "banana_leaf",
-    "candleDesign": "incense",
-    "color": "#7dd3fc",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T21:15:06.392Z"
-  },
-  {
-    "id": "seed_8",
-    "name": "ครูตั้ม ดำน้ำลึก",
-    "employeeId": "DIVE-012",
-    "department": "Diving Center",
-    "wish": "ขอให้ปะการังเกาะพีพีฟื้นตัวสมบูรณ์ ฉลามครีบดำและเต่าทะเลอยู่คู่ทะเลตลอดไป",
-    "type": "ice",
-    "flower": "lotus",
-    "candle": "lotus_candle",
-    "baseDesign": "ice",
-    "candleDesign": "lotus_candle",
-    "color": "#a7f3d0",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T20:15:06.392Z"
-  },
-  {
-    "id": "seed_9",
-    "name": "น้องมิ้นต์ สปา",
-    "employeeId": "SPA-007",
-    "department": "Spa & Wellness",
-    "wish": "ขอให้แขกทุกคนผ่อนคลาย สุขภาพกายใจเบาสบาย สดชื่นตลอดทริป",
-    "type": "lotus",
-    "flower": "jasmine",
-    "candle": "incense",
-    "baseDesign": "lotus",
-    "candleDesign": "incense",
-    "color": "#fbcfe8",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T19:15:06.392Z"
-  },
-  {
-    "id": "seed_10",
-    "name": "ลุงหมาย สวนริมหาด",
-    "employeeId": "GRD-015",
-    "department": "Gardening",
-    "wish": "ขอให้ต้นมะพร้าวและไม้ดอกริมหาดเขียวชอุ่ม ให้ร่มเงาแก่นักเดินทางทุกคน",
-    "type": "coconut",
-    "flower": "sunflower",
-    "candle": "lightstick",
-    "baseDesign": "coconut",
-    "candleDesign": "lightstick",
-    "color": "#fed7aa",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T18:15:06.392Z"
-  },
-  {
-    "id": "seed_11",
-    "name": "น้องพลอย HR",
-    "employeeId": "HR-004",
-    "department": "Human Resources",
-    "wish": "ขอให้ทีมงานทุกคนทำงานอย่างมีความสุข สุขภาพแข็งแรง โบนัสปังๆ",
-    "type": "turtle_bread",
-    "flower": "rose",
-    "candle": "lightstick",
-    "baseDesign": "turtle_bread",
-    "candleDesign": "lightstick",
-    "color": "#fef08a",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T17:15:06.392Z"
-  },
-  {
-    "id": "seed_12",
-    "name": "คุณเจมส์ GM",
-    "employeeId": "GM-001",
-    "department": "Management",
-    "wish": "ขอให้เกาะพีพี ฮอลิเดย์ รีสอร์ต มอบความทรงจำที่ดีที่สุดแก่ผู้มาเยือนทุกคน",
-    "type": "banana_leaf",
-    "flower": "orchid",
-    "candle": "lotus_candle",
-    "baseDesign": "banana_leaf",
-    "candleDesign": "lotus_candle",
-    "color": "#fde047",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T16:15:06.392Z"
-  },
-  {
-    "id": "seed_13",
-    "name": "บาริสต้าตูน คาเฟ่",
-    "employeeId": "FB-042",
-    "department": "Beachside Cafe",
-    "wish": "ขอให้กลิ่นกาแฟหอมละมุน มอบพลังและรอยยิ้มในทุกๆ เช้า",
-    "type": "banana_trunk",
-    "flower": "tulip",
-    "candle": "chili",
-    "baseDesign": "banana_trunk",
-    "candleDesign": "chili",
-    "color": "#e9d5ff",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T15:15:06.392Z"
-  },
-  {
-    "id": "seed_14",
-    "name": "ช่างเบิร์ด ซ่อมบำรุง",
-    "employeeId": "ENG-027",
-    "department": "Engineering",
-    "wish": "ขอให้งานซ่อมเสร็จไว ปลอดภัย ไร้อุบัติเหตุ รอยยิ้มเต็มรีสอร์ต",
-    "type": "banana_leaf",
-    "flower": "lotus",
-    "candle": "tnt",
-    "baseDesign": "banana_leaf",
-    "candleDesign": "tnt",
-    "color": "#fecdd3",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T14:15:06.392Z"
-  },
-  {
-    "id": "seed_15",
-    "name": "น้องบิว ประชาสัมพันธ์",
-    "employeeId": "PR-009",
-    "department": "Public Relations",
-    "wish": "ขอให้ภาพความประทับใจของเกาะพีพีส่งต่อถึงคนทั่วโลก",
-    "type": "ice",
-    "flower": "rose",
-    "candle": "lotus_candle",
-    "baseDesign": "ice",
-    "candleDesign": "lotus_candle",
-    "color": "#bfdbfe",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T13:15:06.392Z"
-  },
-  {
-    "id": "seed_16",
-    "name": "พี่เดชา รปภ.หาด",
-    "employeeId": "SEC-008",
-    "department": "Security",
-    "wish": "ขอให้ทุกค่ำคืนเงียบสงบ นักท่องเที่ยวปลอดภัยและอุ่นใจเสมอ",
-    "type": "coconut",
-    "flower": "jasmine",
-    "candle": "incense",
-    "baseDesign": "coconut",
-    "candleDesign": "incense",
-    "color": "#c7d2fe",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T12:15:06.392Z"
-  },
-  {
-    "id": "seed_17",
-    "name": "Elena & Lucas",
-    "employeeId": "GUEST-702",
-    "department": "Pool Villa Guest",
-    "wish": "May this sea bring peace, joy, and wonderful memories to all travelers",
-    "type": "lotus",
-    "flower": "orchid",
-    "candle": "lotus_candle",
-    "baseDesign": "lotus",
-    "candleDesign": "lotus_candle",
-    "color": "#ddd6fe",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T11:15:06.392Z"
-  },
-  {
-    "id": "seed_18",
-    "name": "Hiroshi Tokyo",
-    "employeeId": "GUEST-415",
-    "department": "Deluxe Guest",
-    "wish": "Wishing happiness and clean oceans for generations to come",
-    "type": "turtle_bread",
-    "flower": "lotus",
-    "candle": "lightstick",
-    "baseDesign": "turtle_bread",
-    "candleDesign": "lightstick",
-    "color": "#bbf7d0",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T10:15:06.392Z"
-  },
-  {
-    "id": "seed_19",
-    "name": "ครอบครัวสุขสันต์ เชียงใหม่",
-    "employeeId": "GUEST-308",
-    "department": "Family Villa",
-    "wish": "ขอให้ครอบครัวมีความสุข ปราศจากโรคภัย การงานรุ่งเรือง มีเงินใช้ไม่ขาดมือ",
-    "type": "banana_leaf",
-    "flower": "jasmine",
-    "candle": "incense",
-    "baseDesign": "banana_leaf",
-    "candleDesign": "incense",
-    "color": "#fef9c3",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T09:15:06.392Z"
-  },
-  {
-    "id": "seed_20",
-    "name": "น้องไอซ์ ไอที",
-    "employeeId": "IT-002",
-    "department": "IT Support",
-    "wish": "ขอให้เซิร์ฟเวอร์เสถียร 99.99% บั๊กหายหมด เน็ตแรงทั่วเกาะพีพี",
-    "type": "ice",
-    "flower": "sunflower",
-    "candle": "lottery99",
-    "baseDesign": "ice",
-    "candleDesign": "lottery99",
-    "color": "#e0e7ff",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T08:15:06.392Z"
-  },
-  {
-    "id": "seed_21",
-    "name": "พี่วุฒิ ไกด์คายัค",
-    "employeeId": "ACT-011",
-    "department": "Recreation",
-    "wish": "ขอให้ท้องทะเลสวยใส ฟ้าเปิด ไร้ลมพายุ พานักท่องเที่ยวชมอ่าวมาหยาอย่างปลอดภัย",
-    "type": "coconut",
-    "flower": "orchid",
-    "candle": "incense",
-    "baseDesign": "coconut",
-    "candleDesign": "incense",
-    "color": "#ccfbf1",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T07:15:06.392Z"
-  },
-  {
-    "id": "seed_22",
-    "name": "น้องกานต์ ต้อนรับกะดึก",
-    "employeeId": "FO-092",
-    "department": "Front Office",
-    "wish": "ขอให้แสงจันทร์คุ้มครองทุกคนในคืนเพ็ญ มีแต่สิ่งดีๆ เข้ามาในชีวิต",
-    "type": "lotus",
-    "flower": "rose",
-    "candle": "lightstick",
-    "baseDesign": "lotus",
-    "candleDesign": "lightstick",
-    "color": "#fed7aa",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T06:15:06.392Z"
-  },
-  {
-    "id": "seed_23",
-    "name": "ป้ามาลี ซักรีด",
-    "employeeId": "HK-045",
-    "department": "Housekeeping",
-    "wish": "ขอให้ครอบครัวอบอุ่น ลูกหลานเจริญก้าวหน้า มีโชคลาภ สุขภาพแข็งแรง",
-    "type": "banana_trunk",
-    "flower": "lotus",
-    "candle": "incense",
-    "baseDesign": "banana_trunk",
-    "candleDesign": "incense",
-    "color": "#fef08a",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T05:15:06.392Z"
-  },
-  {
-    "id": "seed_24",
-    "name": "เชฟแพรว เบเกอรี่",
-    "employeeId": "FK-033",
-    "department": "Pastry Kitchen",
-    "wish": "ขอให้ขนมอบหอมกรุ่นทุกเช้า มอบความสุขแสนหวานแก่ทุกคนที่ได้ชิม",
-    "type": "turtle_bread",
-    "flower": "tulip",
-    "candle": "chili",
-    "baseDesign": "turtle_bread",
-    "candleDesign": "chili",
-    "color": "#fce7f3",
-    "photo": "",
-    "photoPublic": false,
-    "createdAt": "2026-11-18T04:15:06.392Z"
-  }
-];
-
 function getAllAvailableKrathongs() {
-  const local = typeof getLocalKrathongs === 'function' ? getLocalKrathongs() : [];
-  const apiItems = Array.isArray(state.apiItems) ? state.apiItems : (Array.isArray(state.items) ? state.items : []);
-  const combined = [...local, ...apiItems, ...SEED_KRATHONGS];
+  // Real submissions only: in-memory items returned by the API or just saved successfully.
+  const apiItems = Array.isArray(state.items) ? state.items : [];
   const uniqueMap = new Map();
-  for (const item of combined) {
+  for (const item of apiItems) {
     if (item && item.id && !uniqueMap.has(String(item.id))) {
       uniqueMap.set(String(item.id), item);
     }
@@ -2188,65 +1783,40 @@ function renderWishTicker() {
 async function loadSea() {
   if (loadSea.busy) return;
   loadSea.busy = true;
-  let nextItems = [];
-  let nextRecent = [];
-  let nextTotal = 0;
-  let nextMinute = Math.floor(Date.now() / 60000);
-
   const sampleSize = getSeaSampleSize();
   try {
     const out = await request('list', { limit: String(sampleSize), random: String(sampleSize) }, 'GET');
-    if (out && out.ok) {
-      nextItems = out.items || [];
-      nextRecent = out.recent || nextItems;
-      nextTotal = Number(out.total ?? nextItems.length);
-      if (out.minute !== undefined) nextMinute = out.minute;
+    if (!out || !Array.isArray(out.items)) throw Error('API ส่งข้อมูลกระทงไม่ถูกต้อง');
+    const nextItems = out.items.filter(item => item && item.id);
+    const nextRecent = Array.isArray(out.recent) ? out.recent : nextItems;
+    const nextTotal = Number(out.total ?? nextItems.length);
+    const nextMinute = out.minute ?? Math.floor(Date.now() / 60000);
+
+    const nextKey = nextItems.map(x => String(x.id)).join('|');
+    const prevKey = state.items.map(x => String(x.id)).join('|');
+    const structureChanged = state.minute !== nextMinute || nextKey !== prevKey ||
+      nextItems.some((x, i) => seaItemKey(x) !== seaItemKey(state.items[i] || {}));
+
+    state.items = nextItems;
+    state.recentItems = nextRecent;
+    state.total = Number.isFinite(nextTotal) ? nextTotal : nextItems.length;
+    state.minute = nextMinute;
+    initSeaDecor();
+    if (structureChanged) renderSea();
+    else {
+      $('total').textContent = state.total.toLocaleString('th-TH');
+      renderWishTicker();
     }
   } catch (e) {
-    console.warn('API list notice (using local/seed data):', e.message);
-  }
-
-  // Merge with locally created krathongs and seed krathongs if API is empty or blocked on localhost
-  const localKrathongs = getLocalKrathongs();
-  if (!nextItems.length) {
-    const combined = [...localKrathongs, ...SEED_KRATHONGS];
-    nextItems = combined.slice(0, sampleSize);
-    nextRecent = combined.slice(0, 15);
-    nextTotal = combined.length;
-  } else if (localKrathongs.length) {
-    const merged = [...localKrathongs, ...nextItems];
-    const uniqueMap = new Map();
-    for (const item of merged) {
-      if (!uniqueMap.has(String(item.id))) uniqueMap.set(String(item.id), item);
+    // Never replace a failed API response with local, demo, or fabricated records.
+    console.error('โหลดกระทงจาก API ไม่สำเร็จ:', e);
+    const sea = $('seaBoard');
+    if (sea && !state.items.length && !drifters.size && !sea.querySelector('.empty')) {
+      sea.insertAdjacentHTML('beforeend', '<div class="empty">ไม่สามารถโหลดกระทงได้ กรุณาลองใหม่อีกครั้ง</div>');
     }
-    nextItems = Array.from(uniqueMap.values()).slice(0, sampleSize);
-    nextTotal += localKrathongs.length;
+  } finally {
+    loadSea.busy = false;
   }
-
-
-
-  const nextKey = nextItems.map(x => String(x.id)).join('|');
-  const prevKey = state.items.map(x => String(x.id)).join('|');
-  const structureChanged = state.minute !== nextMinute || nextKey !== prevKey || nextItems.some((x, i) => seaItemKey(x) !== seaItemKey(state.items[i] || {}));
-  state.items = nextItems;
-  state.recentItems = nextRecent.length ? nextRecent : nextItems;
-  state.total = nextTotal;
-  state.minute = nextMinute;
-
-  // Ensure HR pool is available for lucky draw
-  if (!state.hrPool || !state.hrPool.length) {
-    state.hrPool = [...localKrathongs, ...SEED_KRATHONGS];
-  }
-
-  initSeaDecor();
-  if (structureChanged) {
-    renderSea();
-  } else {
-    $('total').textContent = state.total.toLocaleString('th-TH');
-    renderWishTicker();
-  }
-
-  loadSea.busy = false;
 }
 
 $('release').onclick = async () => {
@@ -2291,9 +1861,8 @@ $('release').onclick = async () => {
   const fallbackBase = LEGACY_BASE_MAP[chosenBase] || 'orchid';
   const fallbackCandle = LEGACY_CANDLE_MAP[chosenCandle] || 'classic';
 
-  let out = null;
   try {
-    out = await request('create', {
+    const out = await request('create', {
       name,
       employeeId,
       department,
@@ -2310,64 +1879,38 @@ $('release').onclick = async () => {
       photoPublic: !!state.photo && photoPublicBox.checked,
       consent: true
     });
-  } catch (apiErr) {
-    console.warn('API create notice (using local fallback mode):', apiErr.message);
-    const localId = 'k_' + Date.now();
-    out = {
-      ok: true,
-      item: {
-        id: localId,
-        name,
-        employeeId: employeeId || 'PP-' + Math.floor(100 + Math.random() * 900),
-        department,
-        wish,
-        type: fallbackBase,
-        flower: state.flower,
-        candle: fallbackCandle,
-        customType: chosenBase,
-        customCandle: chosenCandle,
-        baseDesign: chosenBase,
-        candleDesign: chosenCandle,
-        color: state.color,
-        photo: state.photo,
-        photoPublic: !!state.photo && photoPublicBox.checked,
-        createdAt: new Date().toISOString()
-      }
-    };
-  }
-
-  try {
-    if (out && out.item) {
-      saveDesign(out.item.id, chosenBase, chosenCandle);
-      saveLocalKrathong(out.item);
-
-      const enhancedItem = {
-        ...out.item,
-        type: chosenBase,
-        candle: chosenCandle,
-        baseDesign: chosenBase,
-        candleDesign: chosenCandle
-      };
-      state.total += 1;
-      state.recentItems = [enhancedItem, ...state.recentItems.filter(x => String(x.id) !== String(out.item.id))].slice(0, 15);
-      state.items = [enhancedItem, ...state.items.filter(x => String(x.id) !== String(out.item.id))].slice(0, getSeaSampleSize());
-      state.hrPool = [enhancedItem, ...state.hrPool.filter(x => String(x.id) !== String(out.item.id))];
-
-      $('total').textContent = state.total.toLocaleString('th-TH');
-      renderSea();
-      launchKrathongToSea(enhancedItem);
-      state.tickerIndex = 0;
-      renderWishTicker();
+    if (!out || !out.item || !out.item.id) {
+      throw Error('API ไม่ได้ยืนยันการบันทึกกระทง กรุณาตรวจสอบก่อนลองอีกครั้ง');
     }
+
+    // Show the actual API-confirmed submission immediately, as before.
+    saveDesign(out.item.id, chosenBase, chosenCandle);
+    const enhancedItem = {
+      ...out.item,
+      type: chosenBase,
+      candle: chosenCandle,
+      baseDesign: chosenBase,
+      candleDesign: chosenCandle
+    };
+    state.total += 1;
+    state.recentItems = [enhancedItem, ...state.recentItems.filter(x => String(x.id) !== String(out.item.id))].slice(0, 15);
+    state.items = [enhancedItem, ...state.items.filter(x => String(x.id) !== String(out.item.id))].slice(0, getSeaSampleSize());
+    // HR pool is loaded from admin_list, not from a browser-local substitute.
+
+    $('total').textContent = state.total.toLocaleString('th-TH');
+    renderSea();
+    launchKrathongToSea(enhancedItem);
+    state.tickerIndex = 0;
+    renderWishTicker();
 
     $('launch').hidden = false;
     setTimeout(() => { $('launch').hidden = true; }, 2300);
     $('status').textContent = 'กระทงลอยอยู่ในทะเลแล้ว!';
     setTimeout(() => { resetBuilder(); closeModal('builderModal'); }, 1000);
     localStorage.setItem('phiPhiLastWish', new Date().toISOString());
-  } catch (renderErr) {
-    console.error('Error rendering released krathong:', renderErr);
-    $('status').textContent = renderErr.message;
+  } catch (err) {
+    console.error('บันทึกกระทงไม่สำเร็จ:', err);
+    $('status').textContent = 'ไม่สามารถบันทึกกระทงได้: ' + (err.message || 'โปรดลองอีกครั้ง');
   } finally {
     setReleaseLoading(false);
   }
@@ -2521,44 +2064,44 @@ function updateHrViews() {
 async function hrLogin() {
   const pin = $('hrPin').value.trim();
   if (!pin) { $('hrLoginStatus').textContent = 'กรุณากรอก PIN'; return; }
-  $('hrLoginBtn').disabled = true; $('hrLoginStatus').textContent = 'กำลังตรวจสอบ...';
+  $('hrLoginBtn').disabled = true;
+  $('hrLoginStatus').textContent = 'กำลังตรวจสอบ...';
   try {
     const out = await request('hr_login', { pin });
-    state.adminToken = out.token; localStorage.setItem('phiPhiHrToken', out.token);
-    $('hrLoginStatus').textContent = 'เข้าสู่ระบบสำเร็จ';
-    $('hrLoginBox').hidden = true; $('hrPanel').hidden = false;
-    await loadAdminList();
-  } catch (e) {
-    console.warn('API hr_login notice (using local admin session):', e.message);
-    if (pin === '1234' || pin === '8888' || pin.length >= 4) {
-      state.adminToken = 'local_admin_' + Date.now();
-      localStorage.setItem('phiPhiHrToken', state.adminToken);
-      $('hrLoginStatus').textContent = 'เข้าสู่ระบบสำเร็จ';
-      $('hrLoginBox').hidden = true; $('hrPanel').hidden = false;
-      const localKrathongs = getLocalKrathongs();
-      state.hrPool = [...localKrathongs, ...SEED_KRATHONGS];
-      updateHrViews();
-    } else {
-      $('hrLoginStatus').textContent = 'รหัส PIN ไม่ถูกต้อง (ทดสอบ PIN: 1234)';
+    if (!out || typeof out.token !== 'string' || !out.token || out.token.startsWith('local_admin_')) {
+      throw Error('API ไม่ได้ยืนยันสิทธิ์ HR');
     }
+    state.adminToken = out.token;
+    localStorage.setItem('phiPhiHrToken', out.token);
+    await loadAdminList();
+    $('hrLoginStatus').textContent = 'เข้าสู่ระบบสำเร็จ';
+    $('hrLoginBox').hidden = true;
+    $('hrPanel').hidden = false;
+  } catch (e) {
+    state.adminToken = '';
+    state.hrPool = [];
+    localStorage.removeItem('phiPhiHrToken');
+    $('hrLoginBox').hidden = false;
+    $('hrPanel').hidden = true;
+    $('hrLoginStatus').textContent = 'เข้าสู่ระบบไม่สำเร็จ: ' + (e.message || 'กรุณาลองใหม่');
   } finally {
     $('hrLoginBtn').disabled = false;
   }
 }
 
 async function loadAdminList() {
-  if (!state.adminToken) return;
+  if (!state.adminToken) throw Error('ยังไม่ได้เข้าสู่ระบบ HR');
   try {
     const out = await request('admin_list', { token: state.adminToken });
-    if (out && out.items) {
-      state.hrPool = out.items;
-    }
+    if (!out || !Array.isArray(out.items)) throw Error('API ส่งรายชื่อผู้เข้าร่วมไม่ถูกต้อง');
+    state.hrPool = out.items;
+    updateHrViews();
   } catch (e) {
-    console.warn('API admin_list notice (using local pool):', e.message);
-    const localKrathongs = getLocalKrathongs();
-    state.hrPool = [...localKrathongs, ...SEED_KRATHONGS];
+    state.hrPool = [];
+    updateHrViews();
+    console.error('โหลดรายชื่อ HR ไม่สำเร็จ:', e);
+    throw e;
   }
-  updateHrViews();
 }
 
 function shootConfetti() {
@@ -2698,12 +2241,22 @@ async function drawWinner() {
 }
 
 function syncHrUi() {
-  if (state.adminToken) {
-    $('hrLoginBox').hidden = true; $('hrPanel').hidden = false;
-    loadAdminList().catch(() => { logoutHr(); });
-  } else {
-    $('hrLoginBox').hidden = false; $('hrPanel').hidden = true;
-  }
+  // A previously saved token must not unlock the HR panel before server validation.
+  $('hrLoginBox').hidden = false;
+  $('hrPanel').hidden = true;
+  if (!state.adminToken) return;
+  $('hrLoginStatus').textContent = 'กำลังตรวจสอบสิทธิ์ HR...';
+  loadAdminList().then(() => {
+    if (!state.adminToken) return;
+    $('hrLoginBox').hidden = true;
+    $('hrPanel').hidden = false;
+    $('hrLoginStatus').textContent = '';
+  }).catch(err => {
+    state.adminToken = '';
+    state.hrPool = [];
+    localStorage.removeItem('phiPhiHrToken');
+    $('hrLoginStatus').textContent = 'ไม่สามารถยืนยันสิทธิ์ HR: ' + (err.message || 'กรุณาเข้าสู่ระบบใหม่');
+  });
 }
 
 function logoutHr() {
@@ -2806,6 +2359,7 @@ function initMusicPlayer() {
 }
 
 if ($('photoPublic')) $('photoPublic').onchange = () => { $('photoPublic').dataset.touched = '1'; };
+try { localStorage.removeItem('phiPhiLocalKrathongs_v1'); } catch (e) {}
 try { localStorage.removeItem('phiPhiMyKrathong_v1'); localStorage.removeItem('phiPhiMyKrathong'); } catch (e) {}
 initChoices();
 updatePreview();
