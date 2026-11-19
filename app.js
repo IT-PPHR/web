@@ -1106,11 +1106,15 @@ function positionPreviewName() {
     // SVG viewBox: 200 x 165; waterline/hull near y=140-150.
     // Position directly beneath that hull and center on SVG x=100.
     const centerX = svgRect.left - skyRect.left + svgRect.width * 0.5;
-    const belowHull = svgRect.top - skyRect.top + svgRect.height * (149 / 165) + 5;
+    const preferredTop = svgRect.top - skyRect.top + svgRect.height * (149 / 165) + 8;
     const halfWidth = Math.min(label.offsetWidth, sky.clientWidth - 12) / 2;
     const safeX = Math.max(halfWidth + 6, Math.min(sky.clientWidth - halfWidth - 6, centerX));
+    const labelHeight = Math.max(label.offsetHeight || 0, 26);
+    const minTop = 16;
+    const maxTop = Math.max(minTop, sky.clientHeight - labelHeight - 16);
+    const safeTop = Math.max(minTop, Math.min(maxTop, preferredTop));
     label.style.left = safeX + 'px';
-    label.style.top = belowHull + 'px';
+    label.style.top = safeTop + 'px';
   });
 }
 window.addEventListener('resize', positionPreviewName, { passive: true });
@@ -1241,7 +1245,18 @@ document.querySelectorAll('#builderModal .wizard-dot').forEach(btn => btn.onclic
 function openModal(id) { $(id).hidden = false; document.body.classList.add('noscroll'); }
 function closeModal(id) { $(id).hidden = true; if ([...document.querySelectorAll('.modal')].every(m => m.hidden)) document.body.classList.remove('noscroll'); }
 
-$('openBuilder').onclick = () => { setWizardStep(1); openModal('builderModal'); };
+$('openBuilder').onclick = () => {
+  setWizardStep(1);
+  openModal('builderModal');
+  // Re-render after the modal becomes visible so the preview-name anchor uses
+  // real dimensions immediately on first open (same look as after selecting a base).
+  requestAnimationFrame(() => {
+    updatePreview();
+    positionPreviewName();
+    setTimeout(positionPreviewName, 60);
+    setTimeout(positionPreviewName, 180);
+  });
+};
 $('openHrTop').onclick = () => openModal('hrModal');
 $('closeBuilder').onclick = () => closeModal('builderModal');
 $('cancelBuilder').onclick = () => closeModal('builderModal');

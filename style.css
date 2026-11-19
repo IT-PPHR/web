@@ -7408,3 +7408,29 @@ body.is-releasing-krathong #cancelBuilder {
   margin: 0;
   pointer-events: none;
 }
+
+
+/* V63: Builder preview label should be stable from the first open and stay fully
+   inside the preview card. Move the krathong a little higher so the name pill fits
+   below the hull without touching the border. */
+#builderModal .preview-sky {
+  padding-bottom: 14px;
+}
+#builderModal .krathong-preview {
+  top: 52% !important;
+}
+#builderModal .preview-sky > #previewName {
+  max-width: calc(100% - 20px);
+}
+@media (max-width: 760px) {
+  #builderModal .preview-sky {
+    min-height: 152px !important;
+    padding-bottom: 18px;
+  }
+  #builderModal .krathong-preview {
+    top: 49% !important;
+  }
+  #builderModal .preview-sky > #previewName {
+    max-width: calc(100% - 24px);
+  }
+}
