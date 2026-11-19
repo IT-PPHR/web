@@ -7215,6 +7215,525 @@ body.is-releasing-krathong #cancelBuilder {
                               transform: translate(-50%, -50%) scale(1);
                             }
                           }
+/* V52: Reduce expensive ambient effects on small/mobile screens while retaining the sea and krathongs. */
+@media (max-width:760px) {
+  .sea-stage .pyro {filter:none !important;}
+  .sea-stage .v7-cloud, .sea-stage .water-cloud-mirror {filter:none !important;}
+  .sea-stage .sky-lantern {filter:drop-shadow(0 0 3px rgba(255,188,87,.3)) !important;}
+  .sea-stage>.sea-item {will-change:transform;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .sea-stage .pyro, .sea-stage .sky-lantern,
+  .sea-stage .v7-cloud, .sea-stage .water-cloud-mirror,
+  .sea-stage .krathong-candle-glow, .sea-stage .krathong-ripple {
+    animation:none !important;
+  }
+  .sea-stage .sea-bob {animation:none !important;}
+}
+
+
+/* V53: compositor-only sea-item motion. app.js positions using translate3d. */
+.sea-stage > .sea-item {
+  left: 0;
+  top: 0;
+  will-change: transform;
+  contain: layout style;
+}
+.sea-stage > .sea-item:hover { filter: none; }
+@media (max-width: 760px) {
+  .sea-stage > .sea-item { filter: none !important; }
+  .sea-stage > .sea-item:hover { transition: none !important; }
+  .sea-low-power .marine-animal:nth-child(n+4),
+  .sea-low-power .v7-lantern:nth-child(n+5) { display: none !important; }
+  .sea-low-power .sea-item .krathong-ripple,
+  .sea-low-power .sea-item .krathong-candle-glow { animation: none !important; }
+  .sea-low-power .sea-item .sea-bob { animation-duration: 4.5s; }
+  .sea-low-power .sea-stage .sea-surface::before,
+  .sea-low-power .sea-stage .sea-surface::after { filter: none !important; }
+}
+
+/* V56 — Floating krathong nameplates stay on one line, regardless of name length.
+   Keep the badge centered below its krathong without changing its motion. */
+.sea-stage > .sea-item .sea-name {
+  display: block;
+  width: max-content;
+  min-width: 0;
+  max-width: none;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 760px) {
+  .sea-stage > .sea-item .sea-name {
+    width: max-content;
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+
+
+/* V58 — Builder preview label follows the actual rendered SVG artwork.
+   The SVG is 2.1em wide / 1.63em tall, while its containing preview box is
+   only 1.42em / 1.16em. The previous 50%-of-container positioning placed
+   the badge over the left side of the krathong instead of below its hull. */
+#builderModal #krathongPreview > #previewName {
+  position: absolute;
+  left: 1.05em !important;   /* middle of the 2.1em SVG, not the narrow preview box */
+  bottom: -0.50em !important; /* below the actual SVG hull/waterline */
+  transform: translateX(-50%) !important;
+  margin: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: min(180px, 85vw);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* V62 — fluffy, opaque white cartoon cloud above one randomly selected krathong.
+   All shapes use simple gradients and pseudo-elements (no blur/backdrop-filter). */
+.sea-stage > .sea-item.wish-speaking:not(.shark-bite-active) {
+  z-index: 26;
+}
+.sea-item .sea-wish-spotlight {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  transform: translate3d(-50%, 9px, 0) scale(.96);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(240px, 68vw);
+  min-width: 108px;
+  padding: 12px 18px;
+  border: 1px solid #e8eef5;
+  border-radius: 36px;
+  background: linear-gradient(180deg, #fff 0%, #f8fbff 74%, #eaf2fb 100%);
+  color: #24384c;
+  box-shadow: 0 7px 0 rgba(209, 222, 237, .65), 0 11px 17px rgba(7, 26, 46, .22);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 700;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: block;
+  overflow: visible; /* Do not cut off the cloud puffs. */
+  opacity: 0;
+  pointer-events: none;
+  z-index: 32;
+  isolation: isolate;
+  animation: seaWishSpotlightShow 6.3s ease-in-out both;
+}
+.sea-item .sea-wish-spotlight::before,
+.sea-item .sea-wish-spotlight::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff, #f6faff);
+  box-shadow: 0 2px 0 rgba(214, 226, 240, .45);
+}
+/* Two overlapping puffs create a recognizable fluffy cartoon cloud silhouette. */
+.sea-item .sea-wish-spotlight::before {
+  width: 48px;
+  height: 37px;
+  left: 13%;
+  top: -17px;
+}
+.sea-item .sea-wish-spotlight::after {
+  width: 58px;
+  height: 42px;
+  right: 13%;
+  top: -23px;
+}
+@keyframes seaWishSpotlightShow {
+  0% { opacity: 0; transform: translate3d(-50%, 9px, 0) scale(.96); }
+  12%, 78% { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); }
+  100% { opacity: 0; transform: translate3d(-50%, -4px, 0) scale(.99); }
+}
+/* Hide the cloud immediately if the shark bites that krathong. */
+.sea-item.shark-bite-active .sea-wish-spotlight { display: none !important; }
+@media (max-width: 760px) {
+  .sea-item .sea-wish-spotlight {
+    max-width: min(190px, 57vw);
+    min-width: 94px;
+    padding: 9px 14px;
+    font-size: 10.5px;
+    line-height: 1.4;
+    box-shadow: 0 5px 0 rgba(209, 222, 237, .64), 0 8px 12px rgba(7, 26, 46, .17);
+  }
+  .sea-item .sea-wish-spotlight::before {
+    width: 34px;
+    height: 26px;
+    left: 14%;
+    top: -12px;
+  }
+  .sea-item .sea-wish-spotlight::after {
+    width: 40px;
+    height: 31px;
+    right: 14%;
+    top: -15px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sea-item .sea-wish-spotlight { animation: none; opacity: 1; }
+}
+
+
+/* V60: Builder's preview name sits in .preview-sky (outside the small SVG holder).
+   Its x/y are calculated against the visible SVG hull in app.js. */
+#builderModal .preview-sky {
+  position: relative;
+}
+#builderModal .preview-sky > #previewName {
+  position: absolute !important;
+  display: inline-block;
+  left: 50%;
+  top: auto;
+  bottom: auto !important;
+  transform: translateX(-50%) !important;
+  width: max-content;
+  max-width: calc(100% - 12px);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 30;
+  margin: 0;
+  pointer-events: none;
+}
+
+
+/* V63: Builder preview label should be stable from the first open and stay fully
+   inside the preview card. Move the krathong a little higher so the name pill fits
+   below the hull without touching the border. */
+#builderModal .preview-sky {
+  padding-bottom: 14px;
+}
+#builderModal .krathong-preview {
+  top: 52% !important;
+}
+#builderModal .preview-sky > #previewName {
+  max-width: calc(100% - 20px);
+}
+@media (max-width: 760px) {
+  #builderModal .preview-sky {
+    min-height: 152px !important;
+    padding-bottom: 18px;
+  }
+  #builderModal .krathong-preview {
+    top: 49% !important;
+  }
+  #builderModal .preview-sky > #previewName {
+    max-width: calc(100% - 24px);
+  }
+}
+
+
+/* V64: Thai event title in header + tighter footer bottom on mobile */
+header .brand-event {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  white-space: normal;
+  max-width: 290px;
+}
+header .brand-event-title {
+  display: block;
+  font-weight: 800;
+  font-size: clamp(20px, 2vw, 32px);
+  line-height: 1.05;
+  letter-spacing: .3px;
+  color: #f3cc80;
+}
+header .brand-event-sub {
+  display: block;
+  font-weight: 600;
+  font-size: clamp(9px, .85vw, 12px);
+  line-height: 1.15;
+  letter-spacing: 2px;
+  color: rgba(243,204,128,.88);
+}
+@media (min-width:761px) and (max-width:1180px) {
+  header .brand-event {
+    max-width: 250px;
+  }
+  header .brand-event-title {
+    font-size: clamp(17px, 2vw, 24px);
+  }
+  header .brand-event-sub {
+    font-size: 10px;
+    letter-spacing: 1.6px;
+  }
+}
+@media (max-width:760px) {
+  header .brand-with-logo {
+    align-items: center;
+  }
+  header .brand-event {
+    gap: 1px;
+    max-width: 190px;
+  }
+  header .brand-event-title {
+    font-size: clamp(13px, 4.4vw, 22px);
+    line-height: 1.05;
+  }
+  header .brand-event-sub {
+    font-size: clamp(7px, 2vw, 9px);
+    letter-spacing: 1.5px;
+  }
+  footer {
+    padding: 14px 10px max(6px, env(safe-area-inset-bottom));
+  }
+}
+@media (max-width:390px) {
+  header .brand-event {
+    max-width: 168px;
+  }
+  header .brand-event-title {
+    font-size: clamp(12px, 4.1vw, 18px);
+  }
+  header .brand-event-sub {
+    font-size: 7px;
+    letter-spacing: 1.2px;
+  }
+}
+
+
+/* V65 – first-pass mobile GPU/CPU reduction.
+   Keep animated krathongs and shark; remove expensive ambient compositing. */
+@media (max-width: 760px) {
+  /* Retain the sea gradient and surface shimmer; stop the large overlapping layers. */
+  .sea-stage .water-caustics-layer.layer-deep,
+  .sea-stage .water-caustics-layer.layer-mid,
+  .sea-stage .water-clouds-layer,
+  .sea-stage .beam-cloud-occlusion,
+  .sea-stage .pyro {
+    display: none !important;
+  }
+  .sea-stage .water-caustics-layer.layer-surface,
+  .sea-stage .water-glints,
+  .sea-stage .moonlight-water-beam {
+    animation: none !important;
+  }
+  .sea-stage .moonlight-water-beam {
+    filter: none !important;
+    mix-blend-mode: normal;
+    opacity: .28;
+  }
+  /* Avoid animating SVG filters every frame on older mobile GPUs. */
+  .sea-stage > .sea-item .krathong-art,
+  .sea-stage > .sea-item .krathong-svg,
+  .sea-stage > .sea-item .krathong-svg *,
+  .sea-stage .marine-animal,
+  .sea-stage .marine-animal svg {
+    filter: none !important;
+  }
+  .sea-stage .flame-flicker,
+  .sea-stage .candle-flame,
+  .sea-stage .candle-sparkle {
+    filter: none !important;
+  }
+  .sea-stage > .sea-item .krathong-candle-glow,
+  .sea-stage > .sea-item .krathong-ripple {
+    animation: none !important;
+  }
+  .sea-stage .v7-cloud,
+  .sea-stage .sky-lantern {
+    filter: none !important;
+  }
+  /* No offscreen full-scene impact shake on phones. */
+  .sea-stage.sea-impact-shake { animation: none !important; }
+}
+
+
+/* V66: polished typography and flush mobile page footer.
+   Uses system/installed typefaces so older phones do not download new fonts. */
+:root {
+  --thai-ui-font: "Thonburi", "Noto Sans Thai", "Sarabun", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+html {
+  background: #633550;
+}
+body {
+  font-family: var(--thai-ui-font);
+  background-repeat: no-repeat;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+button, input, textarea, select { font-family: inherit; }
+header .brand-event-title {
+  font-family: var(--thai-ui-font);
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.22;
+  text-wrap: nowrap;
+}
+header .brand-event-sub {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-weight: 650;
+  letter-spacing: 1.55px;
+}
+.navbtn,
+.hero-actions .btn,
+#builderModal .btn {
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.site-footer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 1.25px;
+  color: rgba(255, 237, 226, .8);
+}
+.site-footer span {
+  display: block;
+  margin-top: 2px;
+  font-size: 9px;
+  letter-spacing: 1.65px;
+  opacity: .85;
+}
+@media (max-width: 760px) {
+  html { background: #633550; }
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100svh;
+    background: linear-gradient(180deg, #141b30 0%, #261d40 40%, #46274a 72%, #633550 100%) no-repeat;
+  }
+  body > main { flex: 1 0 auto; padding-bottom: 0 !important; }
+  body > header { flex-shrink: 0; }
+  body > .site-footer { flex-shrink: 0; margin-top: 0; }
+  .hero-sea { min-height: 0; }
+  .site-footer {
+    padding: 9px 12px max(3px, env(safe-area-inset-bottom));
+    background: #633550;
+  }
+  .site-footer::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: 80px;
+    background: #633550;
+    pointer-events: none;
+  }
+  header .brand-event-title { font-size: clamp(13px, 4.25vw, 21px); }
+  header .brand-event-sub { font-size: clamp(7px, 1.85vw, 9px); letter-spacing: 1.3px; }
+}
+
+
+/* V67 — Fit the entire sea, release button and footer inside the mobile
+   visual viewport. Remove V66's 80px pseudo-footer that could extend below
+   Safari's visible area. The sea flexes to the actual remaining height. */
+@media (max-width: 760px) {
+  html {
+    height: auto;
+    background: #633550;
+  }
+  body {
+    min-height: 100svh;
+    min-height: 100dvh;
+    height: 100svh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: clip;
+  }
+  body > header {
+    flex: 0 0 auto;
+  }
+  body > main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important;
+  }
+  body > main > .hero-sea {
+    flex: 1 1 auto;
+    height: 100%;
+    min-height: 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 5px 12px 3px;
+  }
+  body > main > .hero-sea > .sea-stage {
+    order: 1;
+    flex: 1 1 auto;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    width: 100%;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+  body > main > .hero-sea > .hero-copy {
+    display: contents;
+  }
+  body > main .hero-actions {
+    order: 2;
+    flex: 0 0 auto;
+    margin: 7px 0 0 !important;
+    width: 100%;
+  }
+  body > main .hero-actions .btn {
+    width: 100%;
+    padding: 13px 12px;
+    min-height: 51px;
+  }
+  body > .site-footer {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 5px 12px max(4px, env(safe-area-inset-bottom));
+    font-size: 10px;
+    line-height: 1.25;
+    background: transparent;
+  }
+  body > .site-footer span {
+    margin-top: 0;
+    font-size: 9px;
+  }
+  body > .site-footer::after {
+    content: none !important;
+    display: none !important;
+  }
+  /* Let the sky read a little more spacious after the stage height adjusts.
+     No additional animated effects are added. */
+  .sea-stage .moon {
+    top: 12%;
+  }
+}
+/* Very small landscape/short-phone viewport: preserve usable sea height and
+   allow natural scrolling rather than hiding controls behind browser chrome. */
+@media (max-width: 760px) and (max-height: 590px) {
+  body { height: auto; min-height: 100dvh; }
+  body > main > .hero-sea > .sea-stage {
+    flex: none;
+    height: 310px !important;
+    min-height: 310px !important;
+  }
+}
+
+
+/* V70: V68 title artwork + V69 no-duplicate subtitle, on top of V67 layout. */
 /* V68: use supplied Thai title artwork in header and keep it fitted beside hotel logo */
 header .brand-with-logo {
   display: flex;
@@ -7241,18 +7760,7 @@ header .brand-title-image {
   object-fit: contain;
 }
 
-header .brand-subtitle {
-  display: block;
-  margin-top: 2px;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans Thai', sans-serif;
-  font-weight: 700;
-  font-size: clamp(9px, 1vw, 12px);
-  line-height: 1.15;
-  letter-spacing: .22em;
-  color: #e9c987;
-  white-space: nowrap;
-  text-transform: uppercase;
-}
+
 
 header .brand-event {
   display: none !important;
@@ -7272,11 +7780,7 @@ header .brand-event {
     width: clamp(205px, 32vw, 350px);
   }
 
-  header .brand-subtitle {
-    font-size: 10px;
-    letter-spacing: .16em;
-  }
-}
+  
 
 @media (max-width: 760px) {
   header {
@@ -7298,11 +7802,7 @@ header .brand-event {
     width: min(100%, clamp(160px, 48vw, 250px));
   }
 
-  header .brand-subtitle {
-    font-size: 9px;
-    letter-spacing: .14em;
-  }
-}
+  
 
 @media (max-width: 420px) {
   header .hotel-logo {
@@ -7318,11 +7818,7 @@ header .brand-event {
     width: min(100%, clamp(145px, 44vw, 210px));
   }
 
-  header .brand-subtitle {
-    font-size: 8px;
-    letter-spacing: .12em;
-  }
-}
+  
 
 @media (max-width: 360px) {
   header .hotel-logo {
@@ -7337,8 +7833,4 @@ header .brand-event {
     width: min(100%, 150px);
   }
 
-  header .brand-subtitle {
-    font-size: 7px;
-    letter-spacing: .1em;
-  }
-}
+  
