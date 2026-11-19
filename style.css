@@ -7215,3 +7215,18 @@ body.is-releasing-krathong #cancelBuilder {
                               transform: translate(-50%, -50%) scale(1);
                             }
                           }
+/* V52: Reduce expensive ambient effects on small/mobile screens while retaining the sea and krathongs. */
+@media (max-width:760px) {
+  .sea-stage .pyro {filter:none !important;}
+  .sea-stage .v7-cloud, .sea-stage .water-cloud-mirror {filter:none !important;}
+  .sea-stage .sky-lantern {filter:drop-shadow(0 0 3px rgba(255,188,87,.3)) !important;}
+  .sea-stage>.sea-item {will-change:transform;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .sea-stage .pyro, .sea-stage .sky-lantern,
+  .sea-stage .v7-cloud, .sea-stage .water-cloud-mirror,
+  .sea-stage .krathong-candle-glow, .sea-stage .krathong-ripple {
+    animation:none !important;
+  }
+  .sea-stage .sea-bob {animation:none !important;}
+}

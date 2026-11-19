@@ -74,7 +74,7 @@ const LEGACY_CANDLE_MAP = {
 
 const state = {
   type: 'lotus', flower: 'lotus', candle: 'classic', color: '#ffc977', photo: '', photoProcessing: false,
-  items: [], recentItems: [], total: 0, minute: null, ownItem: null, ownUntil: 0, tickerIndex: 0, adminToken: ((token) => token && !token.startsWith('local_admin_') ? token : '')(localStorage.getItem('phiPhiHrToken') || ''), hrPool: [], renderToken: 0
+  items: [], recentItems: [], total: 0, minute: null, ownItem: null, ownUntil: 0, tickerIndex: 0, adminToken: ((token) => token && !token.startsWith('local_admin_') ? token : '')(localStorage.getItem('phiPhiHrToken') || ''), hrPool: [], serverWinners: [], winnerHistoryReady: false, renderToken: 0
 };
 
 const $ = id => document.getElementById(id);
@@ -1295,29 +1295,73 @@ function setReleaseLoading(isLoading) {
   }
 }
 
+// All mutations use a bounded fetch. Never retry an ambiguous create/draw unless
+// the server supports idempotency for the SAME requestId (see Dev 2 handoff).
+const IDEMPOTENCY_READY = (window.APP_CONFIG || {}).IDEMPOTENCY_READY === true;
+const REQUEST_TIMEOUT_MS = 18000;
+let releaseInProgress = false;
+function makeRequestId() {
+  if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  if (!window.crypto || !crypto.getRandomValues) throw Error('เบราว์เซอร์ไม่รองรับการสร้างรหัสคำขอที่ปลอดภัย');
+  crypto.getRandomValues(bytes);
+  return [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+}
 async function request(action, data = {}, method = 'POST', retries = 1) {
   if (!API || API.includes('REPLACE-WITH')) throw Error('ยังไม่ได้ตั้งค่า API_URL ใน config.js');
-  const url = API.replace(/\/$/, '');
-  try {
-    const resp = await fetch(method === 'GET' ? url + '?' + new URLSearchParams({ action, ...data }) : url, {
-      method,
-      headers: method === 'POST' ? { 'Content-Type': 'application/json' } : {},
-      body: method === 'POST' ? JSON.stringify({ action, ...data }) : undefined
-    });
-    if ((resp.status === 429 || resp.status >= 500) && retries > 0) {
-      await new Promise(r => setTimeout(r, 500 + Math.random() * 400));
-      return request(action, data, method, retries - 1);
+  const isMutation = method !== 'GET';
+  const safeToRetry = !isMutation || (action === 'create' && IDEMPOTENCY_READY && !!data.requestId);
+  const maxRetries = safeToRetry ? Math.min(2, Math.max(0, retries)) : 0;
+  const base = API.replace(/\/$/, '');
+  const url = method === 'GET' ? base + '?' + new URLSearchParams({ action, ...data }) : base;
+  let lastError;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    let transient = false;
+    try {
+      const resp = await fetch(url, {
+        method,
+        headers: isMutation ? { 'Content-Type': 'application/json' } : {},
+        body: isMutation ? JSON.stringify({ action, ...data }) : undefined,
+        signal: controller.signal,
+        cache: 'no-store'
+      });
+      transient = resp.status === 429 || resp.status >= 500;
+      let out;
+      try { out = await resp.json(); } catch { throw Error('API ตอบกลับไม่ใช่ JSON'); }
+      if (!resp.ok || !out || out.ok !== true) {
+        const e = new Error((out && out.error) || `API Error (${resp.status})`);
+        e.transient = transient;
+        throw e;
+      }
+      return out;
+    } catch (e) {
+      lastError = e;
+      if (attempt >= maxRetries || (e.transient === false)) break;
+      // Network/timeout failures can have reached the server. Reuse requestId.
+      await sleep(Math.min(2200, 450 * (2 ** attempt)) + Math.random() * 250);
+    } finally {
+      clearTimeout(timer);
     }
-    const out = await resp.json();
-    if (!resp.ok || !out.ok) throw Error(out.error || 'API Error');
-    return out;
-  } catch (err) {
-    if (retries > 0) {
-      await new Promise(r => setTimeout(r, 500 + Math.random() * 400));
-      return request(action, data, method, retries - 1);
-    }
-    throw err;
   }
+  throw lastError || Error('เชื่อมต่อ API ไม่สำเร็จ');
+}
+async function fingerprintSubmission(payload) {
+  if (!window.crypto || !window.crypto.subtle) throw Error('ต้องเข้าเว็บไซต์ผ่าน HTTPS เพื่อบันทึกกระทงอย่างปลอดภัย');
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+const SUBMISSION_KEY = 'phiPhiPendingCreate_v1';
+function stableSubmissionId(fingerprint) {
+  try {
+    const previous = JSON.parse(sessionStorage.getItem(SUBMISSION_KEY) || 'null');
+    if (previous && previous.fingerprint === fingerprint && previous.requestId) return previous.requestId;
+  } catch {}
+  const requestId = makeRequestId();
+  try { sessionStorage.setItem(SUBMISSION_KEY, JSON.stringify({ fingerprint, requestId })); } catch {}
+  return requestId;
 }
 
 function displayWish(item) {
@@ -1334,7 +1378,8 @@ function initSeaDecor() {
   sky.className = 'atmosphere-sky';
   sky.setAttribute('aria-hidden', 'true');
 
-  for (let i = 0; i < 3; i++) {
+  const lowPowerScene = window.matchMedia('(max-width:760px), (prefers-reduced-motion: reduce)').matches;
+  for (let i = 0; i < (lowPowerScene ? 1 : 3); i++) {
     const pyro = document.createElement('div');
     pyro.className = 'pyro v7-pyro';
     pyro.innerHTML = '<div class="before"></div><div class="after"></div>';
@@ -1361,7 +1406,7 @@ function initSeaDecor() {
     { top: 62, scale: 0.65, duration: 62, delay: -36, dir: 'right' }
   ];
 
-  cloudConfigs.forEach((cfg) => {
+  (lowPowerScene ? cloudConfigs.slice(0, 3) : cloudConfigs).forEach((cfg) => {
     const isRight = cfg.dir === 'right';
 
     const cloud = document.createElement('div');
@@ -1383,7 +1428,7 @@ function initSeaDecor() {
     }
   });
 
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < (lowPowerScene ? 4 : 9); i++) {
     const lantern = document.createElement('div');
     lantern.className = 'sky-lantern v7-lantern';
     const reset = () => {
@@ -1431,7 +1476,7 @@ function initSeaDecor() {
       }
     };
 
-    setInterval(checkMoonOcclusion, 250);
+    setInterval(() => { if (!document.hidden && !lowPowerScene) checkMoonOcclusion(); }, 1200);
   }
   window.addEventListener('resize', () => {
     for (const lantern of sky.querySelectorAll('.v7-lantern'))
@@ -1458,7 +1503,7 @@ function initSeaLife() {
   marineLife.length = 0;
   const mobile = window.matchMedia('(max-width:760px)').matches;
   const plan = mobile
-    ? ['fish', 'turtle', 'ray', 'fish']
+    ? ['fish', 'turtle', 'ray']
     : ['fish', 'turtle', 'dolphin', 'ray', 'fish', 'turtle', 'fish'];
   const specs = {
     fish: { size: [40, 58], speed: [14, 22], amp: [5, 10], depth: [.69, .89], tilt: 8 },
@@ -1651,7 +1696,15 @@ function releaseNextSeaEntry(now) {
   nextSeaEntryAt = now + SEA_ENTRY_GAP_MS;
 }
 
+const MOBILE_LOW_POWER = window.matchMedia('(max-width:760px)').matches;
+let lastPaintFrame = 0;
 function animateSea(ts) {
+  const fpsInterval = MOBILE_LOW_POWER ? 1000 / 30 : 1000 / 60;
+  if (!document.hidden && lastPaintFrame && ts - lastPaintFrame < fpsInterval) {
+    requestAnimationFrame(animateSea);
+    return;
+  }
+  lastPaintFrame = ts;
   const dt = Math.min(.05, Math.max(0, (ts - lastFrame) / 1000 || 0)); lastFrame = ts;
   const sea = $('seaBoard');
   if (!document.hidden && sea.clientWidth) {
@@ -1820,7 +1873,7 @@ async function loadSea() {
 }
 
 $('release').onclick = async () => {
-  if (wizardStep !== 4) return;
+  if (wizardStep !== 4 || releaseInProgress) return;
   const name = $('name').value.trim();
   const employeeId = $('employeeId').value.trim();
   const department = $('dept').value;
@@ -1849,12 +1902,9 @@ $('release').onclick = async () => {
     return;
   }
 
+  releaseInProgress = true;
   setReleaseLoading(true);
   $('status').textContent = 'กำลังปล่อยกระทง...';
-
-  // Level 3: Concurrency Jitter (กระจายโหลด 300 คำขอไม่ให้พุ่งชนเซิร์ฟเวอร์พร้อมกันในมิลลิวินาทีเดียวกัน)
-  const jitterMs = Math.floor(Math.random() * 450);
-  if (jitterMs > 0) await new Promise(r => setTimeout(r, jitterMs));
 
   const chosenBase = state.type;
   const chosenCandle = state.candle;
@@ -1862,7 +1912,10 @@ $('release').onclick = async () => {
   const fallbackCandle = LEGACY_CANDLE_MAP[chosenCandle] || 'classic';
 
   try {
-    const out = await request('create', {
+    // Spread traffic slightly; the server must still handle concurrency atomically.
+    const jitterMs = Math.floor(Math.random() * 450);
+    if (jitterMs) await sleep(jitterMs);
+    const payload = {
       name,
       employeeId,
       department,
@@ -1878,12 +1931,16 @@ $('release').onclick = async () => {
       photo: state.photo,
       photoPublic: !!state.photo && photoPublicBox.checked,
       consent: true
-    });
+    };
+    const fingerprint = await fingerprintSubmission(payload);
+    const requestId = stableSubmissionId(fingerprint);
+    const out = await request('create', { ...payload, requestId }, 'POST', IDEMPOTENCY_READY ? 2 : 0);
     if (!out || !out.item || !out.item.id) {
       throw Error('API ไม่ได้ยืนยันการบันทึกกระทง กรุณาตรวจสอบก่อนลองอีกครั้ง');
     }
 
-    // Show the actual API-confirmed submission immediately, as before.
+    // Only an API-confirmed submission can be shown.
+    try { sessionStorage.removeItem(SUBMISSION_KEY); } catch {}
     saveDesign(out.item.id, chosenBase, chosenCandle);
     const enhancedItem = {
       ...out.item,
@@ -1910,8 +1967,9 @@ $('release').onclick = async () => {
     localStorage.setItem('phiPhiLastWish', new Date().toISOString());
   } catch (err) {
     console.error('บันทึกกระทงไม่สำเร็จ:', err);
-    $('status').textContent = 'ไม่สามารถบันทึกกระทงได้: ' + (err.message || 'โปรดลองอีกครั้ง');
+    $('status').textContent = 'ยังไม่สามารถยืนยันผลการบันทึกได้: ' + (err.message || 'กรุณาตรวจสอบรายการก่อนกดซ้ำ') + ' หากเน็ตหลุดหลังส่ง อาจบันทึกสำเร็จแล้ว';
   } finally {
+    releaseInProgress = false;
     setReleaseLoading(false);
   }
 };
@@ -1937,17 +1995,16 @@ function resetBuilder() {
    3. HR LUCKY DRAW SYSTEM (Exclude Winners + 26 Steps + Celebration)
    ========================================================================== */
 function getWinners() {
-  try {
-    return JSON.parse(localStorage.getItem('phiPhiWinnerHistory_v1') || '[]');
-  } catch (e) {
-    return [];
-  }
+  // Never trust browser storage as the source of truth for prize winners.
+  return state.serverWinners;
 }
-
-function saveWinners(list) {
-  try {
-    localStorage.setItem('phiPhiWinnerHistory_v1', JSON.stringify(list));
-  } catch (e) {}
+async function syncWinnerHistory() {
+  const out = await request('winner_history', { token: state.adminToken });
+  if (!Array.isArray(out.winners)) throw Error('Backend ต้องส่ง winners[] จาก winner_history');
+  state.serverWinners = out.winners;
+  state.winnerHistoryReady = true;
+  updateHrViews();
+  return out.winners;
 }
 
 function getItemWinnerStatus(item, winners, seenEmployees) {
@@ -2095,9 +2152,12 @@ async function loadAdminList() {
     const out = await request('admin_list', { token: state.adminToken });
     if (!out || !Array.isArray(out.items)) throw Error('API ส่งรายชื่อผู้เข้าร่วมไม่ถูกต้อง');
     state.hrPool = out.items;
-    updateHrViews();
+    state.winnerHistoryReady = false;
+    await syncWinnerHistory();
   } catch (e) {
     state.hrPool = [];
+    state.serverWinners = [];
+    state.winnerHistoryReady = false;
     updateHrViews();
     console.error('โหลดรายชื่อ HR ไม่สำเร็จ:', e);
     throw e;
@@ -2114,7 +2174,8 @@ function shootConfetti() {
     return;
   }
   const colors = ['#ffd700', '#ff4081', '#00e676', '#00e5ff', '#ff9100', '#ffffff'];
-  for (let i = 0; i < 60; i++) {
+  const confettiCount = window.matchMedia('(max-width:760px), (prefers-reduced-motion: reduce)').matches ? 22 : 60;
+  for (let i = 0; i < confettiCount; i++) {
     const p = document.createElement('div');
     p.style.cssText = `position:fixed;z-index:9999;width:8px;height:8px;background:${colors[i % colors.length]};left:${50 + (Math.random() - 0.5) * 40}%;top:50%;border-radius:2px;pointer-events:none;transform:scale(${0.5 + Math.random()});transition:all 1s ease-out;`;
     document.body.appendChild(p);
@@ -2175,66 +2236,41 @@ async function runLuckyAnimation(finalWinner, eligiblePool) {
 
 async function drawWinner() {
   const btn = $('drawBtn');
+  if (btn.disabled) return;
   btn.disabled = true;
   try {
-    if (!state.hrPool.length) await loadAdminList();
-    const winners = getWinners();
+    if (!state.adminToken) throw Error('กรุณาเข้าสู่ระบบ HR');
+    await loadAdminList(); // refresh server-side eligibility/history before the draw
     const selectedDept = $('hrDeptFilter') ? $('hrDeptFilter').value : 'ALL';
-
-    const seenEmployees = new Set();
-    const eligiblePool = [];
+    const seen = new Set(), eligiblePool = [];
     for (const item of state.hrPool) {
       if (selectedDept !== 'ALL' && item.department !== selectedDept) continue;
-      const status = getItemWinnerStatus(item, winners, seenEmployees);
-      if (status.type === 'eligible') {
-        eligiblePool.push(item);
-      }
+      if (getItemWinnerStatus(item, getWinners(), seen).type === 'eligible') eligiblePool.push(item);
     }
+    if (!eligiblePool.length) throw Error('ไม่มีผู้มีสิทธิ์ลุ้นรางวัลในแผนกที่เลือก');
 
-    if (!eligiblePool.length) {
-      alert(selectedDept === 'ALL'
-        ? 'ไม่มีผู้มีสิทธิ์ลุ้นรางวัล (ทุกคนได้รับรางวัลแล้ว หรือยังไม่มีผู้เข้าร่วม)'
-        : `ไม่มีผู้มีสิทธิ์ลุ้นรางวัลในแผนก ${selectedDept} (ทุกคนได้รับรางวัลแล้ว หรือยังไม่มีผู้เข้าร่วม)`);
-      return;
+    // The backend atomically chooses, excludes previously-won employees,
+    // commits the result and returns the authoritative winner.
+    const out = await request('draw', {
+      token: state.adminToken,
+      department: selectedDept,
+      requestId: makeRequestId()
+    }, 'POST', 0);
+    if (!out.winner || !out.winner.id) {
+      throw Error('Backend ไม่ได้ส่ง winner ที่ยืนยันแล้ว จึงไม่แสดงผลการจับรางวัล');
     }
-
-    const finalWinner = eligiblePool[Math.floor(Math.random() * eligiblePool.length)];
+    const finalWinner = out.winner;
+    // The animation has no effect on winner selection.
     await runLuckyAnimation(finalWinner, eligiblePool);
-
-    // Call API draw alongside with try/catch
-    try {
-      if (state.adminToken) {
-        await request('draw', { token: state.adminToken });
-      }
-    } catch (apiErr) {
-      console.warn('API draw sync notice:', apiErr.message);
-    }
-
-    const prizeRank = winners.length + 1;
-    const now = new Date();
-    const timeFormatted = now.toTimeString().split(' ')[0]; // HH:mm:ss
-    const winnerRecord = {
-      prizeRank,
-      id: finalWinner.id,
-      name: finalWinner.name,
-      employeeId: finalWinner.employeeId,
-      department: finalWinner.department,
-      wish: finalWinner.wish,
-      photo: finalWinner.photo,
-      type: finalWinner.type,
-      flower: finalWinner.flower,
-      candle: finalWinner.candle,
-      color: finalWinner.color,
-      wonAt: now.toISOString(),
-      wonAtFormatted: timeFormatted
-    };
-    winners.push(winnerRecord);
-    saveWinners(winners);
-
+    await syncWinnerHistory();
+    const winnerRecord = getWinners().find(w => String(w.id) === String(finalWinner.id));
+    if (!winnerRecord) throw Error('ไม่พบผู้ชนะในประวัติกลาง กรุณารีเฟรชและตรวจสอบก่อนจับครั้งถัดไป');
+    const prizeRank = Number(winnerRecord.prizeRank) || getWinners().length;
     updateHrViews();
     showWinnerCelebration(winnerRecord, prizeRank);
   } catch (e) {
-    alert(e.message);
+    // Never fabricate a winner when draw/history fails.
+    alert('ไม่สามารถยืนยันผลจับรางวัล: ' + (e.message || 'กรุณาตรวจสอบประวัติที่ Backend ก่อนลองใหม่'));
   } finally {
     btn.disabled = false;
   }
@@ -2261,6 +2297,8 @@ function syncHrUi() {
 
 function logoutHr() {
   state.adminToken = '';
+  state.serverWinners = [];
+  state.winnerHistoryReady = false;
   localStorage.removeItem('phiPhiHrToken');
   $('hrPin').value = '';
   $('hrLoginStatus').textContent = '';
@@ -2274,14 +2312,20 @@ $('hrLogoutBtn').onclick = logoutHr;
 if ($('hrDeptFilter')) $('hrDeptFilter').onchange = updateHrViews;
 
 if ($('clearHistoryBtn')) {
-  $('clearHistoryBtn').onclick = () => {
-    if (confirm('คุณต้องการล้างประวัติผู้ได้รับรางวัลทั้งหมดเพื่อเริ่มรอบใหม่ใช่หรือไม่?')) {
-      saveWinners([]);
-      updateHrViews();
+  $('clearHistoryBtn').onclick = async () => {
+    if (!state.adminToken || !state.winnerHistoryReady) return alert('ยังไม่สามารถยืนยันข้อมูลผู้ชนะจาก Backend');
+    if (!confirm('ยืนยันล้างประวัติผู้ได้รับรางวัลทั้งหมดบน Server? การดำเนินการนี้ควรจำกัดเฉพาะผู้มีสิทธิ์เท่านั้น')) return;
+    const clearBtn = $('clearHistoryBtn');
+    clearBtn.disabled = true;
+    try {
+      await request('clear_winners', { token: state.adminToken }, 'POST', 0);
+      await syncWinnerHistory();
       $('winnerBox').classList.add('emptywinner');
       $('winnerBox').classList.remove('drawing', 'rolling-shake');
       $('winnerBox').innerHTML = '<div class="winner-placeholder">กด “สุ่มรางวัล” เพื่อเลือกผู้โชคดี</div>';
-    }
+    } catch(e) {
+      alert('ยังไม่ยืนยันการล้างประวัติบน Server: ' + e.message);
+    } finally { clearBtn.disabled = false; }
   };
 }
 
