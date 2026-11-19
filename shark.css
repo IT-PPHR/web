@@ -75,14 +75,43 @@
   100% { transform: translate(6px, 92px) rotate(-26deg) scale(0.14); opacity: 0; }
 }
 
+/* V57: smoothly descend below the waterline after the bite.
+   The shark keeps almost the same size while diving, rather than abruptly
+   shrinking from .8 to .34 in the last ~0.7s (the visible V53 "snap").
+   Only transform/opacity are animated, avoiding extra layout work on mobiles. */
 @keyframes creatureSlowAttack {
-  0%, 16% { transform: translate3d(-50%, 100px, 0) scale(.36) rotate(3deg); opacity: 0; }
+  0%, 16% {
+    transform: translate3d(-50%, 100px, 0) scale(.36) rotate(3deg);
+    opacity: 0;
+    animation-timing-function: cubic-bezier(.30, 0, .60, 1);
+  }
   30% { transform: translate3d(-50%, 26px, 0) scale(.83) rotate(-4deg); opacity: .87; }
   43% { transform: translate3d(-50%, -8px, 0) scale(1.06) rotate(-2deg); opacity: 1; }
   54% { transform: translate3d(-50%, -16px, 0) scale(1.1) rotate(0deg); opacity: 1; }
-  65% { transform: translate3d(-50%, -12px, 0) scale(1.06) rotate(1deg); opacity: 1; }
-  83% { transform: translate3d(-50%, 20px, 0) scale(.8) rotate(2deg); opacity: .8; }
-  100% { transform: translate3d(-50%, 100px, 0) scale(.34) rotate(3deg); opacity: 0; }
+  65% {
+    transform: translate3d(-50%, -12px, 0) scale(1.06) rotate(1deg);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(.35, 0, .65, 1);
+  }
+  74% {
+    transform: translate3d(-50%, 2px, 0) scale(1.02) rotate(1.5deg);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(.40, .10, .65, .85);
+  }
+  84% {
+    transform: translate3d(-50%, 37px, 0) scale(.98) rotate(2deg);
+    opacity: .96;
+    animation-timing-function: cubic-bezier(.40, .12, .72, 1);
+  }
+  93% {
+    transform: translate3d(-50%, 82px, 0) scale(.94) rotate(2deg);
+    opacity: .38;
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: translate3d(-50%, 118px, 0) scale(.92) rotate(2deg);
+    opacity: 0;
+  }
 }
 
 @keyframes splashRingExpandSlow {
@@ -129,7 +158,7 @@
   z-index: 44;
   pointer-events: none;
   transform-origin: center bottom;
-  animation: creatureSlowAttack 4.2s ease-in-out forwards;
+  animation: creatureSlowAttack 4.2s ease-in-out both;
 }
 
 .krathong-sinking {
