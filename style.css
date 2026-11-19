@@ -7295,24 +7295,25 @@ body.is-releasing-krathong #cancelBuilder {
 }
 
 
-/* V59 — one rotating wish attached to a currently visible, real krathong. */
+/* V59/V61 — one rotating wish attached to a currently visible, real krathong.
+   V61 restyles it as a soft cloud instead of a dark rectangular label. */
 .sea-stage > .sea-item.wish-speaking:not(.shark-bite-active) {
   z-index: 26;
 }
 .sea-item .sea-wish-spotlight {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 4px);
-  transform: translate3d(-50%, 7px, 0) scale(.96);
+  bottom: calc(100% + 10px);
+  transform: translate3d(-50%, 8px, 0) scale(.96);
   width: max-content;
-  max-width: min(230px, 63vw);
-  min-width: 95px;
-  padding: 8px 12px;
-  border: 1px solid rgba(255, 219, 148, .84);
-  border-radius: 14px;
-  background: rgba(12, 35, 55, .96);
-  color: #fff5db;
-  box-shadow: 0 5px 13px rgba(0, 12, 27, .32);
+  max-width: min(240px, 66vw);
+  min-width: 108px;
+  padding: 11px 18px;
+  border: 1px solid rgba(255, 250, 238, .5);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(235, 244, 255, .28), rgba(205, 225, 245, .22));
+  color: #fffaf0;
+  box-shadow: 0 10px 24px rgba(10, 22, 38, .18), inset 0 1px 0 rgba(255, 255, 255, .20);
   font-family: inherit;
   font-size: 12px;
   line-height: 1.55;
@@ -7328,22 +7329,57 @@ body.is-releasing-krathong #cancelBuilder {
   opacity: 0;
   pointer-events: none;
   z-index: 32;
+  isolation: isolate;
   animation: seaWishSpotlightShow 6.3s ease-in-out both;
 }
+.sea-item .sea-wish-spotlight::before,
+.sea-item .sea-wish-spotlight::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(240, 247, 255, .24), rgba(205, 225, 245, .18));
+  border: 1px solid rgba(255, 250, 238, .32);
+}
+.sea-item .sea-wish-spotlight::before {
+  width: 38px;
+  height: 25px;
+  left: 16px;
+  top: -10px;
+}
+.sea-item .sea-wish-spotlight::after {
+  width: 48px;
+  height: 32px;
+  right: 18px;
+  top: -15px;
+}
 @keyframes seaWishSpotlightShow {
-  0% { opacity: 0; transform: translate3d(-50%, 7px, 0) scale(.96); }
+  0% { opacity: 0; transform: translate3d(-50%, 8px, 0) scale(.96); }
   12%, 78% { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); }
-  100% { opacity: 0; transform: translate3d(-50%, -3px, 0) scale(.99); }
+  100% { opacity: 0; transform: translate3d(-50%, -4px, 0) scale(.99); }
 }
 /* Hide instantly during shark bite: no text floating over the animal. */
 .sea-item.shark-bite-active .sea-wish-spotlight { display: none !important; }
 @media (max-width: 760px) {
   .sea-item .sea-wish-spotlight {
-    max-width: min(175px, 51vw);
-    padding: 6px 9px;
+    max-width: min(188px, 54vw);
+    min-width: 92px;
+    padding: 8px 13px;
     font-size: 10.5px;
     line-height: 1.45;
-    box-shadow: 0 3px 9px rgba(0, 12, 27, .27);
+    box-shadow: 0 6px 16px rgba(10, 22, 38, .16), inset 0 1px 0 rgba(255, 255, 255, .18);
+  }
+  .sea-item .sea-wish-spotlight::before {
+    width: 28px;
+    height: 18px;
+    left: 12px;
+    top: -8px;
+  }
+  .sea-item .sea-wish-spotlight::after {
+    width: 35px;
+    height: 24px;
+    right: 12px;
+    top: -11px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
