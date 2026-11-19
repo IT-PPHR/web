@@ -7779,8 +7779,7 @@ header .brand-event {
   header .brand-title-image {
     width: clamp(205px, 32vw, 350px);
   }
-
-  
+}
 
 @media (max-width: 760px) {
   header {
@@ -7801,8 +7800,7 @@ header .brand-event {
   header .brand-title-image {
     width: min(100%, clamp(160px, 48vw, 250px));
   }
-
-  
+}
 
 @media (max-width: 420px) {
   header .hotel-logo {
@@ -7817,8 +7815,7 @@ header .brand-event {
   header .brand-title-image {
     width: min(100%, clamp(145px, 44vw, 210px));
   }
-
-  
+}
 
 @media (max-width: 360px) {
   header .hotel-logo {
@@ -7832,8 +7829,7 @@ header .brand-event {
   header .brand-title-image {
     width: min(100%, 150px);
   }
-
-  
+}
 
 /* V71 — Scheduled countdown and event-completed pages.
    Keep the original sea UI untouched when the event is live. */
@@ -8010,4 +8006,25 @@ html[data-event-phase="ended"] body > .site-footer {
 }
 @media (prefers-reduced-motion: reduce) {
   .event-gate-krathong { animation: none !important; }
+}
+
+
+/* V72: Ensure closed/pre-event pages never expose the sea, controls or footer. */
+html[data-event-phase="before"] #top,
+html[data-event-phase="ended"] #top,
+html[data-event-phase="before"] body > .site-footer,
+html[data-event-phase="ended"] body > .site-footer { display: none !important; }
+@media (max-width: 760px) {
+  .event-gate { min-height: calc(100dvh - 96px); padding: 12px 14px max(14px, env(safe-area-inset-bottom)); gap: 12px; }
+  .event-gate-card { width: 100%; max-width: 100%; border-radius: 20px; }
+  .event-gate-sky { height: clamp(116px, 18dvh, 148px); }
+  .event-gate-content { padding: 21px 15px 24px; }
+  .event-gate h1 { font-size: clamp(24px, 6.3vw, 33px); line-height: 1.28; }
+  .event-gate-lead { font-size: 13px; line-height: 1.6; margin: 10px auto 14px; }
+  .event-clock { margin: 16px auto 18px; gap: 6px; }
+  .event-clock > div { padding: 13px 2px; border-radius: 11px; }
+  .event-clock strong { font-size: clamp(24px, 7vw, 38px); }
+  .event-clock span { font-size: 11px; }
+  .event-gate-note { font-size: 11px; line-height: 1.6; margin-top: 10px; }
+  .event-gate-footer { font-size: 9px; max-width: 100%; }
 }
