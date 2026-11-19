@@ -1795,8 +1795,22 @@ function animateSea(ts) {
       v.flow += dt;
       v.vx = Math.abs(v.vx) || 18;
 
-      v.x += (v.entering ? v.entrySpeed : v.vx) * dt;
-      if (v.x >= 120) v.entering = false;
+      // V55: smooth approach speed from the left edge to the normal drift speed.
+      // Smoothstep has zero slope at either end; there is no abrupt speed drop at x=120.
+      if (v.entering) {
+        const entryStartX = -130;
+        const entryEndX = 120;
+        const progress = Math.max(0, Math.min(1, (v.x - entryStartX) / (entryEndX - entryStartX)));
+        const eased = progress * progress * (3 - 2 * progress);
+        const speed = v.entrySpeed + (v.vx - v.entrySpeed) * eased;
+        v.x += speed * dt;
+        if (v.x >= entryEndX) {
+          v.entering = false;
+          // Do not snap the position; subsequent frames use the same terminal speed.
+        }
+      } else {
+        v.x += v.vx * dt;
+      }
       v.y += Math.sin(v.flow * .6) * dt * 1.6;
       v.y = Math.max(h * .55, Math.min(h * .88, v.y));
       const margin = 140;
