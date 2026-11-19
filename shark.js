@@ -7,7 +7,6 @@
 
   const SHARK_CHOMPER = {
     name: 'ฉลามหูดำเกาะพีพี',
-    msg: '🦈 งับ!! ฉลามหูดำเกาะพีพีโผล่มางับกระทง!',
     svg: `
     <svg viewBox="0 0 120 110" style="width:100%; height:100%; overflow:visible; filter:drop-shadow(0 6px 12px rgba(0,0,0,0.6));">
       <path d="M22,105 Q28,32 60,12 Q92,32 98,105 Z" fill="#475569" stroke="#0f172a" stroke-width="2.5"/>
@@ -45,19 +44,12 @@
       krathongEl.style.animationPlayState = 'paused';
       krathongEl.style.zIndex = '49';
 
-      // ป้ายข้อความแจ้งเตือนด้านบนกระทง
-      const alertBubble = document.createElement('div');
-      const msg = willDragDown
-        ? '🦈 งับ!! ฉลามหูดำเกาะพีพีโผล่มางับลากกระทงลงน้ำ!'
-        : '🦈 งับ!! ฉลามหูดำแวะมางับหยอกๆ แล้วปล่อยกระทงไป~';
-      const bubbleBg = willDragDown ? '#fb7185' : '#facc15';
-      const bubbleColor = willDragDown ? '#ffffff' : '#0f172a';
+      // จัดคลาสสถานะงับ เพื่อให้ CSS จัดตำแหน่งกระทงไปที่ปากฉลามระหว่างอนิเมชัน
+      krathongEl.classList.add('shark-bite-active');
+      krathongEl.classList.toggle('shark-bite-drag', willDragDown);
+      krathongEl.classList.toggle('shark-bite-release', !willDragDown);
 
-      alertBubble.style.cssText = `position:absolute; top:-44px; left:50%; transform:translateX(-50%); background:${bubbleBg}; color:${bubbleColor}; font-size:12px; font-weight:800; padding:4px 14px; border-radius:999px; white-space:nowrap; z-index:50; border:2px solid #fff; box-shadow:0 4px 12px rgba(0,0,0,0.4);`;
-      alertBubble.innerText = msg;
-      krathongEl.appendChild(alertBubble);
-
-      // สั่งกระทงสั่น: ถ้างับลากลงน้ำให้จมลงสู่ใต้ทะเล ถ้าเป็นงับแล้วปล่อยให้สั่นโยกเยกแล้วกลับมาลอยต่อ
+      // สั่งกระทงให้ขยับเข้าหาปากฉลาม: ถ้างับลากลงน้ำให้จมลงสู่ใต้ทะเล ถ้าเป็นงับแล้วปล่อยให้โยกแล้วกลับมาลอยต่อ
       const innerBody = krathongEl.querySelector('.sea-bob') || krathongEl.firstElementChild;
       if (innerBody) {
         if (willDragDown) {
@@ -109,7 +101,6 @@
       // คืนค่าหรือนำออกหลังจบอนิเมชัน 4.25 วินาที
       setTimeout(() => {
         if (seaContainerEl) seaContainerEl.classList.remove('sea-impact-shake');
-        safeRemove(alertBubble);
         safeRemove(splash1);
         safeRemove(splash2);
         safeRemove(creatureEl);
@@ -119,9 +110,11 @@
             // 1. กรณีงับลากลงน้ำ: เรียก sinkDrifterItem เพื่อ recycle กระทงให้วนกลับมาลอยใหม่
             const itemId = krathongEl.dataset.itemId;
             if (typeof window.sinkDrifterItem === 'function' && itemId) {
+              krathongEl.classList.remove('shark-bite-active', 'shark-bite-drag', 'shark-bite-release');
               window.sinkDrifterItem(itemId);
             } else {
               if (innerBody) innerBody.classList.remove('krathong-sinking');
+            krathongEl.classList.remove('shark-bite-active', 'shark-bite-drag', 'shark-bite-release');
               krathongEl.dataset.chomped = 'false';
               krathongEl.style.animationPlayState = 'running';
               safeRemove(krathongEl);
@@ -129,6 +122,7 @@
           } else {
             // 2. กรณีงับแล้วปล่อย: กระทงไม่จม คืนค่าให้ลอยต่อไปตามปกติ
             if (innerBody) innerBody.classList.remove('krathong-nibble-release');
+            krathongEl.classList.remove('shark-bite-active', 'shark-bite-drag', 'shark-bite-release');
             krathongEl.dataset.chomped = 'false';
             krathongEl.style.animationPlayState = 'running';
             krathongEl.style.zIndex = '';
