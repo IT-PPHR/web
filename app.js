@@ -87,9 +87,13 @@ const recycledFromShark = [];
 
 let pendingSeaEntries = [];
 let nextSeaEntryAt = 0;
-const SEA_ENTRY_GAP_MS = 1600;
-// V80: Keep mobile light; fill wider desktop scenes with more *real* submissions.
-// Initial desktop distribution is seeded across the sea, future entries still float in from the left.
+// V81: maintain a deliberate stream on desktop; mobile keeps its earlier cadence.
+// At a natural drift of ~16–25 px/s, this gives boats time to separate visibly.
+const SEA_ENTRY_GAP_MOBILE_MS = 1600;
+const SEA_ENTRY_GAP_DESKTOP_MS = 5500;
+const getSeaEntryGap = () => window.innerWidth <= 760 ? SEA_ENTRY_GAP_MOBILE_MS : SEA_ENTRY_GAP_DESKTOP_MS;
+// Keep mobile light; fill wider desktop scenes with more *real* submissions.
+// All boats now enter naturally, rather than being placed instantly across the sea.
 const getSeaSampleSize = () => {
   const width = document.getElementById('seaBoard')?.clientWidth || window.innerWidth;
   if (width <= 760) return 6;
@@ -98,7 +102,6 @@ const getSeaSampleSize = () => {
   return 14;
 };
 const SEA_REFRESH_MS = 45000;
-let initialSeaSeeded = false;
 let nextOccupancyCheckAt = 0;
 const marineLife = [];
 let lastFrame = 0;
@@ -1707,31 +1710,6 @@ function launchKrathongToSea(item) {
   }
 }
 
-// V80: At first load spread real krathongs through the wide desktop scene.
-// Without this, eight krathongs all enter from x=-130 and leave a mostly empty sea
-// for over a minute while they drift slowly at 16-25 px/s.
-function seedDesktopSea(sea) {
-  if (initialSeaSeeded || drifters.size || pendingSeaEntries.length || sea.clientWidth < 900) return;
-  const items = getAllAvailableKrathongs();
-  if (!items.length) return;
-  initialSeaSeeded = true;
-  const target = Math.min(getSeaSampleSize(), items.length);
-  const lanes = [0.60, 0.71, 0.82];
-  const columns = Math.ceil(target / lanes.length);
-  const left = Math.max(105, sea.clientWidth * .095);
-  const right = sea.clientWidth - Math.max(120, sea.clientWidth * .095);
-  const stride = (right - left) / Math.max(1, columns);
-  // Column-major with alternating lane order: avoid visual vertical stacks.
-  for (let i = 0; i < target; i++) {
-    const col = Math.floor(i / lanes.length);
-    const row = i % lanes.length;
-    const lane = (col % 2) ? (lanes.length - 1 - row) : row;
-    const x = Math.min(right, left + (col + .28 + lane * .13) * stride);
-    const y = sea.clientHeight * lanes[lane];
-    addDrifter(items[i], x, y);
-  }
-}
-
 // Queue a replacement while a krathong is approaching the far shore, not only
 // after it has completely exited; keep existing boats floating to the right.
 function fillSeaQueue() {
@@ -1760,7 +1738,6 @@ function renderSea() {
   $('total').textContent = totalCount.toLocaleString('th-TH');
   const sea = $('seaBoard');
   sea.querySelectorAll('.empty').forEach(x => x.remove());
-  seedDesktopSea(sea);
   fillSeaQueue();
   renderWishTicker();
 }
@@ -1798,7 +1775,7 @@ function releaseNextSeaEntry(now) {
   const sea = $('seaBoard');
   if (!sea) return;
   const y = allocateBestLane(sea);
-  // Do not hold the entire entry queue because of a boat in a different lane.
+  // Leave space near the entry point; avoid colliding with an already entering boat.
   const nearEntry = [...drifters.values()].some(d =>
     d.x < 160 && d.x > -175 && !d.sinking && !d.respawnPending &&
     Math.abs(d.y - y) < sea.clientHeight * .095);
@@ -1810,7 +1787,7 @@ function releaseNextSeaEntry(now) {
   // Explicit x=-130 preserves the smooth, normal drift when spawning. The old
   // entering boost is only used if a caller supplies no starting coordinate.
   if (item && !drifters.has(String(item.id))) addDrifter(item, -130, y);
-  nextSeaEntryAt = now + SEA_ENTRY_GAP_MS;
+  nextSeaEntryAt = now + getSeaEntryGap();
 }
 
 const MOBILE_LOW_POWER = window.matchMedia('(max-width:760px)').matches;
