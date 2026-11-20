@@ -8028,3 +8028,8 @@ html[data-event-phase="ended"] body > .site-footer { display: none !important; }
   .event-gate-note { font-size: 11px; line-height: 1.6; margin-top: 10px; }
   .event-gate-footer { font-size: 9px; max-width: 100%; }
 }
+
+/* V73: keep the event gate closed until the Worker clock is verified. */
+html[data-event-phase="syncing"] #top,
+html[data-event-phase="syncing"] body > .site-footer { display: none !important; }
+#eventSyncing[hidden] { display: none !important; }

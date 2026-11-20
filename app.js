@@ -2528,7 +2528,10 @@ syncHrUi();
 initMusicPlayer();
 // Countdown/finished pages do not start the sea renderer or poll participant data.
 // HR login remains available from the existing top navigation.
-if (!window.EVENT_GATE || window.EVENT_GATE.isLive()) {
+// Sea rendering starts only after V73 verifies time with the Worker.
+async function startSeaIfEventLive() {
+  if (window.EVENT_GATE) await window.EVENT_GATE.ready;
+  if (window.EVENT_GATE && !window.EVENT_GATE.isLive()) return;
   initSeaDecor();
   loadSea();
   requestAnimationFrame(animateSea);
@@ -2550,4 +2553,4 @@ if (!window.EVENT_GATE || window.EVENT_GATE.isLive()) {
     else if (!window.EVENT_GATE || window.EVENT_GATE.isLive()) loadSea();
   });
 }
-
+startSeaIfEventLive();
