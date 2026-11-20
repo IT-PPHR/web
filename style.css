@@ -8033,3 +8033,102 @@ html[data-event-phase="ended"] body > .site-footer { display: none !important; }
 html[data-event-phase="syncing"] #top,
 html[data-event-phase="syncing"] body > .site-footer { display: none !important; }
 #eventSyncing[hidden] { display: none !important; }
+
+
+/* V74 — Final Mobile Visual Balance.
+   Bring back visible depth, moonlight and candle warmth without reinstating
+   costly multi-layer blur/filter animations from the desktop scene. */
+@media (max-width: 760px) {
+  /* One soft, slow-moving surface layer creates depth with very little compositing. */
+  .sea-stage .water-caustics-layer.layer-surface {
+    display: block !important;
+    opacity: .64;
+    animation: v74SurfaceDrift 19s ease-in-out infinite alternate !important;
+    will-change: auto;
+  }
+  /* A static mid layer gives the water richness with no per-frame paint work. */
+  .sea-stage .water-caustics-layer.layer-mid {
+    display: block !important;
+    opacity: .34;
+    animation: none !important;
+    filter: none !important;
+  }
+  .sea-stage .water-glints {
+    display: block !important;
+    opacity: .68;
+    animation: v74Glints 8s ease-in-out infinite alternate !important;
+    will-change: auto;
+  }
+  .sea-stage .moonlight-water-beam {
+    display: block !important;
+    width: min(39vw, 230px);
+    opacity: .50;
+    filter: none !important;
+    mix-blend-mode: normal;
+    animation: v74MoonBeam 11s ease-in-out infinite alternate !important;
+    will-change: auto;
+  }
+  /* Restore a small halo around the *whole* boat, not filters on every SVG path. */
+  .sea-stage > .sea-item .krathong-art,
+  .sea-stage > .sea-item .krathong-svg,
+  .sea-stage > .sea-item .krathong-svg * {
+    filter: none !important;
+  }
+  .sea-stage > .sea-item .krathong-candle-glow {
+    opacity: .76;
+    filter: none !important;
+    animation: v74CandleHalo 4.4s ease-in-out infinite alternate !important;
+  }
+  .sea-stage > .sea-item .krathong-ripple {
+    opacity: .40;
+    animation: none !important;
+  }
+  .sea-stage .v7-cloud,
+  .sea-stage .water-cloud-mirror,
+  .sea-stage .sky-lantern,
+  .sea-stage .marine-animal,
+  .sea-stage .marine-animal svg {
+    filter: none !important;
+  }
+  .sea-stage .water-clouds-layer { display: none !important; }
+  .sea-stage .pyro { display: none !important; }
+}
+@keyframes v74SurfaceDrift {
+  0% { opacity: .48; transform: translate3d(-2px, 0, 0); }
+  100% { opacity: .74; transform: translate3d(3px, 1px, 0); }
+}
+@keyframes v74Glints {
+  0% { opacity: .34; }
+  100% { opacity: .76; }
+}
+@keyframes v74MoonBeam {
+  0% { opacity: .42; }
+  100% { opacity: .58; }
+}
+@keyframes v74CandleHalo {
+  0% { opacity: .50; }
+  100% { opacity: .84; }
+}
+/* Lite quality: preserve static light and color, stop subtle background movement. */
+@media (max-width: 760px) {
+  html.sea-low-power .sea-stage .water-caustics-layer.layer-surface,
+  html.sea-low-power .sea-stage .water-glints,
+  html.sea-low-power .sea-stage .moonlight-water-beam,
+  html.sea-low-power .sea-stage > .sea-item .krathong-candle-glow {
+    animation: none !important;
+  }
+  html.sea-low-power .sea-stage .water-caustics-layer.layer-surface { opacity: .58; }
+  html.sea-low-power .sea-stage .water-glints { opacity: .55; }
+  html.sea-low-power .sea-stage .moonlight-water-beam { opacity: .50; }
+  html.sea-low-power .sea-stage > .sea-item .krathong-candle-glow { opacity: .70; }
+  html.sea-low-power .sea-stage .v7-cloud:nth-of-type(n+2),
+  html.sea-low-power .sea-stage .sky-lantern:nth-of-type(n+3) { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sea-stage .water-caustics-layer.layer-surface,
+  .sea-stage .water-glints,
+  .sea-stage .moonlight-water-beam,
+  .sea-stage > .sea-item .krathong-candle-glow {
+    animation: none !important;
+  }
+}
