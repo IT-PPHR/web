@@ -5,7 +5,7 @@
  */
 (function () {
   'use strict';
-  const START_AT = Date.parse('2026-11-20T08:00:00+07:00');
+  const START_AT = Date.parse('2026-11-20T08:32:00+07:00');
   const END_AT = Date.parse('2026-11-21T00:00:00+07:00');
   const RESYNC_MS = 60000;
   const RETRY_MS = 15000;
