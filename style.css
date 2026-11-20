@@ -8615,3 +8615,78 @@ html[data-event-phase="syncing"] body > .site-footer { display: none !important;
     margin: 0 auto !important;
   }
 }
+
+
+/* V83: Fit the desktop sea, create button, and footer within the visible viewport.
+   The sea consumes only the space left after the header, actions, and footer. */
+@media (min-width: 1181px) and (min-height: 650px) {
+  html { height: 100%; }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow-x: hidden;
+  }
+
+  body > header { flex: 0 0 auto; }
+
+  body > main#top {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0 !important;
+  }
+
+  body > main#top > .hero-sea {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: stretch;
+    gap: 10px;
+    height: 100%;
+    min-height: 0;
+    padding: 6px max(24px, 2.2vw) 4px;
+  }
+
+  body > main#top .hero-sea > .sea-stage {
+    grid-row: 1;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  body > main#top .hero-sea .hero-actions {
+    grid-row: 2;
+    margin: 0 auto !important;
+    min-height: 52px;
+  }
+
+  body > main#top .hero-sea .hero-actions .btn {
+    min-height: 50px;
+    padding: 12px 28px;
+  }
+
+  body > .site-footer {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 3px 12px 6px;
+    font-size: 10px;
+    line-height: 1.15;
+  }
+
+  body > .site-footer span {
+    margin-top: 1px;
+    font-size: 9px;
+  }
+}
+
+/* Short desktop windows scroll naturally instead of shrinking the sea excessively. */
+@media (min-width: 1181px) and (max-height: 649px) {
+  .hero-sea > .sea-stage {
+    height: 410px;
+    min-height: 410px;
+  }
+  body > .site-footer { padding: 4px 12px 8px; }
+}
