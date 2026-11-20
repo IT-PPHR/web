@@ -1126,7 +1126,7 @@ function updatePreview() {
   }
   const krathongPreview = $('krathongPreview');
   if (krathongPreview) {
-    krathongPreview.style.setProperty('--glow', state.color);
+    applyKrathongGlowVars(krathongPreview, state.color);
   }
   const photoBadge = $('photoBadge');
   if (photoBadge) {
@@ -1423,11 +1423,7 @@ function initSeaDecor() {
   sky.className = 'atmosphere-sky';
   sky.setAttribute('aria-hidden', 'true');
 
-  // V74: keep atmosphere on ordinary phones; only trim decorative layers.
-  // Do not re-enable costly fireworks on phones or reduced-motion devices.
-  const mobileScene = window.matchMedia('(max-width:760px)').matches;
-  const reducedScene = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const lowPowerScene = mobileScene || reducedScene;
+  const lowPowerScene = window.matchMedia('(max-width:760px), (prefers-reduced-motion: reduce)').matches;
   for (let i = 0; i < (lowPowerScene ? 0 : 3); i++) {
     const pyro = document.createElement('div');
     pyro.className = 'pyro v7-pyro';
@@ -1455,7 +1451,7 @@ function initSeaDecor() {
     { top: 62, scale: 0.65, duration: 62, delay: -36, dir: 'right' }
   ];
 
-  (reducedScene ? cloudConfigs.slice(0, 1) : mobileScene ? cloudConfigs.slice(0, 2) : cloudConfigs).forEach((cfg) => {
+  (lowPowerScene ? cloudConfigs.slice(0, 1) : cloudConfigs).forEach((cfg) => {
     const isRight = cfg.dir === 'right';
 
     const cloud = document.createElement('div');
@@ -1477,7 +1473,7 @@ function initSeaDecor() {
     }
   });
 
-  for (let i = 0; i < (reducedScene ? 1 : mobileScene ? 3 : 9); i++) {
+  for (let i = 0; i < (lowPowerScene ? 1 : 9); i++) {
     const lantern = document.createElement('div');
     lantern.className = 'sky-lantern v7-lantern';
     const reset = () => {
@@ -1532,8 +1528,6 @@ function initSeaDecor() {
       lantern.style.setProperty('--lantern-travel', (sky.clientHeight + 75) + 'px');
   }, { passive: true });
   initSeaLife();
-  // Apply quality to decorations created after the initial performance check.
-  if (typeof setSceneQuality === 'function') setSceneQuality(document.documentElement.classList.contains('sea-low-power'));
 }
 
 const SEA_LIFE_ART = {
@@ -1554,7 +1548,7 @@ function initSeaLife() {
   marineLife.length = 0;
   const mobile = window.matchMedia('(max-width:760px)').matches;
   const plan = mobile
-    ? ['fish', 'turtle', 'ray']
+    ? ['fish', 'turtle']
     : ['fish', 'turtle', 'dolphin', 'ray', 'fish', 'turtle', 'fish'];
   const specs = {
     fish: { size: [40, 58], speed: [14, 22], amp: [5, 10], depth: [.69, .89], tilt: 8 },
@@ -1626,8 +1620,28 @@ function seaItemKey(item) {
   return [item.id, item.name, item.photo, item.type, item.flower, item.candle, item.color].join('|');
 }
 
+function hexToRgba(hex, alpha) {
+  const m = /^#([0-9a-f]{6})$/i.exec(String(hex || ''));
+  const safeHex = m ? m[1] : 'ffc977';
+  const r = parseInt(safeHex.slice(0, 2), 16);
+  const g = parseInt(safeHex.slice(2, 4), 16);
+  const b = parseInt(safeHex.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function applyKrathongGlowVars(node, color) {
+  if (!node) return;
+  const safeColor = /^#[0-9a-f]{6}$/i.test(color || '') ? color : '#ffc977';
+  node.style.setProperty('--glow', safeColor);
+  node.style.setProperty('--glow-soft', hexToRgba(safeColor, 0.18));
+  node.style.setProperty('--glow-mid', hexToRgba(safeColor, 0.30));
+  node.style.setProperty('--glow-strong', hexToRgba(safeColor, 0.52));
+  node.style.setProperty('--glow-ripple', hexToRgba(safeColor, 0.34));
+  node.style.setProperty('--glow-ripple-soft', hexToRgba(safeColor, 0.18));
+}
+
 function patchDrifterNode(node, item) {
-  node.style.setProperty('--glow', /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : '#ffc977');
+  applyKrathongGlowVars(node, item && item.color);
   node.innerHTML = seaItemHTML(item);
   node.onclick = () => displayWish(item);
   node.dataset.itemKey = seaItemKey(item);
@@ -1760,17 +1774,9 @@ let smoothedFrameMs = 1000 / MOTION_FPS;
 let performanceDegrade = 0;
 let frameSamples = 0;
 function setSceneQuality(low) {
-  const root = document.documentElement;
-  root.classList.toggle('sea-low-power', low);
-  root.classList.toggle('sea-mobile-balanced', MOBILE_LOW_POWER && !low);
-  // V74: keep fish and turtle on Lite; Balanced retains the ray as well.
+  document.documentElement.classList.toggle('sea-low-power', low);
   const marine = $('seaBoard')?.querySelectorAll('.marine-animal') || [];
-  marine.forEach((el, i) => { el.style.display = low && i >= 2 ? 'none' : ''; });
-  const sky = $('seaBoard')?.querySelector('.atmosphere-sky');
-  if (sky) {
-    sky.querySelectorAll('.v7-cloud').forEach((el, i) => { el.style.display = low && i >= 1 ? 'none' : ''; });
-    sky.querySelectorAll('.v7-lantern').forEach((el, i) => { el.style.display = low && i >= 2 ? 'none' : ''; });
-  }
+  marine.forEach((el, i) => { el.style.display = low && i > 2 ? 'none' : ''; });
 }
 setSceneQuality(LOW_END_MOBILE || REDUCE_MOTION);
 

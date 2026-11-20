@@ -8395,3 +8395,143 @@ html[data-event-phase="syncing"] body > .site-footer { display: none !important;
     opacity: .88;
   }
 }
+
+
+/* ========================================================================
+   V77 – Restore original Andaman horizon atmosphere + tone-based krathong glow
+   Revert the V76 sky/sea cinematic overrides back to the previous scene mood,
+   while tinting floating krathong under-glow/ripple with each krathong's chosen color.
+   ======================================================================== */
+.sea-stage {
+  background: radial-gradient(circle at 65% 20%, #ffaa78 0, #d8645e 16%, #8a3760 38%, #492452 64%, #1c1a3a 100%);
+  box-shadow: none;
+}
+
+.sea-stage::before,
+.sea-stage::after,
+.island::before,
+.island::after,
+.sea-stage > .sea-surface::after {
+  content: none !important;
+}
+
+.moon {
+  background: radial-gradient(circle at 35% 35%, #fff9db 0, #fed587 60%, #fca441 100%);
+  box-shadow: 0 0 90px rgba(255, 185, 95, .8), 0 0 35px rgba(255, 230, 160, .9);
+}
+
+.island {
+  background: linear-gradient(180deg, #2b1f3e, #131024);
+  box-shadow: none;
+}
+
+.sea-stage > .sea-surface {
+  background: linear-gradient(180deg, #1b3d5d 0%, #15324e 28%, #0f243a 65%, #081624 100%);
+  box-shadow: inset 0 8px 30px rgba(255, 200, 110, 0.20), 0 -2px 14px rgba(255, 180, 90, 0.28);
+}
+
+.sea-stage > .sea-surface::before {
+  background: radial-gradient(ellipse at 78% 0%, rgba(255, 205, 120, 0.30) 0%, rgba(212, 100, 90, 0.14) 35%, transparent 70%);
+  opacity: 1;
+}
+
+.moonlight-water-beam {
+  right: 5%;
+  width: 250px;
+  clip-path: none;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 225, 145, 0.52) 0%, rgba(255, 190, 105, 0.26) 32%, rgba(215, 110, 95, 0.10) 65%, transparent 80%),
+    linear-gradient(180deg, rgba(255, 220, 140, 0.38) 0%, rgba(255, 195, 110, 0.20) 35%, rgba(255, 175, 80, 0.08) 75%, transparent 100%);
+  filter: blur(8px);
+  opacity: 0.85;
+  mix-blend-mode: screen;
+  animation: moonBeamShimmer 4.6s ease-in-out infinite alternate;
+}
+
+.beam-cloud-occlusion {
+  background: radial-gradient(ellipse at center, rgba(10, 24, 40, 0.84) 0%, rgba(14, 32, 52, 0.50) 45%, transparent 75%);
+}
+
+.horizon-tide-line {
+  height: 2.5px;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 215, 140, 0.35) 15%,
+      rgba(135, 225, 255, 0.55) 45%,
+      rgba(255, 225, 150, 0.70) 75%,
+      transparent 100%);
+  box-shadow: 0 1px 8px rgba(135, 225, 255, 0.45), 0 0 12px rgba(255, 215, 140, 0.35);
+  animation: horizonTideShimmer 3.8s ease-in-out infinite alternate;
+}
+
+.water-glints {
+  background-image:
+    radial-gradient(1.5px 1.5px at 14% 22%, rgba(255, 240, 180, 0.85), transparent),
+    radial-gradient(2px 2px at 36% 42%, rgba(255, 235, 160, 0.90), transparent),
+    radial-gradient(1.5px 1.5px at 56% 26%, rgba(255, 245, 200, 0.80), transparent),
+    radial-gradient(2.2px 2.2px at 76% 20%, rgba(255, 255, 220, 0.95), transparent),
+    radial-gradient(1.8px 1.8px at 80% 50%, rgba(255, 225, 150, 0.85), transparent),
+    radial-gradient(1.5px 1.5px at 90% 32%, rgba(255, 240, 190, 0.90), transparent),
+    radial-gradient(2px 2px at 46% 66%, rgba(255, 230, 170, 0.75), transparent),
+    radial-gradient(1.5px 1.5px at 26% 72%, rgba(255, 240, 180, 0.70), transparent);
+  opacity: 0.72;
+  animation: waterGlintTwinkle 3.5s ease-in-out infinite alternate;
+}
+
+.sea-stage > .sea-item .krathong-candle-glow {
+  width: 96px;
+  height: 24px;
+  background: radial-gradient(ellipse at center,
+    var(--glow-strong, rgba(255, 190, 80, 0.45)) 0%,
+    var(--glow-mid, rgba(255, 140, 40, 0.20)) 48%,
+    transparent 76%);
+  filter: blur(4px);
+}
+
+.sea-stage > .sea-item .krathong-ripple {
+  border: 1px solid var(--glow-ripple, rgba(135, 225, 255, 0.40));
+  box-shadow: 0 0 8px var(--glow-ripple-soft, rgba(100, 215, 255, 0.25)), inset 0 0 6px var(--glow-soft, rgba(255, 215, 140, 0.15));
+  opacity: .48;
+}
+
+@media (max-width: 760px) {
+  .sea-stage {
+    box-shadow: none;
+  }
+  .sea-stage .water-caustics-layer.layer-mid {
+    opacity: .34;
+  }
+  .sea-stage .water-caustics-layer.layer-surface {
+    opacity: .64;
+    animation: v74SurfaceDrift 19s ease-in-out infinite alternate !important;
+  }
+  .sea-stage .water-glints {
+    opacity: .68;
+    animation: v74Glints 8s ease-in-out infinite alternate !important;
+  }
+  .sea-stage .moonlight-water-beam {
+    width: min(39vw, 230px);
+    right: 5%;
+    opacity: .50;
+    filter: none !important;
+    mix-blend-mode: normal;
+    animation: v74MoonBeam 11s ease-in-out infinite alternate !important;
+  }
+  .sea-stage > .sea-item .krathong-candle-glow {
+    opacity: .76;
+    animation: v74CandleHalo 4.4s ease-in-out infinite alternate !important;
+  }
+}
+
+@media (max-width: 760px) {
+  html.sea-low-power .sea-stage .water-caustics-layer.layer-surface,
+  html.sea-low-power .sea-stage .water-glints,
+  html.sea-low-power .sea-stage .moonlight-water-beam,
+  html.sea-low-power .sea-stage > .sea-item .krathong-candle-glow {
+    animation: none !important;
+  }
+  html.sea-low-power .sea-stage .water-caustics-layer.layer-surface { opacity: .58; }
+  html.sea-low-power .sea-stage .water-glints { opacity: .55; }
+  html.sea-low-power .sea-stage .moonlight-water-beam { opacity: .50; }
+  html.sea-low-power .sea-stage > .sea-item .krathong-candle-glow { opacity: .70; }
+}
