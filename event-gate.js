@@ -7,8 +7,8 @@
   'use strict';
   // Worker is the single source of truth for the event schedule.
   // These fallback values are never used to unlock submissions before sync.
-  let START_AT = Date.parse('2026-11-20T09:59:00+07:00');
-  let END_AT = Date.parse('2026-11-20T09:60:00+07:00');
+  let START_AT = Date.parse('2026-11-20T10:03:00+07:00');
+  let END_AT = Date.parse('2026-11-20T10:05:00+07:00');
   const RESYNC_MS = 60000;
   const RETRY_MS = 15000;
   const CLOCK_MAX_AGE_MS = 300000;
