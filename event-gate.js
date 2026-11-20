@@ -5,8 +5,10 @@
  */
 (function () {
   'use strict';
-  const START_AT = Date.parse('2026-11-20T08:45:00+07:00');
-  const END_AT = Date.parse('2026-11-25T00:00:00+07:00');
+  // Worker is the single source of truth for the event schedule.
+  // These fallback values are never used to unlock submissions before sync.
+  let START_AT = Date.parse('2026-11-24T08:00:00+07:00');
+  let END_AT = Date.parse('2026-11-25T00:00:00+07:00');
   const RESYNC_MS = 60000;
   const RETRY_MS = 15000;
   const CLOCK_MAX_AGE_MS = 300000;
@@ -39,7 +41,9 @@
   const isLive = () => phase() === 'live';
 
   window.EVENT_GATE = {
-    phase, isLive, now, ready, START_AT, END_AT,
+    phase, isLive, now, ready,
+    get START_AT() { return START_AT; },
+    get END_AT() { return END_AT; },
     refresh: () => fetchStatus(),
     isSynchronized: validClock
   };
@@ -62,7 +66,7 @@
 
   function paint() {
     const current = phase();
-    if (firstPhase !== null && current !== firstPhase) {
+    if (firstPhase !== null && current !== 'syncing' && current !== firstPhase) {
       // Reinitialize the sea renderer only after a verified phase transition.
       window.location.reload();
       return;
@@ -96,10 +100,19 @@
         });
         if (!response.ok) throw new Error('Server time unavailable: ' + response.status);
         const data = await response.json();
-        if (!data || data.ok !== true || !Number.isFinite(data.serverTime) ||
-            data.startAt !== START_AT || data.endAt !== END_AT) {
-          throw new Error('Invalid event_status response');
+        if (!data || data.ok !== true) {
+          throw new Error('Worker event_status unavailable: ' + String(data?.error || 'unexpected API response'));
         }
+        if (!Number.isFinite(data.serverTime) || !Number.isFinite(data.startAt) ||
+            !Number.isFinite(data.endAt) || data.startAt >= data.endAt ||
+            data.endAt - data.startAt > 31 * 86400000 ||
+            data.startAt < Date.parse('2026-01-01T00:00:00+07:00')) {
+          throw new Error('Worker event_status returned missing or invalid timestamps');
+        }
+        // Use Worker dates rather than rejecting an otherwise valid status
+        // whenever an operator changes the schedule for staging/tests.
+        START_AT = data.startAt;
+        END_AT = data.endAt;
         // Worker supplies time when sending its response; estimate the one-way
         // network delay from round-trip duration (capped to reduce jitter).
         const received = monotonicNow();
