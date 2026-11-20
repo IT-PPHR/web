@@ -87,11 +87,22 @@ const recycledFromShark = [];
 
 let pendingSeaEntries = [];
 let nextSeaEntryAt = 0;
-const SEA_ENTRY_GAP_MS = 1600;
-// Mobile optimization: one compositor transform per krathong rather than layout-changing left/top.
-const SEA_SAMPLE_SIZE = 8;
-const getSeaSampleSize = () => (typeof window !== 'undefined' && window.innerWidth <= 768 ? 6 : 8);
+// V81: maintain a deliberate stream on desktop; mobile keeps its earlier cadence.
+// At a natural drift of ~16–25 px/s, this gives boats time to separate visibly.
+const SEA_ENTRY_GAP_MOBILE_MS = 1600;
+const SEA_ENTRY_GAP_DESKTOP_MS = 5500;
+const getSeaEntryGap = () => window.innerWidth <= 760 ? SEA_ENTRY_GAP_MOBILE_MS : SEA_ENTRY_GAP_DESKTOP_MS;
+// Keep mobile light; fill wider desktop scenes with more *real* submissions.
+// All boats now enter naturally, rather than being placed instantly across the sea.
+const getSeaSampleSize = () => {
+  const width = document.getElementById('seaBoard')?.clientWidth || window.innerWidth;
+  if (width <= 760) return 6;
+  if (width <= 1100) return 9;
+  if (width <= 1500) return 12;
+  return 14;
+};
 const SEA_REFRESH_MS = 45000;
+let nextOccupancyCheckAt = 0;
 const marineLife = [];
 let lastFrame = 0;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -1126,7 +1137,7 @@ function updatePreview() {
   }
   const krathongPreview = $('krathongPreview');
   if (krathongPreview) {
-    krathongPreview.style.setProperty('--glow', state.color);
+    applyKrathongGlowVars(krathongPreview, state.color);
   }
   const photoBadge = $('photoBadge');
   if (photoBadge) {
@@ -1620,8 +1631,28 @@ function seaItemKey(item) {
   return [item.id, item.name, item.photo, item.type, item.flower, item.candle, item.color].join('|');
 }
 
+function hexToRgba(hex, alpha) {
+  const m = /^#([0-9a-f]{6})$/i.exec(String(hex || ''));
+  const safeHex = m ? m[1] : 'ffc977';
+  const r = parseInt(safeHex.slice(0, 2), 16);
+  const g = parseInt(safeHex.slice(2, 4), 16);
+  const b = parseInt(safeHex.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function applyKrathongGlowVars(node, color) {
+  if (!node) return;
+  const safeColor = /^#[0-9a-f]{6}$/i.test(color || '') ? color : '#ffc977';
+  node.style.setProperty('--glow', safeColor);
+  node.style.setProperty('--glow-soft', hexToRgba(safeColor, 0.18));
+  node.style.setProperty('--glow-mid', hexToRgba(safeColor, 0.30));
+  node.style.setProperty('--glow-strong', hexToRgba(safeColor, 0.52));
+  node.style.setProperty('--glow-ripple', hexToRgba(safeColor, 0.34));
+  node.style.setProperty('--glow-ripple-soft', hexToRgba(safeColor, 0.18));
+}
+
 function patchDrifterNode(node, item) {
-  node.style.setProperty('--glow', /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : '#ffc977');
+  applyKrathongGlowVars(node, item && item.color);
   node.innerHTML = seaItemHTML(item);
   node.onclick = () => displayWish(item);
   node.dataset.itemKey = seaItemKey(item);
@@ -1644,8 +1675,8 @@ function addDrifter(item, startX = null, startY = null) {
   const speed = 16 + Math.random() * 9;
   drifters.set(String(item.id), {
     el: b, item, x: pos.x, y: pos.y,
-    vx: speed, vy: 0, entrySpeed: startX !== null ? speed : (42 + Math.random() * 8),
-    entering: startX === null,
+    vx: speed, vy: 0, entrySpeed: startX !== null && startX >= 0 ? speed : (32 + Math.random() * 5),
+    entering: startX === null || startX < 0,
     retiring: false,
     direction, flow: Math.random() * Math.PI * 2, turn: 0, phase: Math.random() * 7
   });
@@ -1679,24 +1710,35 @@ function launchKrathongToSea(item) {
   }
 }
 
+// Queue a replacement while a krathong is approaching the far shore, not only
+// after it has completely exited; keep existing boats floating to the right.
+function fillSeaQueue() {
+  const sea = $('seaBoard');
+  if (!sea || !sea.clientWidth) return;
+  const target = getSeaSampleSize();
+  const rightEdge = sea.clientWidth - Math.min(200, sea.clientWidth * .14);
+  let visible = 0;
+  for (const d of drifters.values()) {
+    if (d.sinking || d.respawnPending || !d.el.isConnected) continue;
+    if (d.x < rightEdge) visible++;
+  }
+  const slots = Math.max(0, Math.min(target - visible - pendingSeaEntries.length,
+    target + 2 - drifters.size - pendingSeaEntries.length));
+  for (let i = 0; i < slots; i++) {
+    const nextItem = getNextStreamKrathong();
+    if (!nextItem || drifters.has(String(nextItem.id)) ||
+        pendingSeaEntries.some(p => String(p.id) === String(nextItem.id))) break;
+    pendingSeaEntries.push(nextItem);
+  }
+  if (!nextSeaEntryAt && pendingSeaEntries.length) nextSeaEntryAt = performance.now();
+}
+
 function renderSea() {
   const totalCount = Number(state.total || getAllAvailableKrathongs().length);
   $('total').textContent = totalCount.toLocaleString('th-TH');
   const sea = $('seaBoard');
   sea.querySelectorAll('.empty').forEach(x => x.remove());
-
-  const targetCount = getSeaSampleSize();
-  const currentCount = drifters.size + pendingSeaEntries.length;
-  const needed = Math.max(0, targetCount - currentCount);
-
-  for (let i = 0; i < needed; i++) {
-    const nextItem = getNextStreamKrathong();
-    if (nextItem && !drifters.has(String(nextItem.id)) && !pendingSeaEntries.some(p => String(p.id) === String(nextItem.id))) {
-      pendingSeaEntries.push(nextItem);
-    }
-  }
-
-  if (!nextSeaEntryAt && pendingSeaEntries.length) nextSeaEntryAt = performance.now();
+  fillSeaQueue();
   renderWishTicker();
 }
 
@@ -1722,26 +1764,30 @@ window.sinkDrifterItem = function(itemId) {
     recycledFromShark.push(sunkItem);
   }
 
-  // Queue next krathong to replace sunken one
-  const nextItem = getNextStreamKrathong();
-  if (nextItem && !pendingSeaEntries.some(p => String(p.id) === String(nextItem.id))) {
-    pendingSeaEntries.push(nextItem);
-    if (!nextSeaEntryAt) nextSeaEntryAt = performance.now();
-  }
+  // Recover an available seat without exceeding the desktop/mobile limit.
+  fillSeaQueue();
   renderWishTicker();
 };
 
 function releaseNextSeaEntry(now) {
   if (!pendingSeaEntries.length) { nextSeaEntryAt = 0; return; }
   if (now < nextSeaEntryAt) return;
-  const nearEntry = [...drifters.values()].some(d => d.x < 75 && !d.sinking);
+  const sea = $('seaBoard');
+  if (!sea) return;
+  const y = allocateBestLane(sea);
+  // Leave space near the entry point; avoid colliding with an already entering boat.
+  const nearEntry = [...drifters.values()].some(d =>
+    d.x < 160 && d.x > -175 && !d.sinking && !d.respawnPending &&
+    Math.abs(d.y - y) < sea.clientHeight * .095);
   if (nearEntry) {
-    nextSeaEntryAt = now + 650;
+    nextSeaEntryAt = now + 900;
     return;
   }
   const item = pendingSeaEntries.shift();
-  if (item && !drifters.has(String(item.id))) addDrifter(item);
-  nextSeaEntryAt = now + SEA_ENTRY_GAP_MS;
+  // Explicit x=-130 preserves the smooth, normal drift when spawning. The old
+  // entering boost is only used if a caller supplies no starting coordinate.
+  if (item && !drifters.has(String(item.id))) addDrifter(item, -130, y);
+  nextSeaEntryAt = now + getSeaEntryGap();
 }
 
 const MOBILE_LOW_POWER = window.matchMedia('(max-width:760px)').matches;
@@ -1783,6 +1829,11 @@ function animateSea(ts) {
   const sea = $('seaBoard');
   if (!document.hidden && sea.clientWidth) {
     const w = sea.clientWidth, h = sea.clientHeight;
+    // Two checks per second are sufficient; keep animation work constant-time.
+    if (ts >= nextOccupancyCheckAt) {
+      fillSeaQueue();
+      nextOccupancyCheckAt = ts + 1000;
+    }
     releaseNextSeaEntry(ts);
 
     for (const m of marineLife) {
@@ -1864,11 +1915,7 @@ function animateSea(ts) {
         if (v.el && v.el.isConnected) v.el.remove();
         drifters.delete(id);
 
-        const nextItem = getNextStreamKrathong();
-        if (nextItem && !pendingSeaEntries.some(p => String(p.id) === String(nextItem.id))) {
-          pendingSeaEntries.push(nextItem);
-          if (!nextSeaEntryAt) nextSeaEntryAt = performance.now();
-        }
+        fillSeaQueue();
         continue;
       }
 
@@ -1884,7 +1931,6 @@ function animateSea(ts) {
 // This is purely visual: no API call, extra network request, or generated/demo wishes.
 const SEA_WISH_SPOTLIGHT_MS = 10500;
 const SEA_WISH_VISIBLE_MS = 6300;
-const ENABLE_WISH_TICKER = false;
 let seaWishSpotlight = null;
 let seaWishHideTimer = 0;
 let lastSpotlightId = '';
@@ -1932,7 +1978,8 @@ function showRandomSeaWish() {
 }
 
 function renderWishTicker() {
-  if (!ENABLE_WISH_TICKER) return;
+  // V85: wish ticker has been removed from all screen sizes.
+  return;
   const node = $('wishTicker');
   if (!node) return;
   const source = (state.recentItems.length ? state.recentItems : state.items).filter(x => String(x.wish || '').trim());
@@ -1951,8 +1998,11 @@ async function loadSea() {
   if (loadSea.busy) return;
   loadSea.busy = true;
   const sampleSize = getSeaSampleSize();
+  // A wider pool of real submissions keeps replacement boats available while
+  // earlier boats are still in view. Render only sampleSize simultaneously.
+  const poolSize = sampleSize <= 6 ? 8 : Math.min(20, sampleSize + 8);
   try {
-    const out = await request('list', { limit: String(sampleSize), random: String(sampleSize) }, 'GET');
+    const out = await request('list', { limit: String(poolSize), random: String(poolSize) }, 'GET');
     if (!out || !Array.isArray(out.items)) throw Error('API ส่งข้อมูลกระทงไม่ถูกต้อง');
     const nextItems = out.items.filter(item => item && item.id);
     const nextRecent = Array.isArray(out.recent) ? out.recent : nextItems;
@@ -1987,6 +2037,10 @@ async function loadSea() {
 }
 
 $('release').onclick = async () => {
+  if (window.EVENT_GATE && !window.EVENT_GATE.isLive()) {
+    $('status').textContent = 'ยังไม่อยู่ในช่วงเวลาที่เปิดให้ลอยกระทง';
+    return;
+  }
   if (wizardStep !== 4 || releaseInProgress) return;
   const name = $('name').value.trim();
   const employeeId = $('employeeId').value.trim();
@@ -2048,6 +2102,7 @@ $('release').onclick = async () => {
     };
     const fingerprint = await fingerprintSubmission(payload);
     const requestId = stableSubmissionId(fingerprint);
+    if (window.EVENT_GATE && !window.EVENT_GATE.isLive()) throw Error('หมดเวลาร่วมกิจกรรมแล้ว');
     const out = await request('create', { ...payload, requestId }, 'POST', IDEMPOTENCY_READY ? 2 : 0);
     if (!out || !out.item || !out.item.id) {
       throw Error('API ไม่ได้ยืนยันการบันทึกกระทง กรุณาตรวจสอบก่อนลองอีกครั้ง');
@@ -2522,20 +2577,32 @@ try { localStorage.removeItem('phiPhiMyKrathong_v1'); localStorage.removeItem('p
 initChoices();
 updatePreview();
 syncHrUi();
-initSeaDecor();
-loadSea();
 initMusicPlayer();
-requestAnimationFrame(animateSea);
-setTimeout(showRandomSeaWish, 4800);
-setInterval(showRandomSeaWish, SEA_WISH_SPOTLIGHT_MS);
-if (ENABLE_WISH_TICKER) setInterval(() => { state.tickerIndex++; renderWishTicker(); }, 8000);
-function scheduleSeaPolling() {
-  const nextInterval = SEA_REFRESH_MS + (Math.random() - 0.5) * 6000;
-  setTimeout(() => {
-    if (!document.hidden) loadSea();
-    scheduleSeaPolling();
-  }, nextInterval);
+// Countdown/finished pages do not start the sea renderer or poll participant data.
+// HR login remains available from the existing top navigation.
+// Sea rendering starts only after V73 verifies time with the Worker.
+async function startSeaIfEventLive() {
+  if (window.EVENT_GATE) await window.EVENT_GATE.ready;
+  if (window.EVENT_GATE && !window.EVENT_GATE.isLive()) return;
+  initSeaDecor();
+  loadSea();
+  requestAnimationFrame(animateSea);
+  setTimeout(showRandomSeaWish, 4800);
+  setInterval(showRandomSeaWish, SEA_WISH_SPOTLIGHT_MS);
+  // V85: no periodic wish ticker refresh (HUD removed).
+  function scheduleSeaPolling() {
+    const nextInterval = SEA_REFRESH_MS + (Math.random() - 0.5) * 6000;
+    setTimeout(() => {
+      if (!document.hidden && (!window.EVENT_GATE || window.EVENT_GATE.isLive())) loadSea();
+      scheduleSeaPolling();
+    }, nextInterval);
+  }
+  scheduleSeaPolling();
+  document.addEventListener('visibilitychange', () => {
+    lastFrame = 0;
+    lastPaintFrame = 0;
+    if (document.hidden) hideSeaWishSpotlight();
+    else if (!window.EVENT_GATE || window.EVENT_GATE.isLive()) loadSea();
+  });
 }
-scheduleSeaPolling();
-document.addEventListener('visibilitychange', () => { lastFrame = 0; lastPaintFrame = 0; if (document.hidden) hideSeaWishSpotlight(); else loadSea(); });
-
+startSeaIfEventLive();
