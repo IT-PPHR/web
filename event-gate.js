@@ -4,9 +4,9 @@
  */
 (function () {
   'use strict';
-  const START_AT = Date.parse('2026-11-24T08:00:00+07:00');
+  const START_AT = Date.parse('2026-11-20T08:04:00+07:00');
   // 23:59 is the last permitted minute: stop at 25 Nov 00:00:00 Thailand time.
-  const END_AT = Date.parse('2026-11-25T00:00:00+07:00');
+  const END_AT = Date.parse('2026-11-20T08:06:00+07:00');
 
   function phase(now) {
     const ms = typeof now === 'number' ? now : Date.now();
