@@ -8593,3 +8593,25 @@ html[data-event-phase="syncing"] body > .site-footer { display: none !important;
     line-height: 1.1;
   }
 }
+
+
+/* V79 – Center desktop create button */
+@media (min-width: 1181px) {
+  body > main .hero-actions,
+  body > main .hero-sea .hero-actions {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin: 10px auto 0 !important;
+    padding: 0 !important;
+  }
+
+  body > main .hero-actions .btn,
+  body > main .hero-sea .hero-actions .btn {
+    width: auto !important;
+    min-width: 340px;
+    max-width: min(420px, 90vw);
+    margin: 0 auto !important;
+  }
+}
