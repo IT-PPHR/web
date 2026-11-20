@@ -88,10 +88,18 @@ const recycledFromShark = [];
 let pendingSeaEntries = [];
 let nextSeaEntryAt = 0;
 const SEA_ENTRY_GAP_MS = 1600;
-// Mobile optimization: one compositor transform per krathong rather than layout-changing left/top.
-const SEA_SAMPLE_SIZE = 8;
-const getSeaSampleSize = () => (typeof window !== 'undefined' && window.innerWidth <= 768 ? 6 : 8);
+// V80: Keep mobile light; fill wider desktop scenes with more *real* submissions.
+// Initial desktop distribution is seeded across the sea, future entries still float in from the left.
+const getSeaSampleSize = () => {
+  const width = document.getElementById('seaBoard')?.clientWidth || window.innerWidth;
+  if (width <= 760) return 6;
+  if (width <= 1100) return 9;
+  if (width <= 1500) return 12;
+  return 14;
+};
 const SEA_REFRESH_MS = 45000;
+let initialSeaSeeded = false;
+let nextOccupancyCheckAt = 0;
 const marineLife = [];
 let lastFrame = 0;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -1664,8 +1672,8 @@ function addDrifter(item, startX = null, startY = null) {
   const speed = 16 + Math.random() * 9;
   drifters.set(String(item.id), {
     el: b, item, x: pos.x, y: pos.y,
-    vx: speed, vy: 0, entrySpeed: startX !== null ? speed : (42 + Math.random() * 8),
-    entering: startX === null,
+    vx: speed, vy: 0, entrySpeed: startX !== null && startX >= 0 ? speed : (32 + Math.random() * 5),
+    entering: startX === null || startX < 0,
     retiring: false,
     direction, flow: Math.random() * Math.PI * 2, turn: 0, phase: Math.random() * 7
   });
@@ -1699,24 +1707,61 @@ function launchKrathongToSea(item) {
   }
 }
 
+// V80: At first load spread real krathongs through the wide desktop scene.
+// Without this, eight krathongs all enter from x=-130 and leave a mostly empty sea
+// for over a minute while they drift slowly at 16-25 px/s.
+function seedDesktopSea(sea) {
+  if (initialSeaSeeded || drifters.size || pendingSeaEntries.length || sea.clientWidth < 900) return;
+  const items = getAllAvailableKrathongs();
+  if (!items.length) return;
+  initialSeaSeeded = true;
+  const target = Math.min(getSeaSampleSize(), items.length);
+  const lanes = [0.60, 0.71, 0.82];
+  const columns = Math.ceil(target / lanes.length);
+  const left = Math.max(105, sea.clientWidth * .095);
+  const right = sea.clientWidth - Math.max(120, sea.clientWidth * .095);
+  const stride = (right - left) / Math.max(1, columns);
+  // Column-major with alternating lane order: avoid visual vertical stacks.
+  for (let i = 0; i < target; i++) {
+    const col = Math.floor(i / lanes.length);
+    const row = i % lanes.length;
+    const lane = (col % 2) ? (lanes.length - 1 - row) : row;
+    const x = Math.min(right, left + (col + .28 + lane * .13) * stride);
+    const y = sea.clientHeight * lanes[lane];
+    addDrifter(items[i], x, y);
+  }
+}
+
+// Queue a replacement while a krathong is approaching the far shore, not only
+// after it has completely exited; keep existing boats floating to the right.
+function fillSeaQueue() {
+  const sea = $('seaBoard');
+  if (!sea || !sea.clientWidth) return;
+  const target = getSeaSampleSize();
+  const rightEdge = sea.clientWidth - Math.min(200, sea.clientWidth * .14);
+  let visible = 0;
+  for (const d of drifters.values()) {
+    if (d.sinking || d.respawnPending || !d.el.isConnected) continue;
+    if (d.x < rightEdge) visible++;
+  }
+  const slots = Math.max(0, Math.min(target - visible - pendingSeaEntries.length,
+    target + 2 - drifters.size - pendingSeaEntries.length));
+  for (let i = 0; i < slots; i++) {
+    const nextItem = getNextStreamKrathong();
+    if (!nextItem || drifters.has(String(nextItem.id)) ||
+        pendingSeaEntries.some(p => String(p.id) === String(nextItem.id))) break;
+    pendingSeaEntries.push(nextItem);
+  }
+  if (!nextSeaEntryAt && pendingSeaEntries.length) nextSeaEntryAt = performance.now();
+}
+
 function renderSea() {
   const totalCount = Number(state.total || getAllAvailableKrathongs().length);
   $('total').textContent = totalCount.toLocaleString('th-TH');
   const sea = $('seaBoard');
   sea.querySelectorAll('.empty').forEach(x => x.remove());
-
-  const targetCount = getSeaSampleSize();
-  const currentCount = drifters.size + pendingSeaEntries.length;
-  const needed = Math.max(0, targetCount - currentCount);
-
-  for (let i = 0; i < needed; i++) {
-    const nextItem = getNextStreamKrathong();
-    if (nextItem && !drifters.has(String(nextItem.id)) && !pendingSeaEntries.some(p => String(p.id) === String(nextItem.id))) {
-      pendingSeaEntries.push(nextItem);
-    }
-  }
-
-  if (!nextSeaEntryAt && pendingSeaEntries.length) nextSeaEntryAt = performance.now();
+  seedDesktopSea(sea);
+  fillSeaQueue();
   renderWishTicker();
 }
 
@@ -1742,25 +1787,29 @@ window.sinkDrifterItem = function(itemId) {
     recycledFromShark.push(sunkItem);
   }
 
-  // Queue next krathong to replace sunken one
-  const nextItem = getNextStreamKrathong();
-  if (nextItem && !pendingSeaEntries.some(p => String(p.id) === String(nextItem.id))) {
-    pendingSeaEntries.push(nextItem);
-    if (!nextSeaEntryAt) nextSeaEntryAt = performance.now();
-  }
+  // Recover an available seat without exceeding the desktop/mobile limit.
+  fillSeaQueue();
   renderWishTicker();
 };
 
 function releaseNextSeaEntry(now) {
   if (!pendingSeaEntries.length) { nextSeaEntryAt = 0; return; }
   if (now < nextSeaEntryAt) return;
-  const nearEntry = [...drifters.values()].some(d => d.x < 75 && !d.sinking);
+  const sea = $('seaBoard');
+  if (!sea) return;
+  const y = allocateBestLane(sea);
+  // Do not hold the entire entry queue because of a boat in a different lane.
+  const nearEntry = [...drifters.values()].some(d =>
+    d.x < 160 && d.x > -175 && !d.sinking && !d.respawnPending &&
+    Math.abs(d.y - y) < sea.clientHeight * .095);
   if (nearEntry) {
-    nextSeaEntryAt = now + 650;
+    nextSeaEntryAt = now + 900;
     return;
   }
   const item = pendingSeaEntries.shift();
-  if (item && !drifters.has(String(item.id))) addDrifter(item);
+  // Explicit x=-130 preserves the smooth, normal drift when spawning. The old
+  // entering boost is only used if a caller supplies no starting coordinate.
+  if (item && !drifters.has(String(item.id))) addDrifter(item, -130, y);
   nextSeaEntryAt = now + SEA_ENTRY_GAP_MS;
 }
 
@@ -1803,6 +1852,11 @@ function animateSea(ts) {
   const sea = $('seaBoard');
   if (!document.hidden && sea.clientWidth) {
     const w = sea.clientWidth, h = sea.clientHeight;
+    // Two checks per second are sufficient; keep animation work constant-time.
+    if (ts >= nextOccupancyCheckAt) {
+      fillSeaQueue();
+      nextOccupancyCheckAt = ts + 1000;
+    }
     releaseNextSeaEntry(ts);
 
     for (const m of marineLife) {
@@ -1884,11 +1938,7 @@ function animateSea(ts) {
         if (v.el && v.el.isConnected) v.el.remove();
         drifters.delete(id);
 
-        const nextItem = getNextStreamKrathong();
-        if (nextItem && !pendingSeaEntries.some(p => String(p.id) === String(nextItem.id))) {
-          pendingSeaEntries.push(nextItem);
-          if (!nextSeaEntryAt) nextSeaEntryAt = performance.now();
-        }
+        fillSeaQueue();
         continue;
       }
 
@@ -1969,8 +2019,11 @@ async function loadSea() {
   if (loadSea.busy) return;
   loadSea.busy = true;
   const sampleSize = getSeaSampleSize();
+  // A wider pool of real submissions keeps replacement boats available while
+  // earlier boats are still in view. Render only sampleSize simultaneously.
+  const poolSize = sampleSize <= 6 ? 8 : Math.min(20, sampleSize + 8);
   try {
-    const out = await request('list', { limit: String(sampleSize), random: String(sampleSize) }, 'GET');
+    const out = await request('list', { limit: String(poolSize), random: String(poolSize) }, 'GET');
     if (!out || !Array.isArray(out.items)) throw Error('API ส่งข้อมูลกระทงไม่ถูกต้อง');
     const nextItems = out.items.filter(item => item && item.id);
     const nextRecent = Array.isArray(out.recent) ? out.recent : nextItems;
